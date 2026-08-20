@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Payment Entry - Up Field</title>
+  
+  <style>
+    /* Shared Theme Variables */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none !important; }
+    body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; } /* Controlled scrolling per screen */
+
+    /* --- Top Header & Live Sync Pill --- */
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); border-bottom: 1px solid var(--border); z-index: 10; position: relative; }
+    .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    
+    .sync-pill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); border-radius: 20px; color: var(--primary); font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .sync-dot { width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+    .sync-pill.offline { background: rgba(239, 68, 68, 0.15); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
+    .sync-pill.offline .sync-dot { background-color: var(--danger); animation: none; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+    /* --- Screen Management (Sliding History API) --- */
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; }
+    .screen.hidden-right { transform: translateX(100%); }
+    .screen-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
+
+    /* --- Search Area --- */
+    .search-container { position: relative; margin-bottom: 20px; }
+    .search-container svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; fill: var(--text-sub); }
+    .search-container input { width: 100%; padding: 18px 15px 18px 48px; border-radius: 16px; border: 2px solid var(--border); background-color: var(--surface-card); color: var(--text-main); font-size: 1.1rem; outline: none; transition: border-color 0.3s; box-shadow: var(--shadow); }
+    .search-container input:focus { border-color: var(--primary); }
+
+    /* --- Cards --- */
+    .card { background-color: var(--surface-card); padding: 16px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; gap: 5px; }
+    .card:active { transform: scale(0.97); }
+    .card-title { font-size: 1.1rem; font-weight: 800; display: flex; justify-content: space-between; }
+    .card-sub { font-size: 0.85rem; color: var(--text-sub); font-weight: 600; }
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; background: rgba(59, 130, 246, 0.15); color: #3b82f6; width: fit-content; }
+
+    /* Skeletons */
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; height: 20px; margin-bottom: 8px; }
+
+    /* --- Second Screen Header --- */
+    .back-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; }
+    .location-btn { background: rgba(59, 130, 246, 0.15); border: none; color: #3b82f6; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 50%; cursor: pointer; }
+
+    /* --- Bottom Sheet Modal --- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
+    .bottom-sheet.active { transform: translateY(0); }
+    .sheet-handle { width: 40px; height: 5px; background: var(--border); border-radius: 5px; margin: 0 auto 20px auto; }
+    
+    .input-group { margin-bottom: 15px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px; }
+    .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 700; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
+    
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 10px; transition: transform 0.1s; }
+    .btn-full:active { transform: scale(0.96); }
+
+    /* --- Location Circle Modal --- */
+    .center-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: var(--surface-card); padding: 30px; border-radius: 24px; z-index: 102; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow); width: 85%; max-width: 320px; }
+    .center-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+    .circle-loader { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px auto; display: none; }
+    .center-modal h3 { margin-bottom: 10px; }
+    .center-modal p { color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-outline { flex: 1; padding: 12px; border-radius: 12px; border: 2px solid var(--border); background: transparent; color: var(--text-main); font-weight: 700; cursor: pointer; }
+    .btn-blue { flex: 1; padding: 12px; border-radius: 12px; border: none; background: #3b82f6; color: #fff; font-weight: 700; cursor: pointer; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- ================= SCREEN 1: SEARCH ================= -->
+  <div id="screen-search" class="screen">
+    <div class="header">
+      <h2>Entry</h2>
+      <div class="sync-pill" id="sync-status">
+        <div class="sync-dot"></div> Live Sync
+      </div>
+    </div>
+    <div class="screen-content">
+      <div class="search-container">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <!-- Autofocus applied here to trigger keyboard on load -->
+        <input type="text" id="search-input" placeholder="Search Name or ID..." autocomplete="off" autofocus>
+      </div>
+      <div id="search-results">
+        <!-- Results inject here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCREEN 2: CUSTOMER DETAIL ================= -->
+  <div id="screen-detail" class="screen hidden-right">
+    <div class="header">
+      <button class="back-btn" onclick="window.history.back()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <h2 style="font-size: 1.1rem;" id="detail-name">Loading...</h2>
+      <button class="location-btn" onclick="openLocationModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+      </button>
+    </div>
+    <div class="screen-content" id="products-list">
+      <!-- Live Products inject here -->
+    </div>
+  </div>
+
+  <!-- ================= MODALS & OVERLAYS ================= -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <!-- Payment Bottom Sheet -->
+  <div class="bottom-sheet" id="payment-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px;" id="sheet-product-name">Product Name</h3>
+    <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px; font-weight: 600;">Pending: <span id="sheet-pending-amt" style="color: var(--primary);">₹0</span></p>
+    
+    <div class="input-group">
+      <label>Total Amount Collected (₹)</label>
+      <input type="number" id="pay-total" placeholder="e.g. 5000" inputmode="numeric">
+    </div>
+
+    <div class="input-group">
+      <label>Payment Method</label>
+      <select id="pay-method">
+        <option value="cash">Cash</option>
+        <option value="online">Online / UPI</option>
+        <option value="split">Split (Cash + Online)</option>
+      </select>
+    </div>
+
+    <div class="input-group" id="split-container" style="display: none;">
+      <label>How much of the total was Cash? (₹)</label>
+      <input type="number" id="pay-cash-split" placeholder="Cash amount" inputmode="numeric">
+    </div>
+
+    <button class="btn-full" id="btn-save-payment">Save Entry</button>
+  </div>
+
+  <!-- Location Update Modal -->
+  <div class="center-modal" id="location-modal">
+    <div class="circle-loader" id="loc-loader"></div>
+    <div id="loc-content">
+      <h3>Update Location?</h3>
+      <p>This will save your current GPS coordinates to this customer permanently.</p>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="window.history.back()">Cancel</button>
+        <button class="btn-blue" onclick="runLocationUpdate()">Update GPS</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { collection, query, where, getDocs, doc, getDoc, runTransaction, updateDoc, limit } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // Global State
+    let currentUser = null;
+    let selectedCustomer = null;
+    let selectedProduct = null;
+
+    // DOM Elements
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    const screenSearch = document.getElementById('screen-search');
+    const screenDetail = document.getElementById('screen-detail');
+    const productsList = document.getElementById('products-list');
+    
+    const modalOverlay = document.getElementById('modal-overlay');
+    const paymentSheet = document.getElementById('payment-sheet');
+    const locationModal = document.getElementById('location-modal');
+    
+    const payTotal = document.getElementById('pay-total');
+    const payMethod = document.getElementById('pay-method');
+    const splitContainer = document.getElementById('split-container');
+
+    // Focus Keyboard on Load
+    window.addEventListener('load', () => {
+      setTimeout(() => { searchInput.focus(); }, 100);
+    });
+
+    // Check Network Sync
+    window.addEventListener('offline', () => document.getElementById('sync-status').classList.add('offline'));
+    window.addEventListener('online', () => document.getElementById('sync-status').classList.remove('offline'));
+
+    // Auth
+    onAuthStateChanged(auth, (user) => { if (user) currentUser = user; });
+
+    // Haptics
+    function vibrate(p = 30) { if(navigator.vibrate) navigator.vibrate(p); }
+
+    // --- History API (Back Button) Management ---
+    window.addEventListener('popstate', (e) => {
+      const state = e.state;
+      // Close Modals
+      modalOverlay.classList.remove('active');
+      paymentSheet.classList.remove('active');
+      locationModal.classList.remove('active');
+      
+      // Close Detail Screen
+      if (!state || state.screen !== 'detail') {
+        screenDetail.classList.add('hidden-right');
+      }
+    });
+
+    // --- Search Logic (400ms Debounce + Firebase Double Query) ---
+    let searchTimeout;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      const val = e.target.value.trim().toUpperCase(); // Uppercase for ID matching, standard for names
+
+      if(val.length < 2) {
+        searchResults.innerHTML = '';
+        return;
+      }
+
+      // Show Skeleton
+      searchResults.innerHTML = '<div class="card"><div class="skeleton-box" style="width:50%"></div><div class="skeleton-box" style="width:80%"></div></div>';
+
+      searchTimeout = setTimeout(() => searchFirebase(val), 400);
+    });
+
+    async function searchFirebase(term) {
+      if(!currentUser) return;
+      
+      // Capitalize first letter for name search
+      const nameTerm = term.charAt(0).toUpperCase() + term.slice(1).toLowerCase();
+
+      try {
+        const usersRef = collection(db, "customers");
+        
+        // Double Query: Name & ID
+        const qName = query(usersRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), limit(4));
+        const qId = query(usersRef, where("id", ">=", term), where("id", "<=", term + "\uf8ff"), limit(4));
+
+        const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
+        
+        let resultsMap = {};
+        nameSnap.forEach(doc => resultsMap[doc.id] = doc.data());
+        idSnap.forEach(doc => resultsMap[doc.id] = doc.data());
+
+        renderResults(Object.values(resultsMap));
+
+      } catch (error) {
+        console.error(error);
+        searchResults.innerHTML = '<p style="color:var(--danger); text-align:center;">Search failed. Check connection.</p>';
+      }
+    }
+
+    function renderResults(customers) {
+      searchResults.innerHTML = '';
+      if(customers.length === 0) {
+        searchResults.innerHTML = '<p style="text-align:center; color:var(--text-sub); margin-top:20px; font-weight:600;">No customers found.</p>';
+        return;
+      }
+
+      customers.forEach(cust => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-title">${cust.name} <span class="badge">${cust.id}</span></div>
+          <div class="card-sub">📞 ${cust.phone || 'N/A'}</div>
+        `;
+        card.onclick = () => openCustomerDetail(cust);
+        searchResults.appendChild(card);
+      });
+    }
+
+    // --- Second Screen: Live Pending Math ---
+    window.openCustomerDetail = async (customer) => {
+      vibrate();
+      selectedCustomer = customer;
+      document.getElementById('detail-name').innerText = customer.name;
+      
+      // History Push
+      window.history.pushState({ screen: 'detail' }, '');
+      screenDetail.classList.remove('hidden-right');
+
+      productsList.innerHTML = '<div class="card"><div class="skeleton-box"></div><div class="skeleton-box"></div></div>';
+
+      try {
+        // 1. Fetch Master Document (Live)
+        const custDoc = await getDoc(doc(db, "customers", customer.id));
+        const masterData = custDoc.data();
+        
+        // 2. Fetch Agent's Daily Draft Log (To subtract unapproved amounts)
+        const today = new Date().toISOString().split('T')[0];
+        const logDoc = await getDoc(doc(db, "daily_logs", `${currentUser.uid}_${today}`));
+        const pendingData = logDoc.exists() ? logDoc.data() : {};
+
+        productsList.innerHTML = '';
+
+        // Safely map products assuming a `products` array in customer doc
+        const products = masterData.products || [];
+        if(products.length === 0) productsList.innerHTML = '<p>No active products.</p>';
+
+        products.forEach((prod, index) => {
+          // LIVE MATH ENGINE
+          // Check if this specific product/customer has a pending payment in today's log
+          const draftEntry = pendingData[`${customer.id}_${index}`];
+          const pendingDeduction = draftEntry ? parseInt(draftEntry.amount) : 0;
+          
+          const liveBalance = Math.max(0, parseInt(prod.pending_balance) - pendingDeduction);
+
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-title">${prod.product_name}</div>
+            <div class="card-sub" style="margin-top: 5px;">Master Ledger: ₹${prod.pending_balance}</div>
+            ${pendingDeduction > 0 ? `<div class="card-sub" style="color:var(--danger)">Unapproved Draft: -₹${pendingDeduction}</div>` : ''}
+            <div class="card-title" style="margin-top: 10px; color:var(--primary)">Live Pending: ₹${liveBalance}</div>
+          `;
+          
+          // Disable click if paid off
+          if(liveBalance > 0) {
+             card.onclick = () => openPaymentSheet(prod.product_name, liveBalance, index);
+          } else {
+             card.style.opacity = '0.5';
+          }
+          
+          productsList.appendChild(card);
+        });
+
+      } catch (error) {
+        console.error(error);
+        productsList.innerHTML = '<p>Error loading live ledger.</p>';
+      }
+    }
+
+    // --- Payment Flow & Transaction ---
+    window.openPaymentSheet = (productName, maxAmount, prodIndex) => {
+      vibrate();
+      selectedProduct = { name: productName, index: prodIndex, max: maxAmount };
+      
+      document.getElementById('sheet-product-name').innerText = productName;
+      document.getElementById('sheet-pending-amt').innerText = `₹${maxAmount}`;
+      
+      payTotal.value = '';
+      payMethod.value = 'cash';
+      payCashSplit.value = '';
+      splitContainer.style.display = 'none';
+
+      window.history.pushState({ screen: 'modal' }, '');
+      modalOverlay.classList.add('active');
+      paymentSheet.classList.add('active');
+    };
+
+    payMethod.addEventListener('change', (e) => {
+      splitContainer.style.display = e.target.value === 'split' ? 'block' : 'none';
+    });
+
+    document.getElementById('btn-save-payment').addEventListener('click', async () => {
+      const amt = parseInt(payTotal.value);
+      if(!amt || amt <= 0 || amt > selectedProduct.max) {
+        alert("Enter a valid amount up to ₹" + selectedProduct.max); return;
+      }
+      
+      vibrate(50);
+      const btn = document.getElementById('btn-save-payment');
+      btn.innerText = "Saving Securely...";
+      btn.disabled = true;
+
+      const today = new Date().toISOString().split('T')[0];
+      const logRef = doc(db, "daily_logs", `${currentUser.uid}_${today}`);
+      const entryKey = `${selectedCustomer.id}_${selectedProduct.index}`;
+
+      const paymentPayload = {
+        amount: amt,
+        method: payMethod.value,
+        cash_split: payMethod.value === 'split' ? parseInt(document.getElementById('pay-cash-split').value) || 0 : (payMethod.value === 'cash' ? amt : 0),
+        status: "pending",
+        timestamp: new Date().toISOString(),
+        customer_name: selectedCustomer.name
+      };
+
+      try {
+        // FIREBASE TRANSACTION: Guarantee atomicity for the outbox
+        await runTransaction(db, async (transaction) => {
+          const logDoc = await transaction.get(logRef);
+          if (!logDoc.exists()) {
+            transaction.set(logRef, { [entryKey]: paymentPayload });
+          } else {
+            transaction.update(logRef, { [entryKey]: paymentPayload });
+          }
+        });
+
+        // SUCCESS: Auto-clear from Local Storage Map Manifest
+        try {
+          const cacheKey = `route_data_${today}`;
+          let routeData = JSON.parse(localStorage.getItem(cacheKey));
+          if(routeData) {
+             const custIndex = routeData.findIndex(c => c.id === selectedCustomer.id);
+             if(custIndex !== -1) {
+               routeData[custIndex].active = false;
+               localStorage.setItem(cacheKey, JSON.stringify(routeData));
+             }
+          }
+        } catch(e) { console.warn("Cache update skipped", e); }
+
+        vibrate([30,50,30]);
+        window.history.back(); // Closes modal
+        setTimeout(() => window.history.back(), 300); // Closes detail screen, goes back to search
+
+      } catch (error) {
+        console.error(error);
+        alert("Save failed. Try again.");
+      }
+      
+      btn.innerText = "Save Entry";
+      btn.disabled = false;
+    });
+
+    // --- 1-Tap GPS Update ---
+    window.openLocationModal = () => {
+      vibrate();
+      window.history.pushState({ screen: 'modal' }, '');
+      modalOverlay.classList.add('active');
+      locationModal.classList.add('active');
+    };
+
+    window.runLocationUpdate = () => {
+      vibrate();
+      document.getElementById('loc-content').style.display = 'none';
+      document.getElementById('loc-loader').style.display = 'block';
+
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const coords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+        try {
+          await updateDoc(doc(db, "customers", selectedCustomer.id), { location: coords });
+          
+          // Show success briefly
+          locationModal.innerHTML = `<h3 style="color:var(--primary)">Location Saved!</h3><p>${coords}</p>`;
+          vibrate([30,50,30]);
+          setTimeout(() => window.history.back(), 1500); // Auto close
+        } catch(e) {
+          alert("Error saving to DB.");
+          window.history.back();
+        }
+      }, (err) => {
+        alert("GPS Error. Make sure location is turned on.");
+        window.history.back();
+      }, { enableHighAccuracy: true });
+    };
+
+    // Close on overlay click
+    modalOverlay.addEventListener('click', () => window.history.back());
+  </script>
+</body>
+</html>
