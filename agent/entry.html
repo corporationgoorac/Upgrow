@@ -93,7 +93,7 @@
     .btn-full:active { transform: scale(0.96); }
 
     /* --- Location Circle Modal --- */
-    .center-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: var(--surface-card); padding: 30px; border-radius: 24px; z-index: 102; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 85%; max-width: 320px; }
+    .center-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: var(--surface-card); padding: 30px; border-radius: 24px; z-index: 102; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 85%; max-width: 340px; }
     .center-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
     .circle-loader { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px auto; display: none; }
     .center-modal h3 { margin-bottom: 10px; font-size: 1.3rem; font-weight: 800; }
@@ -108,7 +108,6 @@
 </head>
 <body>
 
-  <!-- ================= SCREEN 1: SEARCH ================= -->
   <div id="screen-search" class="screen">
     <div class="header">
       <h2>Entry</h2>
@@ -119,37 +118,30 @@
     <div class="screen-content">
       <div class="search-container">
         <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <!-- Autofocus applied here to trigger keyboard on load -->
         <input type="text" id="search-input" placeholder="Search Name or ID..." autocomplete="off" autofocus>
       </div>
       <div id="search-results">
-        <!-- Results inject here -->
-      </div>
+        </div>
     </div>
   </div>
 
-  <!-- ================= SCREEN 2: CUSTOMER DETAIL ================= -->
   <div id="screen-detail" class="screen hidden-right">
     <div class="header">
       <button class="back-btn" onclick="window.history.back()">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
       </button>
       <h2 style="font-size: 1.15rem; color: var(--text-main);" id="detail-name">Loading...</h2>
-      <!-- Pulsing Location Button with Text -->
       <button class="location-btn" onclick="openLocationModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
         <span>Update GPS</span>
       </button>
     </div>
     <div class="screen-content" id="products-list">
-      <!-- Live Products inject here -->
-    </div>
+      </div>
   </div>
 
-  <!-- ================= MODALS & OVERLAYS ================= -->
   <div class="modal-overlay" id="modal-overlay"></div>
 
-  <!-- Payment Bottom Sheet -->
   <div class="bottom-sheet" id="payment-sheet">
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-product-name">Product Name</h3>
@@ -177,7 +169,6 @@
     <button class="btn-full" id="btn-save-payment">Save Entry</button>
   </div>
 
-  <!-- Location Update Modal -->
   <div class="center-modal" id="location-modal">
     <div class="circle-loader" id="loc-loader"></div>
     <div id="loc-content">
@@ -315,7 +306,24 @@
       });
     }
 
-    // --- Second Screen: Live Pending Math ---
+    // --- Second Screen: Live Pending Math & Detail Card UI ---
+    window.openPaymentSheet = (productName, maxAmount, prodIndex) => {
+      vibrate();
+      selectedProduct = { name: productName, index: prodIndex, max: maxAmount };
+      
+      document.getElementById('sheet-product-name').innerText = productName;
+      document.getElementById('sheet-pending-amt').innerText = fmt(maxAmount);
+      
+      payTotal.value = '';
+      payMethod.value = 'cash';
+      payCashSplit.value = '';
+      splitContainer.style.display = 'none';
+
+      window.history.pushState({ screen: 'modal' }, '');
+      modalOverlay.classList.add('active');
+      paymentSheet.classList.add('active');
+    };
+
     window.openCustomerDetail = async (customer) => {
       vibrate();
       selectedCustomer = customer;
@@ -332,54 +340,66 @@
         const custDoc = await getDoc(doc(db, "customers", customer.id));
         const masterData = custDoc.data();
         
-        // 2. Fetch Agent's Daily Draft Log (To subtract unapproved amounts)
-        const today = new Date().toISOString().split('T')[0];
-        const logDoc = await getDoc(doc(db, "daily_logs", `${currentUser.uid}_${today}`));
-        const pendingData = logDoc.exists() ? logDoc.data() : {};
+        // 2. Fetch ALL Agents' Daily Draft Logs to prevent Race Conditions (Global Check)
+        const logsSnap = await getDocs(collection(db, "daily_logs"));
+        let allPendingData = {};
+        
+        logsSnap.forEach(d => {
+          const data = d.data();
+          // Aggregate all pending/submitted status entries for this customer across all logs
+          Object.keys(data).forEach(key => {
+             if(data[key].status === 'pending' || data[key].status === 'submitted') {
+                 if(!allPendingData[key]) allPendingData[key] = 0;
+                 allPendingData[key] += parseInt(data[key].amount);
+             }
+          });
+        });
 
         productsList.innerHTML = '';
 
-        // Safely map products assuming a `products` array in customer doc
+        // Safely map products from the master database
         const products = masterData.products || [];
-        if(products.length === 0) productsList.innerHTML = '<p style="text-align:center; color:var(--text-sub); margin-top:20px; font-weight:600;">No active products.</p>';
+        if(products.length === 0) {
+          productsList.innerHTML = '<p style="text-align:center; color:var(--text-sub); margin-top:20px; font-weight:600;">No active products.</p>';
+        }
 
         products.forEach((prod, index) => {
           // LIVE MATH ENGINE
-          // Check if this specific product/customer has a pending payment in today's log
-          const draftEntry = pendingData[`${customer.id}_${index}`];
-          const pendingDeduction = draftEntry ? parseInt(draftEntry.amount) : 0;
-          
-          // Fixed variable names based on database structure
           const masterPending = parseInt(prod.pending) || 0;
+          const masterTotal = parseInt(prod.total) || 0;
+          const masterPaid = parseInt(prod.paid) || 0;
+          
+          // Deduct any global pending payments that haven't been approved by admin yet
+          const pendingDeduction = allPendingData[`${customer.id}_${index}`] || 0;
+          
           const liveBalance = Math.max(0, masterPending - pendingDeduction);
+          const totalPaidSoFar = masterPaid + pendingDeduction;
 
           const card = document.createElement('div');
           card.className = 'card';
           
-          // Beautiful Premium UI for the Product Card
+          // Beautiful Premium Detail Card UI (Live Data Only)
           card.innerHTML = `
             <div style="color: var(--text-main); font-size: 1.15rem; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.3px;">${prod.name || 'Unnamed Product'}</div>
             
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px dashed var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; padding-bottom: 10px; border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border); margin-bottom: 15px;">
                 <div>
-                    <div style="font-size: 0.75rem; color: var(--text-sub); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Master Ledger</div>
-                    <div style="font-size: 1rem; font-weight: 700; color: var(--text-main);">${fmt(masterPending)}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-sub); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Total Value</div>
+                    <div style="font-size: 1rem; font-weight: 700; color: var(--text-main);">${fmt(masterTotal)}</div>
                 </div>
-                ${pendingDeduction > 0 ? `
                 <div style="text-align: right;">
-                    <div style="font-size: 0.75rem; color: var(--danger); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Unapproved</div>
-                    <div style="font-size: 1rem; font-weight: 700; color: var(--danger);">- ${fmt(pendingDeduction)}</div>
+                    <div style="font-size: 0.75rem; color: #10B981; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Total Paid</div>
+                    <div style="font-size: 1rem; font-weight: 700; color: #10B981;">${fmt(totalPaidSoFar)}</div>
                 </div>
-                ` : ''}
             </div>
 
-            <div style="margin-top: 15px; background: rgba(16, 185, 129, 0.1); padding: 14px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 14px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-weight: 800; color: var(--primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Live Pending</span>
                 <span style="font-weight: 800; color: var(--primary); font-size: 1.35rem; letter-spacing: -0.5px;">${fmt(liveBalance)}</span>
             </div>
           `;
           
-          // Disable click if paid off
+          // Attach Click Event
           if(liveBalance > 0) {
              card.onclick = () => openPaymentSheet(prod.name || 'Unnamed Product', liveBalance, index);
              card.style.border = "2px solid rgba(16, 185, 129, 0.2)";
@@ -398,23 +418,6 @@
     }
 
     // --- Payment Flow & Transaction ---
-    window.openPaymentSheet = (productName, maxAmount, prodIndex) => {
-      vibrate();
-      selectedProduct = { name: productName, index: prodIndex, max: maxAmount };
-      
-      document.getElementById('sheet-product-name').innerText = productName;
-      document.getElementById('sheet-pending-amt').innerText = fmt(maxAmount);
-      
-      payTotal.value = '';
-      payMethod.value = 'cash';
-      payCashSplit.value = '';
-      splitContainer.style.display = 'none';
-
-      window.history.pushState({ screen: 'modal' }, '');
-      modalOverlay.classList.add('active');
-      paymentSheet.classList.add('active');
-    };
-
     payMethod.addEventListener('change', (e) => {
       splitContainer.style.display = e.target.value === 'split' ? 'block' : 'none';
     });
@@ -480,9 +483,21 @@
       btn.disabled = false;
     });
 
-    // --- 1-Tap GPS Update ---
+    // --- 1-Tap GPS Update with Visual Map Preview ---
     window.openLocationModal = () => {
       vibrate();
+      // Reset Modal UI
+      document.getElementById('loc-content').innerHTML = `
+          <h3>Update Location?</h3>
+          <p>This will save your current GPS coordinates to this customer permanently.</p>
+          <div class="modal-actions">
+            <button class="btn-outline" onclick="window.history.back()">Cancel</button>
+            <button class="btn-blue" onclick="runLocationUpdate()">Update GPS</button>
+          </div>
+      `;
+      document.getElementById('loc-content').style.display = 'block';
+      document.getElementById('loc-loader').style.display = 'none';
+
       window.history.pushState({ screen: 'modal' }, '');
       modalOverlay.classList.add('active');
       locationModal.classList.add('active');
@@ -494,14 +509,29 @@
       document.getElementById('loc-loader').style.display = 'block';
 
       navigator.geolocation.getCurrentPosition(async (pos) => {
-        const coords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const coords = `${lat}, ${lon}`;
         try {
           await updateDoc(doc(db, "customers", selectedCustomer.id), { location: coords });
           
-          // Show success briefly
-          locationModal.innerHTML = `<h3 style="color:var(--primary); font-size:1.3rem; font-weight:800; margin-bottom:10px;">Location Saved!</h3><p style="color:var(--text-sub); font-size:0.95rem; font-weight:600;">${coords}</p>`;
+          // Generate Map iframe Preview (Zero Cost via OSM)
+          const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
+          const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+
+          // Show Map & OK Button
+          document.getElementById('loc-loader').style.display = 'none';
+          document.getElementById('loc-content').style.display = 'block';
+          document.getElementById('loc-content').innerHTML = `
+            <h3 style="color:var(--primary); font-size:1.4rem; font-weight:800; margin-bottom:15px;">Location Saved!</h3>
+            <div style="width:100%; height:180px; border-radius:16px; overflow:hidden; margin-bottom:15px; border:1px solid var(--border); background:var(--skeleton-base); position:relative;">
+                <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="${mapUrl}" style="filter: invert(100%) hue-rotate(180deg) brightness(85%);"></iframe>
+            </div>
+            <p style="color:var(--text-sub); font-size:0.95rem; font-weight:700; margin-bottom:20px; font-family:monospace;">${coords}</p>
+            <button class="btn-full" onclick="window.history.back()" style="margin-top:0;">OK</button>
+          `;
           vibrate([30,50,30]);
-          setTimeout(() => window.history.back(), 1500); // Auto close
+
         } catch(e) {
           alert("Error saving to DB.");
           window.history.back();
