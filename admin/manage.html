@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Manage Staff - Up Grow</title>
+  
+  <style>
+    /* Shared Theme Variables */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    input { user-select: auto; }
+    
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 20px;
+      padding-bottom: 90px; /* Space for mobile bottom nav */
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+
+    h2 { font-size: 1.3rem; margin-bottom: 15px; letter-spacing: -0.5px; }
+
+    /* Animations */
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+    /* --- Cards --- */
+    .card {
+      background-color: var(--surface-card);
+      padding: 15px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+    }
+
+    .my-card-header { margin-bottom: 10px; font-size: 0.9rem; color: var(--text-sub); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+    .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); background-color: var(--skeleton-base); flex-shrink: 0; }
+    
+    .card-info { flex: 1; overflow: hidden; }
+    .card-info h3 { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .card-info p { font-size: 0.85rem; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .role-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; margin-top: 5px; text-transform: uppercase; }
+    .role-admin { background-color: rgba(16, 185, 129, 0.15); color: var(--primary); }
+    .role-agent { background-color: rgba(107, 114, 128, 0.15); color: var(--text-sub); }
+
+    .btn-edit { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+    .btn-edit:active { transform: scale(0.95); background-color: var(--border); }
+
+    /* --- Search Bar --- */
+    .search-container { position: relative; margin-bottom: 20px; margin-top: 10px; animation: popIn 0.4s 0.1s forwards; opacity: 0; }
+    .search-container svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: var(--text-sub); }
+    .search-container input { width: 100%; padding: 14px 14px 14px 45px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--surface-card); color: var(--text-main); font-size: 1rem; outline: none; transition: all 0.3s ease; }
+    .search-container input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); }
+
+    /* --- Skeleton Loader --- */
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 4px; }
+    @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* --- Mobile Modal (Bottom Sheet) --- */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    
+    .modal { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--surface-card); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 25px 20px 35px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -10px 25px rgba(0,0,0,0.2); }
+    .modal.active { transform: translateY(0); }
+    .modal-handle { width: 40px; height: 5px; background-color: var(--border); border-radius: 10px; margin: 0 auto 20px auto; }
+    
+    .modal-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+    .modal-header .avatar { width: 60px; height: 60px; }
+    .modal-header h3 { font-size: 1.2rem; }
+
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
+    .input-group input { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid var(--border); background-color: var(--bg-color); color: var(--text-main); font-size: 1rem; outline: none; }
+    .input-group input:focus { border-color: var(--primary); }
+
+    /* --- Toggle Switch --- */
+    .toggle-container { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 25px; background-color: var(--bg-color); }
+    .toggle-label { display: flex; flex-direction: column; }
+    .toggle-label span { font-weight: 600; font-size: 1rem; }
+    .toggle-label small { font-size: 0.75rem; color: var(--text-sub); }
+    
+    .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(22px); }
+
+    .btn-full { width: 100%; padding: 14px; border-radius: 12px; font-size: 1.05rem; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; margin-bottom: 10px; }
+    .btn-save { background-color: var(--primary); color: #fff; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
+    .btn-save:active { transform: scale(0.96); }
+    .btn-delete { background-color: transparent; border: 1px solid var(--danger); color: var(--danger); }
+    .btn-delete:active { background-color: var(--danger); color: #fff; }
+
+    #loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.85rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="my-card-header">Logged In As</div>
+  <div id="my-card-container">
+    <!-- Current User Card Skeletons -->
+    <div class="card" style="animation-delay: 0s;">
+      <div class="avatar skeleton-box"></div>
+      <div class="card-info">
+        <div class="skeleton-box" style="height: 18px; width: 60%; margin-bottom: 6px;"></div>
+        <div class="skeleton-box" style="height: 14px; width: 40%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-container">
+    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <input type="text" id="search-input" placeholder="Search staff by name...">
+  </div>
+
+  <div class="my-card-header" style="margin-top: 10px;">All Staff</div>
+  <div id="users-list">
+    <!-- Skeletons loaded via JS -->
+  </div>
+  
+  <div id="loading-trigger">Loading more...</div>
+
+  <!-- Mobile Bottom Sheet Modal -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+  <div class="modal" id="edit-modal">
+    <div class="modal-handle"></div>
+    
+    <div class="modal-header">
+      <img id="modal-dp" class="avatar" src="" alt="Profile" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==';">
+      <div>
+        <h3 id="modal-email">user@email.com</h3>
+        <p style="font-size: 0.8rem; color: var(--text-sub);">Staff ID: <span id="modal-uid">...</span></p>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label for="modal-name">Full Name</label>
+      <input type="text" id="modal-name">
+    </div>
+
+    <div class="toggle-container">
+      <div class="toggle-label">
+        <span>Admin Privileges</span>
+        <small>Grant full access to ledger & approvals</small>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="modal-role-toggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <button class="btn-full btn-save" id="btn-save-user">Save Changes</button>
+    <button class="btn-full btn-delete" id="btn-delete-user">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      Delete User
+    </button>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // State Variables
+    let currentUser = null;
+    let currentUserDoc = null;
+    let lastVisible = null;
+    let isLoading = false;
+    let hasMore = true;
+    let currentSearchTerm = "";
+    let usersDataMap = {}; // Store fetched users for instant modal open
+    let editingUid = null;
+
+    // DOM Elements
+    const myCardContainer = document.getElementById('my-card-container');
+    const usersListContainer = document.getElementById('users-list');
+    const searchInput = document.getElementById('search-input');
+    const loadingTrigger = document.getElementById('loading-trigger');
+    
+    // Modal Elements
+    const modalOverlay = document.getElementById('modal-overlay');
+    const editModal = document.getElementById('edit-modal');
+    const modalDp = document.getElementById('modal-dp');
+    const modalEmail = document.getElementById('modal-email');
+    const modalUid = document.getElementById('modal-uid');
+    const modalName = document.getElementById('modal-name');
+    const modalRoleToggle = document.getElementById('modal-role-toggle');
+    const btnSaveUser = document.getElementById('btn-save-user');
+    const btnDeleteUser = document.getElementById('btn-delete-user');
+
+    // Default Fallback Avatar
+    const fallbackAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==";
+
+    // Haptic Feedback
+    function vibrate(pattern = 40) {
+      if (navigator.vibrate) navigator.vibrate(pattern);
+    }
+
+    // 1. Auth Listener
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        await loadMyProfile();
+        loadUsers(false);
+      }
+    });
+
+    // 2. Load My Profile Card
+    async function loadMyProfile() {
+      try {
+        const docRef = doc(db, "users", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          currentUserDoc = docSnap.data();
+          usersDataMap[currentUser.uid] = currentUserDoc; // Store in map
+          
+          myCardContainer.innerHTML = createUserCardHTML(currentUserDoc, true);
+        }
+      } catch (error) {
+        console.error("Error fetching my profile:", error);
+      }
+    }
+
+    // 3. Create Card HTML
+    function createUserCardHTML(userData, isMe = false) {
+      const delay = isMe ? 0 : 0.1;
+      const isAdmin = userData.role === 'admin';
+      const roleClass = isAdmin ? 'role-admin' : 'role-agent';
+      const roleText = isAdmin ? 'Admin' : 'Agent';
+      const dpUrl = userData.photoURL || fallbackAvatar;
+
+      return `
+        <div class="card" style="animation-delay: ${delay}s;" id="card-${userData.uid}">
+          <img src="${dpUrl}" alt="DP" class="avatar" onerror="this.src='${fallbackAvatar}'">
+          <div class="card-info">
+            <h3>${userData.name || 'Unnamed User'}</h3>
+            <p>${userData.email}</p>
+            <span class="role-badge ${roleClass}">${roleText}</span>
+          </div>
+          <button class="btn-edit" onclick="window.openEditModal('${userData.uid}')">Edit</button>
+        </div>
+      `;
+    }
+
+    function showSkeletons(container, count = 3) {
+      let html = '';
+      for(let i=0; i<count; i++) {
+        html += `
+          <div class="card" style="animation-delay: ${i*0.1}s;">
+            <div class="avatar skeleton-box"></div>
+            <div class="card-info">
+              <div class="skeleton-box" style="height: 18px; width: 60%; margin-bottom: 6px;"></div>
+              <div class="skeleton-box" style="height: 14px; width: 40%; margin-bottom: 6px;"></div>
+              <div class="skeleton-box" style="height: 20px; width: 50px; border-radius: 6px;"></div>
+            </div>
+          </div>
+        `;
+      }
+      container.insertAdjacentHTML('beforeend', html);
+    }
+
+    // 4. Load Users (Pagination & Search)
+    async function loadUsers(isLoadMore = false) {
+      if (isLoading || (!hasMore && isLoadMore)) return;
+      isLoading = true;
+
+      if (!isLoadMore) {
+        usersListContainer.innerHTML = '';
+        showSkeletons(usersListContainer, 4);
+        loadingTrigger.style.display = 'none';
+      } else {
+        loadingTrigger.innerText = 'Loading...';
+      }
+
+      try {
+        let q;
+        const usersRef = collection(db, "users");
+
+        if (currentSearchTerm) {
+          // Firestore Prefix Search
+          q = query(
+            usersRef, 
+            where("name", ">=", currentSearchTerm), 
+            where("name", "<=", currentSearchTerm + "\uf8ff"),
+            orderBy("name"),
+            limit(10)
+          );
+        } else {
+          // Standard Load
+          q = query(usersRef, orderBy("name"), limit(10));
+        }
+
+        if (isLoadMore && lastVisible) {
+          q = query(q, startAfter(lastVisible));
+        }
+
+        const querySnapshot = await getDocs(q);
+        
+        if (!isLoadMore) usersListContainer.innerHTML = ''; // Clear skeletons
+        
+        if (querySnapshot.empty) {
+          hasMore = false;
+          if (!isLoadMore) {
+            usersListContainer.innerHTML = `<p style="text-align:center; color:var(--text-sub); margin-top:20px;">No staff found.</p>`;
+          }
+          loadingTrigger.style.display = 'none';
+          isLoading = false;
+          return;
+        }
+
+        lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+        
+        let html = '';
+        querySnapshot.forEach((docSnap) => {
+          const uData = docSnap.data();
+          usersDataMap[uData.uid] = uData; // Save to global map for modal
+          // Don't show current user twice
+          if (uData.uid !== currentUser.uid) {
+            html += createUserCardHTML(uData);
+          }
+        });
+
+        usersListContainer.insertAdjacentHTML('beforeend', html);
+        
+        hasMore = querySnapshot.docs.length === 10;
+        loadingTrigger.style.display = hasMore ? 'block' : 'none';
+        loadingTrigger.innerText = hasMore ? 'Scroll for more' : '';
+
+      } catch (error) {
+        console.error("Error loading users:", error);
+        if (!isLoadMore) usersListContainer.innerHTML = `<p style="text-align:center; color:var(--danger);">${error.message}</p>`;
+      }
+
+      isLoading = false;
+    }
+
+    // 5. Infinite Scroll Detection
+    window.addEventListener('scroll', () => {
+      // Check if user scrolled near bottom
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
+        if (hasMore && !isLoading) {
+          vibrate(10);
+          loadUsers(true);
+        }
+      }
+    });
+
+    // 6. Search Debounce (400ms)
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        // Capitalize first letter to match basic DB casing structure typically used
+        let val = e.target.value.trim();
+        if(val.length > 0) val = val.charAt(0).toUpperCase() + val.slice(1);
+        
+        currentSearchTerm = val;
+        lastVisible = null;
+        hasMore = true;
+        loadUsers(false);
+      }, 400);
+    });
+
+    // 7. Modal Logic & History API integration for physical back button
+    window.openEditModal = (uid) => {
+      vibrate();
+      const uData = usersDataMap[uid];
+      if (!uData) return;
+
+      editingUid = uid;
+      modalDp.src = uData.photoURL || fallbackAvatar;
+      modalEmail.innerText = uData.email;
+      modalUid.innerText = uData.uid.substring(0, 10) + '...';
+      modalName.value = uData.name || '';
+      modalRoleToggle.checked = (uData.role === 'admin');
+
+      // Prevent deleting yourself
+      btnDeleteUser.style.display = (uid === currentUser.uid) ? 'none' : 'flex';
+
+      // Show Modal
+      modalOverlay.classList.add('active');
+      editModal.classList.add('active');
+
+      // Push state to history so physical back button closes modal
+      window.history.pushState({ modalOpen: true }, '', '');
+    };
+
+    function closeEditModal() {
+      modalOverlay.classList.remove('active');
+      editModal.classList.remove('active');
+      editingUid = null;
+    }
+
+    // Handle Physical Back Button
+    window.addEventListener('popstate', (e) => {
+      if (editModal.classList.contains('active')) {
+        closeEditModal();
+      }
+    });
+
+    // Close on overlay click or handle click
+    modalOverlay.addEventListener('click', () => {
+      window.history.back(); // Triggers popstate
+    });
+    document.querySelector('.modal-handle').addEventListener('click', () => {
+      window.history.back();
+    });
+
+    // 8. Save User Changes
+    btnSaveUser.addEventListener('click', async () => {
+      if (!editingUid) return;
+      vibrate();
+      
+      const newName = modalName.value.trim();
+      const newRole = modalRoleToggle.checked ? 'admin' : 'agent';
+      
+      btnSaveUser.innerText = "Saving...";
+      btnSaveUser.disabled = true;
+
+      try {
+        const userRef = doc(db, "users", editingUid);
+        await updateDoc(userRef, {
+          name: newName,
+          role: newRole
+        });
+
+        // Update local map
+        usersDataMap[editingUid].name = newName;
+        usersDataMap[editingUid].role = newRole;
+
+        // Re-render specifically that card without reloading DB
+        const existingCard = document.getElementById(`card-${editingUid}`);
+        if (existingCard) {
+          existingCard.outerHTML = createUserCardHTML(usersDataMap[editingUid], editingUid === currentUser.uid);
+        }
+
+        vibrate([50, 50]);
+        window.history.back(); // Close modal
+
+      } catch (error) {
+        console.error("Save error:", error);
+        alert("Error saving: " + error.message);
+      }
+
+      btnSaveUser.innerHTML = "Save Changes";
+      btnSaveUser.disabled = false;
+    });
+
+    // 9. Delete User
+    btnDeleteUser.addEventListener('click', async () => {
+      if (!editingUid || editingUid === currentUser.uid) return;
+      
+      vibrate([50, 100, 50]); // Warning pattern
+      const confirmDelete = confirm("Are you sure you want to permanently delete this user? They will lose access to the app.");
+      if (!confirmDelete) return;
+
+      btnDeleteUser.innerText = "Deleting...";
+      btnDeleteUser.disabled = true;
+
+      try {
+        await deleteDoc(doc(db, "users", editingUid));
+        
+        // Remove from UI instantly
+        const existingCard = document.getElementById(`card-${editingUid}`);
+        if (existingCard) existingCard.remove();
+        
+        delete usersDataMap[editingUid];
+
+        vibrate([100, 50, 100]);
+        window.history.back(); // Close modal
+
+      } catch (error) {
+        console.error("Delete error:", error);
+        alert("Error deleting: " + error.message);
+      }
+
+      btnDeleteUser.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        Delete User
+      `;
+      btnDeleteUser.disabled = false;
+    });
+
+  </script>
+</body>
+</html>
