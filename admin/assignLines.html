@@ -48,7 +48,7 @@
     /* --- Views / Slide Panels --- */
     .view-panel { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background-color: var(--bg-color); overflow-y: auto; transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 10; }
     #view-staff { z-index: 1; padding: 20px; padding-bottom: 90px; }
-    #view-schedule { transform: translateX(100%); z-index: 2; background: transparent; } /* Transparent for Map Parallax */
+    #view-schedule { transform: translateX(100%); z-index: 2; background: transparent; padding: 0 !important; } /* Parallax Overlay Fix */
     .view-panel.active { transform: translateX(0) !important; }
 
     .header-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; animation: fadeIn 0.3s; }
@@ -538,10 +538,16 @@
       try {
         let q = collection(db, "lines");
         if(linesSearch) {
-          q = query(q, where("name", ">=", linesSearch), where("name", "<=", linesSearch + "\uf8ff"), orderBy("name"), limit(5));
+          // SMART SEARCH DETECTOR: If it contains a number or is fully uppercase, search by ID. Otherwise, search Name.
+          let isIdSearch = /\d/.test(linesSearch) || (linesSearch === linesSearch.toUpperCase() && linesSearch.length > 1);
+          let searchField = isIdSearch ? "id" : "name";
+          let searchTerm = isIdSearch ? linesSearch.toUpperCase() : (linesSearch.charAt(0).toUpperCase() + linesSearch.slice(1));
+          
+          q = query(q, where(searchField, ">=", searchTerm), where(searchField, "<=", searchTerm + "\uf8ff"), orderBy(searchField), limit(5));
         } else {
           q = query(q, orderBy("createdAt", "desc"), limit(5));
         }
+        
         if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
 
         const snap = await getDocs(q);
@@ -575,7 +581,7 @@
 
     document.getElementById('search-lines').addEventListener('input', debounce(e => {
       let val = e.target.value.trim();
-      linesSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
+      linesSearch = val; // Store raw value, parsing handled in loadPickerLines
       linesLastVisible = null; linesHasMore = true; loadPickerLines();
     }));
 
