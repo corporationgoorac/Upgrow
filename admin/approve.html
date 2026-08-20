@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Approvals - Up Field</title>
+  
+  <style>
+    /* Shared Theme Variables */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none !important; }
+    body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; }
+
+    /* --- Screen Management (Sliding History API) --- */
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; }
+    .screen.hidden-right { transform: translateX(100%); }
+    .screen-content { flex: 1; overflow-y: auto; padding: 0 20px 120px 20px; }
+
+    /* --- Top Header --- */
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); border-bottom: none; z-index: 10; position: relative; }
+    .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .back-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; margin-left: -8px; margin-right: 5px; }
+
+    .sync-pill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); border-radius: 20px; color: var(--primary); font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .sync-dot { width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+    /* --- Dashboard SVG Stats --- */
+    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; margin-bottom: 25px; }
+    .dash-card { background: var(--surface-card); padding: 16px; border-radius: 18px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
+    .dash-card.total { grid-column: 1 / -1; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent); border-color: rgba(16, 185, 129, 0.3); }
+    .dash-icon { width: 28px; height: 28px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .dash-icon svg { width: 16px; height: 16px; stroke-width: 2.5; }
+    .icon-total { background: rgba(16, 185, 129, 0.15); color: var(--primary); }
+    .icon-cash { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .icon-online { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+    .dash-title { font-size: 0.8rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
+    .dash-value { font-size: 1.4rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+    .dash-card.total .dash-value { font-size: 1.8rem; color: var(--primary); }
+
+    /* --- Cards (Agent & Entry) --- */
+    .card { background-color: var(--surface-card); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; margin-top: 15px; box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s, border-color 0.2s; display: flex; flex-direction: column; gap: 8px; }
+    .card:active { transform: scale(0.97); }
+    .card.collecting { border-left: 5px solid var(--warning); }
+    .card.submitted { border-left: 5px solid var(--primary); }
+    
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.3px; }
+    .card-sub { font-size: 0.85rem; color: var(--text-sub); font-weight: 700; margin-top: 4px; }
+    
+    .card-amount { font-size: 1.25rem; font-weight: 800; color: var(--primary); margin-top: 5px; }
+    
+    /* Badges */
+    .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; width: fit-content; }
+    .badge-cash { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .badge-online { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+    .badge-split { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .badge-pending { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-success { background: rgba(16, 185, 129, 0.15); color: var(--primary); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .split-breakdown { display: flex; gap: 15px; background: var(--bg-color); padding: 10px 14px; border-radius: 10px; border: 1px dashed var(--border); margin-top: 5px; }
+    .split-item { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .split-lbl { font-size: 0.7rem; color: var(--text-sub); font-weight: 800; text-transform: uppercase; }
+    .split-val { font-size: 0.95rem; font-weight: 700; color: var(--text-main); }
+
+    /* Actions */
+    .card-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 5px; flex-wrap: wrap; }
+    .btn-act { background: var(--bg-color); border: 1px solid var(--border); padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: transform 0.2s; color: var(--text-main); }
+    .btn-act:active { transform: scale(0.95); }
+    .btn-act.approve { background: var(--primary); color: white; border: none; }
+    .btn-act.reject { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: none; }
+    .btn-act.delete { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: none; }
+    .btn-act svg { width: 14px; height: 14px; stroke-width: 2.5; }
+
+    /* --- Floating Action Button (FAB) --- */
+    .fab { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 90px); right: 20px; background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 30px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 90; transition: transform 0.2s; }
+    .fab:active { transform: scale(0.95); }
+    .fab svg { width: 22px; height: 22px; stroke-width: 2.5; fill: none; stroke: currentColor; }
+
+    /* --- Modals & Overlays --- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    
+    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
+    .bottom-sheet.active { transform: translateY(0); }
+    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 0 auto 25px auto; }
+
+    .center-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: var(--surface-card); padding: 30px; border-radius: 24px; z-index: 102; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 85%; max-width: 340px; }
+    .center-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+    
+    .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
+    .btn-outline { flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--border); background: transparent; color: var(--text-main); font-weight: 800; cursor: pointer; }
+    .btn-blue { flex: 1; padding: 14px; border-radius: 12px; border: none; background: #3b82f6; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
+    .btn-blue:active, .btn-outline:active { transform: scale(0.96); }
+
+    /* Inputs */
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
+
+    /* --- Animations (Google Play Success) --- */
+    .loader-circle { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px auto; display: none; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .success-svg { display: none; width: 80px; height: 80px; margin: 0 auto 20px auto; }
+    .success-svg.active { display: block; }
+    .success-circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 4; stroke-miterlimit: 10; stroke: var(--primary); fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+    .success-check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; stroke: var(--primary); stroke-width: 5; stroke-linecap: round; fill: none; animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards; }
+    @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+    
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); display: none; }
+    .empty-state svg { width: 64px; height: 64px; stroke: var(--border); margin-bottom: 15px; }
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; height: 20px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- ================= LEVEL 1: MASTER DASHBOARD ================= -->
+  <div id="screen-main" class="screen">
+    <div class="header">
+      <h2>Approvals</h2>
+      <div class="sync-pill" id="sync-status">
+        <div class="sync-dot"></div> Live Sync
+      </div>
+    </div>
+    <div class="screen-content">
+      
+      <div style="margin-top: 15px; margin-bottom: 10px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;">
+        Active Agents in Field: <span id="active-agent-count" style="color: var(--primary);">0</span>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="empty-state-main">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <h3 style="color:var(--text-main); margin-bottom:5px;">All Caught Up!</h3>
+        <p>No agents have pending or submitted collections.</p>
+      </div>
+
+      <!-- Agent Cards Inject Here -->
+      <div id="agent-list"></div>
+    </div>
+  </div>
+
+  <!-- ================= LEVEL 2: AGENT DETAIL VIEW ================= -->
+  <div id="screen-detail" class="screen hidden-right">
+    <div class="header">
+      <button class="back-btn" onclick="window.history.back()">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <h2 style="font-size: 1.15rem; margin-left: 5px;" id="detail-agent-name">Agent Name</h2>
+    </div>
+    
+    <div class="screen-content">
+      <!-- Dashboard Stats for this Agent -->
+      <div class="dashboard" id="detail-dashboard">
+        <div class="dash-card total">
+          <div class="dash-icon icon-total"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg></div>
+          <div class="dash-title">Total Collected</div>
+          <div class="dash-value" id="dash-val-total">₹0</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-icon icon-cash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+          <div class="dash-title">Cash</div>
+          <div class="dash-value" id="dash-val-cash">₹0</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-icon icon-online"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></div>
+          <div class="dash-title">Online</div>
+          <div class="dash-value" id="dash-val-online">₹0</div>
+        </div>
+      </div>
+
+      <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border);">Collection Log</div>
+      
+      <!-- List of Drafts -->
+      <div id="draft-list"></div>
+    </div>
+
+    <!-- FAB for Approve All -->
+    <button class="fab" id="btn-fab-approve" onclick="openApproveAllConfirm()" style="display: none;">
+      Approve All
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </button>
+  </div>
+
+  <!-- ================= MODALS & OVERLAYS ================= -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <!-- Universal Confirm Modal (Reject, Delete, Approve) -->
+  <div class="center-modal" id="confirm-modal">
+    <div class="loader-circle" id="confirm-loader"></div>
+    
+    <!-- Google Play Checkmark -->
+    <svg class="success-svg" id="confirm-success" viewBox="0 0 152 152">
+      <circle class="success-circle" cx="76" cy="76" r="24"/>
+      <path class="success-check" d="M63 76l10 10 18-18"/>
+    </svg>
+
+    <div id="confirm-content">
+      <!-- Dynamic Icon -->
+      <div id="confirm-icon-wrap" style="width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+        <svg id="confirm-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></svg>
+      </div>
+      <h3 id="confirm-title" style="font-size: 1.3rem; margin-bottom: 10px;">Are you sure?</h3>
+      <p id="confirm-msg" style="color: var(--text-sub); font-size: 0.95rem; margin-bottom: 25px;">Action details here.</p>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="window.history.back()">Cancel</button>
+        <button class="btn-blue" id="btn-confirm-action">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Bottom Sheet -->
+  <div class="bottom-sheet" id="edit-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="edit-customer-name">Customer Name</h3>
+    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700;" id="edit-timestamp">Time</p>
+    
+    <div class="input-group">
+      <label>Total Amount (₹)</label>
+      <input type="number" id="edit-total" inputmode="numeric">
+    </div>
+
+    <div class="input-group">
+      <label>Payment Method</label>
+      <select id="edit-method">
+        <option value="cash">Cash</option>
+        <option value="online">Online / UPI</option>
+        <option value="split">Split (Cash + Online)</option>
+      </select>
+    </div>
+
+    <!-- Side-by-Side Split Inputs -->
+    <div id="edit-split-container" style="display: none; gap: 15px; margin-bottom: 20px;">
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label>Cash (₹)</label>
+        <input type="number" id="edit-cash-split" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label>Online (₹)</label>
+        <input type="number" id="edit-online-split" placeholder="0" inputmode="numeric">
+      </div>
+    </div>
+
+    <button class="btn-full" id="btn-save-edit">Save Changes</button>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { collection, query, getDocs, doc, getDoc, updateDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // --- Global State ---
+    let currentUser = null;
+    let allLogs = []; // Raw flattened logs
+    let groupedAgents = {}; // Processed per agent
+    let activeAgentId = null; // Currently viewing agent
+    
+    // Edit/Action State
+    let editingDocId = null;
+    let editingKey = null;
+    let editingOriginalData = null;
+    
+    // Universal Confirm State
+    let confirmActionType = null; // 'delete', 'reject', 'approve_single', 'approve_all', 'force_submit'
+    let confirmPayload = null;
+
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // --- DOM Elements ---
+    const screenMain = document.getElementById('screen-main');
+    const screenDetail = document.getElementById('screen-detail');
+    const agentList = document.getElementById('agent-list');
+    const draftList = document.getElementById('draft-list');
+    const fabApprove = document.getElementById('btn-fab-approve');
+    
+    const modalOverlay = document.getElementById('modal-overlay');
+    const confirmModal = document.getElementById('confirm-modal');
+    const editSheet = document.getElementById('edit-sheet');
+
+    // --- History API Management (Back Button Safety) ---
+    window.addEventListener('popstate', (e) => {
+      const state = e.state;
+      modalOverlay.classList.remove('active');
+      confirmModal.classList.remove('active');
+      editSheet.classList.remove('active');
+      
+      // Reset Modal UI
+      document.getElementById('confirm-content').style.display = 'block';
+      document.getElementById('confirm-loader').style.display = 'none';
+      document.getElementById('confirm-success').classList.remove('active');
+
+      if (!state || state.screen !== 'detail') {
+        screenDetail.classList.add('hidden-right');
+        activeAgentId = null;
+      }
+    });
+
+    // --- Auth Listener ---
+    onAuthStateChanged(auth, (user) => { 
+      if (user) {
+        currentUser = user; 
+        fetchGlobalLogs();
+      }
+    });
+
+    // --- Agent Smart Cache (Zero Extra Reads) ---
+    let agentCache = JSON.parse(localStorage.getItem('agentCache') || '{}');
+    async function getAgentDetails(uid) {
+        if(agentCache[uid]) return agentCache[uid];
+        try {
+            const uDoc = await getDoc(doc(db, "users", uid));
+            if(uDoc.exists()) {
+                agentCache[uid] = uDoc.data();
+                localStorage.setItem('agentCache', JSON.stringify(agentCache));
+                return agentCache[uid];
+            }
+        } catch(e) {}
+        return { name: "Agent " + uid.substring(0,4), phone: "N/A" };
+    }
+
+    // --- 1. Fetch All Global Logs ---
+    async function fetchGlobalLogs() {
+      agentList.innerHTML = '<div class="skeleton-box" style="height:100px;"></div><div class="skeleton-box" style="height:100px;"></div>';
+      
+      try {
+        const snap = await getDocs(collection(db, "daily_logs"));
+        allLogs = [];
+        groupedAgents = {};
+        
+        snap.forEach(d => {
+          const docId = d.id;
+          const agentId = docId.split('_')[0]; // Extract Agent UID
+          const data = d.data();
+          
+          Object.keys(data).forEach(key => {
+             const item = data[key];
+             if (item.status === 'pending' || item.status === 'submitted') {
+                 
+                 // Add to flat list
+                 const entry = { docId, key, agentId, ...item };
+                 allLogs.push(entry);
+
+                 // Group by Agent
+                 if(!groupedAgents[agentId]) {
+                     groupedAgents[agentId] = { id: agentId, pending: 0, submitted: 0, totalAmt: 0, entries: [] };
+                 }
+                 groupedAgents[agentId].entries.push(entry);
+                 
+                 if(item.status === 'pending') groupedAgents[agentId].pending++;
+                 if(item.status === 'submitted') groupedAgents[agentId].submitted++;
+                 groupedAgents[agentId].totalAmt += parseInt(item.amount || 0);
+             }
+          });
+        });
+
+        // Resolve Agent Names
+        for (let aId in groupedAgents) {
+            const profile = await getAgentDetails(aId);
+            groupedAgents[aId].name = profile.name;
+            groupedAgents[aId].phone = profile.phone;
+            // Sort their entries newest first
+            groupedAgents[aId].entries.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+        }
+
+        renderLevel1();
+
+      } catch (error) {
+        console.error("Fetch Error:", error);
+        agentList.innerHTML = '<p style="text-align:center; color:var(--danger);">Error loading logs.</p>';
+      }
+    }
+
+    // --- 2. Render Level 1 (Master Dashboard) ---
+    function renderLevel1() {
+        const agentKeys = Object.keys(groupedAgents);
+        document.getElementById('active-agent-count').innerText = agentKeys.length;
+        
+        agentList.innerHTML = '';
+        if(agentKeys.length === 0) {
+            document.getElementById('empty-state-main').style.display = 'block';
+            return;
+        }
+        document.getElementById('empty-state-main').style.display = 'none';
+
+        agentKeys.forEach(aId => {
+            const ag = groupedAgents[aId];
+            const isCollecting = ag.pending > 0;
+            
+            const card = document.createElement('div');
+            card.className = `card ${isCollecting ? 'collecting' : 'submitted'}`;
+            
+            // Badges & Buttons based on status
+            const badgeHtml = isCollecting 
+                ? `<span class="badge badge-pending">Collecting (${ag.pending} Drafts)</span>`
+                : `<span class="badge badge-success">Ready to Approve</span>`;
+                
+            const forceSubmitHtml = isCollecting 
+                ? `<button class="btn-act" onclick="event.stopPropagation(); openConfirm('force_submit', '${aId}')" style="background:var(--primary); color:white; border:none; margin-top:10px;">Force Submit</button>`
+                : '';
+
+            card.innerHTML = `
+              <div class="card-top">
+                <div>
+                    <div class="card-title">${ag.name}</div>
+                    <div class="card-sub">📞 ${ag.phone}</div>
+                </div>
+                ${badgeHtml}
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                  <div class="card-amount">Total: ${fmt(ag.totalAmt)}</div>
+                  ${forceSubmitHtml}
+              </div>
+            `;
+            
+            card.onclick = () => openLevel2(aId);
+            agentList.appendChild(card);
+        });
+    }
+
+    // --- 3. Render Level 2 (Agent Details) ---
+    window.openLevel2 = (aId) => {
+        vibrate();
+        activeAgentId = aId;
+        const ag = groupedAgents[aId];
+        
+        document.getElementById('detail-agent-name').innerText = ag.name;
+        
+        window.history.pushState({ screen: 'detail' }, '');
+        screenDetail.classList.remove('hidden-right');
+        
+        renderLevel2Items();
+    };
+
+    function renderLevel2Items() {
+        const ag = groupedAgents[activeAgentId];
+        if(!ag || ag.entries.length === 0) {
+            window.history.back(); // Auto close if empty
+            fetchGlobalLogs(); // refresh level 1
+            return;
+        }
+
+        let tTotal = 0, tCash = 0, tOnline = 0, subCount = 0;
+        draftList.innerHTML = '';
+
+        ag.entries.forEach(entry => {
+            const amt = parseInt(entry.amount) || 0;
+            tTotal += amt;
+            if (entry.method === 'cash') tCash += amt;
+            else if (entry.method === 'online') tOnline += amt;
+            else if (entry.method === 'split') {
+                tCash += (parseInt(entry.cash_split) || 0);
+                tOnline += (parseInt(entry.online_split) || 0);
+            }
+            if(entry.status === 'submitted') subCount++;
+
+            // Method Badge & Split HTML
+            let methodBadge = entry.method === 'cash' ? '<span class="badge badge-cash">Cash</span>' : (entry.method === 'online' ? '<span class="badge badge-online">Online</span>' : '<span class="badge badge-split">Split</span>');
+            let splitHTML = entry.method === 'split' ? `
+              <div class="split-breakdown">
+                 <div class="split-item"><span class="split-lbl">Cash</span><span class="split-val">${fmt(entry.cash_split)}</span></div>
+                 <div class="split-item"><span class="split-lbl">Online</span><span class="split-val">${fmt(entry.online_split)}</span></div>
+              </div>` : '';
+
+            // Status Badge & Action Buttons based on status
+            const isSub = entry.status === 'submitted';
+            const statusBadge = isSub ? `<span class="badge badge-success">Submitted</span>` : `<span class="badge badge-pending">Pending</span>`;
+            
+            let actionsHtml = `
+                <button class="btn-act edit" onclick="openEdit('${entry.docId}', '${entry.key}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                <button class="btn-act delete" onclick="openConfirm('delete', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            `;
+            if(isSub) {
+                actionsHtml = `
+                    <button class="btn-act approve" onclick="openConfirm('approve_single', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg> Approve</button>
+                    <button class="btn-act reject" onclick="openConfirm('reject', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Reject</button>
+                    ${actionsHtml}
+                `;
+            }
+
+            const card = document.createElement('div');
+            card.className = `card ${isSub ? 'submitted' : 'collecting'}`;
+            card.innerHTML = `
+              <div class="card-top">
+                <div class="card-title">${entry.customer_name || 'Customer'}</div>
+                ${statusBadge}
+              </div>
+              <div style="display:flex; align-items:center; gap: 10px; margin-top:2px;">
+                <div class="card-amount">${fmt(amt)}</div>
+                ${methodBadge}
+              </div>
+              ${splitHTML}
+              <div class="card-actions">${actionsHtml}</div>
+            `;
+            draftList.appendChild(card);
+        });
+
+        // Update Level 2 Dashboard
+        document.getElementById('dash-val-total').innerText = fmt(tTotal);
+        document.getElementById('dash-val-cash').innerText = fmt(tCash);
+        document.getElementById('dash-val-online').innerText = fmt(tOnline);
+
+        fabApprove.style.display = subCount > 0 ? 'flex' : 'none';
+    }
+
+    // --- 4. The Universal Confirm Engine ---
+    window.openConfirm = (type, payload) => {
+      vibrate();
+      confirmActionType = type;
+      confirmPayload = payload;
+
+      const title = document.getElementById('confirm-title');
+      const msg = document.getElementById('confirm-msg');
+      const btn = document.getElementById('btn-confirm-action');
+      const iconWrap = document.getElementById('confirm-icon-wrap');
+      const icon = document.getElementById('confirm-icon');
+
+      if (type === 'delete') {
+          iconWrap.style.background = 'rgba(239, 68, 68, 0.1)'; iconWrap.style.color = 'var(--danger)';
+          icon.innerHTML = `<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>`;
+          title.innerText = "Delete Entry?"; msg.innerText = "This permanently removes the draft.";
+          btn.innerText = "Delete"; btn.style.background = "var(--danger)";
+      } else if (type === 'reject') {
+          iconWrap.style.background = 'rgba(245, 158, 11, 0.1)'; iconWrap.style.color = 'var(--warning)';
+          icon.innerHTML = `<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>`;
+          title.innerText = "Reject Submission?"; msg.innerText = "Sends this back to the agent as 'Pending'.";
+          btn.innerText = "Reject"; btn.style.background = "var(--warning)";
+      } else if (type === 'force_submit') {
+          iconWrap.style.background = 'rgba(59, 130, 246, 0.1)'; iconWrap.style.color = '#3b82f6';
+          icon.innerHTML = `<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>`;
+          title.innerText = "Force Submit?"; msg.innerText = "Force all pending drafts for this agent to 'Submitted' status.";
+          btn.innerText = "Force Submit"; btn.style.background = "#3b82f6";
+      } else if (type === 'approve_single') {
+          iconWrap.style.background = 'rgba(16, 185, 129, 0.1)'; iconWrap.style.color = 'var(--primary)';
+          icon.innerHTML = `<polyline points="20 6 9 17 4 12"></polyline>`;
+          title.innerText = "Approve Collection?"; msg.innerText = "This updates the Master Ledger permanently.";
+          btn.innerText = "Approve"; btn.style.background = "var(--primary)";
+      }
+
+      window.history.pushState({ modal: 'confirm' }, '');
+      modalOverlay.classList.add('active');
+      confirmModal.classList.add('active');
+    };
+
+    document.getElementById('btn-confirm-action').addEventListener('click', async () => {
+      vibrate();
+      const type = confirmActionType;
+      const pay = confirmPayload;
+
+      // Show loader
+      document.getElementById('confirm-content').style.display = 'none';
+      document.getElementById('confirm-loader').style.display = 'block';
+
+      try {
+          if (type === 'delete') {
+              await updateDoc(doc(db, "daily_logs", pay.docId), { [pay.key]: deleteField() });
+              refreshLocalDataAndUI(pay.docId, pay.key, 'delete');
+              window.history.back();
+
+          } else if (type === 'reject') {
+              await updateDoc(doc(db, "daily_logs", pay.docId), { [`${pay.key}.status`]: 'pending' });
+              refreshLocalDataAndUI(pay.docId, pay.key, 'update', {status: 'pending'});
+              window.history.back();
+
+          } else if (type === 'force_submit') {
+              const batch = writeBatch(db);
+              const ag = groupedAgents[pay];
+              let updatesByDoc = {};
+              ag.entries.forEach(e => {
+                  if(e.status === 'pending') {
+                      if(!updatesByDoc[e.docId]) updatesByDoc[e.docId] = {};
+                      updatesByDoc[e.docId][`${e.key}.status`] = 'submitted';
+                  }
+              });
+              Object.keys(updatesByDoc).forEach(dId => batch.update(doc(db, "daily_logs", dId), updatesByDoc[dId]));
+              await batch.commit();
+              fetchGlobalLogs(); // Full refresh
+              window.history.back();
+
+          } else if (type === 'approve_single') {
+              // Master Batch Execute for 1 item
+              await executeMasterApproval([ groupedAgents[activeAgentId].entries.find(e => e.key === pay.key) ]);
+              // Animation handled inside executeMasterApproval
+          }
+
+      } catch (e) {
+          alert("Action failed: " + e.message);
+          window.history.back();
+      }
+    });
+
+    // Local array mutator to save reads
+    function refreshLocalDataAndUI(docId, key, action, updates = {}) {
+        const ag = groupedAgents[activeAgentId];
+        const idx = ag.entries.findIndex(e => e.docId === docId && e.key === key);
+        if(idx !== -1) {
+            if(action === 'delete') ag.entries.splice(idx, 1);
+            if(action === 'update') ag.entries[idx] = { ...ag.entries[idx], ...updates };
+            renderLevel2Items();
+        }
+    }
+
+    // --- Edit Flow (Isolated) ---
+    window.openEdit = (docId, key) => {
+      vibrate();
+      const entry = groupedAgents[activeAgentId].entries.find(e => e.docId === docId && e.key === key);
+      editingDocId = docId; editingKey = key; editingOriginalData = entry;
+
+      document.getElementById('edit-customer-name').innerText = entry.customer_name;
+      editTotal.value = entry.amount; editMethod.value = entry.method;
+      editCashSplit.value = entry.cash_split || ''; editOnlineSplit.value = entry.online_split || '';
+      editSplitContainer.style.display = entry.method === 'split' ? 'flex' : 'none';
+
+      window.history.pushState({ modal: 'edit' }, '');
+      modalOverlay.classList.add('active');
+      editSheet.classList.add('active');
+    };
+
+    // Edit Math
+    editMethod.addEventListener('change', (e) => {
+      editSplitContainer.style.display = e.target.value === 'split' ? 'flex' : 'none';
+      if(e.target.value !== 'split') { editCashSplit.value = ''; editOnlineSplit.value = ''; }
+    });
+    editCashSplit.addEventListener('input', () => {
+      const t = parseInt(editTotal.value)||0; const c = parseInt(editCashSplit.value)||0;
+      if (t>0 && c<=t) editOnlineSplit.value = t - c;
+    });
+    editOnlineSplit.addEventListener('input', () => {
+      const t = parseInt(editTotal.value)||0; const o = parseInt(editOnlineSplit.value)||0;
+      if (t>0 && o<=t) editCashSplit.value = t - o;
+    });
+
+    document.getElementById('btn-save-edit').addEventListener('click', async () => {
+      vibrate();
+      const amt = parseInt(editTotal.value);
+      if (!amt || amt <= 0) return alert("Enter valid amount");
+
+      const btn = document.getElementById('btn-save-edit');
+      btn.innerText = "Saving..."; btn.disabled = true;
+
+      const updatedPayload = {
+        amount: amt, method: editMethod.value,
+        cash_split: editMethod.value === 'split' ? (parseInt(editCashSplit.value)||0) : (editMethod.value==='cash'?amt:0),
+        online_split: editMethod.value === 'split' ? (parseInt(editOnlineSplit.value)||0) : (editMethod.value==='online'?amt:0)
+      };
+
+      try {
+        // Only update specific fields, don't overwrite timestamp or status
+        let dbUpdates = {};
+        for(let k in updatedPayload) dbUpdates[`${editingKey}.${k}`] = updatedPayload[k];
+        
+        await updateDoc(doc(db, "daily_logs", editingDocId), dbUpdates);
+        refreshLocalDataAndUI(editingDocId, editingKey, 'update', updatedPayload);
+        
+        vibrate([30,50]);
+        window.history.back();
+      } catch (error) { alert("Edit failed."); }
+      btn.innerText = "Save Changes"; btn.disabled = false;
+    });
+
+    // --- 5. THE MASTER APPROVAL BATCH ENGINE (480 Limit Safe) ---
+    window.openApproveAllConfirm = () => {
+        openConfirm('approve_all', null);
+        document.getElementById('confirm-title').innerText = "Approve All Submitted?";
+        document.getElementById('confirm-msg').innerText = "This will permanently apply all submitted collections to the Master Ledger.";
+        document.getElementById('btn-confirm-action').innerText = "Approve All";
+        document.getElementById('btn-confirm-action').style.background = "var(--primary)";
+        const iconWrap = document.getElementById('confirm-icon-wrap');
+        iconWrap.style.background = 'rgba(16, 185, 129, 0.1)'; iconWrap.style.color = 'var(--primary)';
+        document.getElementById('confirm-icon').innerHTML = `<polyline points="20 6 9 17 4 12"></polyline><polyline points="20 12 9 23 4 18"></polyline>`; // Double tick
+    };
+
+    // Override the confirm click for Approve All to trigger master execution
+    const originalConfirmClick = document.getElementById('btn-confirm-action').onclick;
+    document.getElementById('btn-confirm-action').addEventListener('click', async (e) => {
+        if(confirmActionType === 'approve_all') {
+            e.stopImmediatePropagation();
+            vibrate();
+            document.getElementById('confirm-content').style.display = 'none';
+            document.getElementById('confirm-loader').style.display = 'block';
+            
+            const toApprove = groupedAgents[activeAgentId].entries.filter(en => en.status === 'submitted');
+            await executeMasterApproval(toApprove);
+        }
+    });
+
+    async function executeMasterApproval(itemsToApprove) {
+        if(itemsToApprove.length === 0) return window.history.back();
+
+        try {
+            const batch = writeBatch(db);
+            const customerUpdates = {}; // Cache customer docs to prevent overwriting arrays
+            let logDeletes = {}; // Cache deletes
+
+            // 1. Resolve all customer documents needed
+            for (let item of itemsToApprove) {
+                const custId = item.key.split('_')[0];
+                const prodIndex = parseInt(item.key.split('_')[1]);
+                
+                if(!customerUpdates[custId]) {
+                    const cSnap = await getDoc(doc(db, "customers", custId));
+                    if(!cSnap.exists()) throw new Error(`Customer ${custId} not found!`);
+                    customerUpdates[custId] = { ref: doc(db, "customers", custId), data: cSnap.data(), logsToDelete: [] };
+                }
+                
+                const cData = customerUpdates[custId].data;
+                const prod = cData.products[prodIndex];
+                const amt = parseInt(item.amount);
+
+                // Math Engine
+                prod.pending = Math.max(0, parseInt(prod.pending) - amt);
+                prod.paid = (parseInt(prod.paid) || 0) + amt;
+                if(!prod.payments) prod.payments = [];
+                
+                // Receipt Generation
+                prod.payments.push({
+                    id: 'PAY_' + Date.now() + Math.floor(Math.random()*1000),
+                    amount: amt,
+                    date: new Date().toISOString(),
+                    type: 'collection',
+                    method: item.method,
+                    agent_uid: item.agentId,
+                    pendingAfter: prod.pending
+                });
+
+                customerUpdates[custId].logsToDelete.push(item);
+            }
+
+            // 2. Package Batch Writes
+            Object.keys(customerUpdates).forEach(custId => {
+                const bundle = customerUpdates[custId];
+                // Update Customer Master Products Array
+                batch.update(bundle.ref, { products: bundle.data.products });
+                
+                // Package Draft Deletions
+                bundle.logsToDelete.forEach(log => {
+                    if(!logDeletes[log.docId]) logDeletes[log.docId] = {};
+                    logDeletes[log.docId][log.key] = deleteField();
+                });
+            });
+
+            // Package final deletes into the batch
+            Object.keys(logDeletes).forEach(logDocId => {
+                batch.update(doc(db, "daily_logs", logDocId), logDeletes[logDocId]);
+            });
+
+            // 3. EXECUTE SAFE BATCH
+            await batch.commit();
+
+            // 4. Success Animation
+            vibrate([30, 80, 30]);
+            document.getElementById('confirm-loader').style.display = 'none';
+            document.getElementById('confirm-success').classList.add('active');
+
+            // 5. Cleanup Local UI
+            itemsToApprove.forEach(i => refreshLocalDataAndUI(i.docId, i.key, 'delete'));
+            
+            setTimeout(() => {
+                window.history.back(); // Close modal
+                if(groupedAgents[activeAgentId].entries.length === 0) {
+                    window.history.back(); // Close Level 2
+                    fetchGlobalLogs(); // Refresh Level 1
+                }
+            }, 1800);
+
+        } catch(e) {
+            alert("Approval Failed! " + e.message);
+            console.error(e);
+            window.history.back();
+        }
+    }
+
+    // Close Modals on Overlay Click
+    modalOverlay.addEventListener('click', () => window.history.back());
+  </script>
+</body>
+</html>
