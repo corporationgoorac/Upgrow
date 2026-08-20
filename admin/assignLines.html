@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Assign Routes - Up Grow</title>
+  
+  <style>
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+    input { user-select: auto; }
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+    body { background-color: var(--bg-color); color: var(--text-main); overflow-x: hidden; -ms-overflow-style: none !important; scrollbar-width: none !important; }
+
+    /* Animations */
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+    /* --- Views / Slide Panels --- */
+    .view-panel { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background-color: var(--bg-color); overflow-y: auto; transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 10; }
+    #view-staff { z-index: 1; padding: 20px; padding-bottom: 90px; }
+    #view-schedule { transform: translateX(100%); z-index: 2; background: transparent; } /* Transparent for Map Parallax */
+    .view-panel.active { transform: translateX(0) !important; }
+
+    .header-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; animation: fadeIn 0.3s; }
+    .header-nav h2 { font-size: 1.3rem; letter-spacing: -0.5px; margin: 0; }
+
+    /* --- Search Bar --- */
+    .search-container { position: relative; margin-bottom: 20px; animation: popIn 0.4s forwards; }
+    .search-container svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: var(--text-sub); }
+    .search-container input { width: 100%; padding: 14px 14px 14px 45px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--surface-card); color: var(--text-main); font-size: 1rem; outline: none; transition: all 0.3s; }
+    .search-container input:focus { border-color: var(--primary); }
+
+    /* --- Staff Cards --- */
+    .staff-card { background-color: var(--surface-card); padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; margin-bottom: 15px; cursor: pointer; animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s, box-shadow 0.2s; box-shadow: var(--shadow); }
+    .staff-card:active { transform: scale(0.98); }
+    .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); background-color: var(--skeleton-base); flex-shrink: 0; }
+    .staff-info { flex: 1; overflow: hidden; }
+    .staff-info h3 { font-size: 1.1rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .staff-info p { font-size: 0.85rem; color: var(--text-sub); font-family: monospace; }
+    .today-route-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; margin-top: 6px; }
+    
+    /* --- Line Cards & Gradients --- */
+    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; border:none!important; }
+    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; border:none!important;}
+    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; border:none!important;}
+    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; border:none!important;}
+    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; border:none!important;}
+    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; border:none!important;}
+    .grad-none { background: var(--surface-card); color: var(--text-main); border: 2px dashed var(--border); }
+
+    /* --- UBER-STYLE PARALLAX MAP & SCHEDULE --- */
+    #parallax-map { position: fixed; top: 0; left: 0; width: 100vw; height: 35vh; z-index: -1; filter: invert(100%) hue-rotate(180deg) brightness(80%); pointer-events: none; }
+    #parallax-map-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 35vh; background: linear-gradient(to bottom, rgba(18,18,18,0.2) 0%, var(--bg-color) 95%); z-index: 0; pointer-events: none; }
+    
+    .schedule-container { margin-top: 25vh; min-height: 80vh; background-color: var(--bg-color); border-top-left-radius: 30px; border-top-right-radius: 30px; padding: 25px 20px 90px 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); position: relative; z-index: 5; }
+    
+    .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .btn-back-map { background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); border: none; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: fixed; top: 20px; left: 20px; z-index: 20; }
+    .btn-back-map svg { width: 24px; height: 24px; stroke: white; }
+
+    .day-card { padding: 18px; border-radius: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
+    .day-card:active { transform: scale(0.98); }
+    .day-info h4 { font-size: 1.1rem; font-weight: 800; margin-bottom: 4px; }
+    .day-info p { font-size: 0.85rem; font-weight: 600; opacity: 0.9; font-family: monospace; }
+    
+    .btn-clear-all { width: 100%; padding: 16px; border-radius: 14px; background: transparent; border: 2px solid var(--danger); color: var(--danger); font-weight: 700; font-size: 1rem; margin-top: 20px; cursor: pointer; transition: background 0.2s; }
+    .btn-clear-all:active { background: rgba(239, 68, 68, 0.1); transform: scale(0.98); }
+
+    /* --- Modals --- */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(3px); }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: hidden; display: flex; flex-direction: column; }
+    .modal.active { transform: translateY(0); }
+    .modal-handle { width: 45px; height: 6px; background-color: var(--border); border-radius: 10px; margin: 0 auto 20px auto; flex-shrink: 0; }
+    
+    /* Picker Modal specific */
+    #picker-list { overflow-y: auto; flex: 1; padding-bottom: 20px; margin-top: 10px; }
+    .picker-line { padding: 16px; border-radius: 14px; margin-bottom: 10px; cursor: pointer; transition: transform 0.2s; }
+    .picker-line:active { transform: scale(0.98); }
+    .picker-line h4 { margin-bottom: 3px; font-size: 1.1rem; }
+    .picker-line p { font-size: 0.85rem; font-family: monospace; opacity: 0.9; }
+
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; }
+    @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .loading-trigger { text-align: center; padding: 15px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
+
+    /* Custom Modals (Confirm & Alert) */
+    .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
+    .alert-modal.active { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+    .alert-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; }
+    .alert-actions { display: flex; gap: 10px; margin-top: 25px; }
+    .btn-alert { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; }
+    .btn-cancel { background: var(--bg-color); color: var(--text-main); border: 2px solid var(--border); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-primary { background: var(--primary); color: #fff; }
+
+    /* Index Pill */
+    #index-pill-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; }
+    .index-pill { background: var(--danger); color: white; padding: 14px 18px; border-radius: 14px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4); display: flex; justify-content: space-between; align-items: center; gap: 12px; animation: popIn 0.3s forwards; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- Index Pill Container -->
+  <div id="index-pill-container"></div>
+
+  <!-- LEVEL 1: STAFF LIST -->
+  <div id="view-staff" class="view-panel active">
+    <div class="header-nav">
+      <h2>Assign Routes</h2>
+    </div>
+    
+    <div class="search-container">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="text" id="search-staff" placeholder="Search by name or mobile...">
+    </div>
+
+    <div id="list-staff"></div>
+    <div id="loading-staff" class="loading-trigger">Loading...</div>
+  </div>
+
+  <!-- LEVEL 2: AGENT 7-DAY SCHEDULE (UBER STYLE) -->
+  <div id="view-schedule" class="view-panel">
+    
+    <!-- Background Map Locked to Thoothukudi -->
+    <iframe id="parallax-map" src="https://www.openstreetmap.org/export/embed.html?bbox=77.95,8.7,78.25,8.9&layer=mapnik"></iframe>
+    <div id="parallax-map-overlay"></div>
+
+    <button class="btn-back-map" onclick="window.history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+
+    <div class="schedule-container">
+      <div class="schedule-header">
+        <div>
+          <h2 id="sched-agent-name" style="margin:0; font-size:1.5rem; font-weight:800;">Agent Name</h2>
+          <p id="sched-agent-phone" style="color:var(--text-sub); font-size:0.9rem; font-weight:600;">Phone</p>
+        </div>
+        <img id="sched-agent-dp" class="avatar" src="" style="width:60px; height:60px; border-width:3px;">
+      </div>
+
+      <h3 style="margin-bottom: 15px; font-size:1.1rem;">Weekly Route</h3>
+      <div id="list-7days">
+        <!-- JS populates Monday - Sunday cards here -->
+      </div>
+      
+      <button class="btn-clear-all" onclick="clearEntireSchedule()">
+        Clear Entire Schedule
+      </button>
+    </div>
+  </div>
+
+  <!-- LEVEL 3: LINE PICKER BOTTOM SHEET -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+  <div class="modal" id="modal-picker" style="height: 85vh;">
+    <div class="modal-handle"></div>
+    <h3 style="margin-bottom: 10px;">Select Line for <span id="picker-day-title" style="color:var(--primary);">Day</span></h3>
+    
+    <button class="btn-alert btn-cancel" style="width: 100%; border-color: var(--danger); color: var(--danger); margin-bottom: 15px; flex-shrink: 0;" onclick="assignRouteToDay(null)">
+      Clear / Mark Day Off
+    </button>
+
+    <div class="search-container" style="margin-bottom: 10px; flex-shrink: 0;">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="text" id="search-lines" placeholder="Search line name or ID...">
+    </div>
+
+    <div id="picker-list"></div>
+    <div id="loading-lines" class="loading-trigger">Loading...</div>
+  </div>
+
+  <!-- ALERT & CONFIRM MODALS -->
+  <div class="confirm-overlay" id="alert-overlay"></div>
+  
+  <div class="alert-modal" id="custom-alert">
+    <div class="alert-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+    <h3 id="alert-title">Notice</h3>
+    <p id="alert-msg" style="margin-bottom: 25px; color: var(--text-sub);"></p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-primary" onclick="window.history.back()">OK</button>
+    </div>
+  </div>
+
+  <div class="alert-modal" id="custom-confirm">
+    <div class="alert-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger);">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    </div>
+    <h3>Are you sure?</h3>
+    <p id="confirm-msg" style="margin-bottom: 25px; color: var(--text-sub);"></p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-cancel" id="btn-confirm-cancel">Cancel</button>
+      <button class="btn-alert btn-danger" id="btn-confirm-ok">Confirm</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+    const defaultDp = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==";
+    const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    
+    // State
+    let staffLastVisible = null, staffHasMore = true, staffLoading = false, staffSearch = "";
+    let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
+    
+    let activeAgentId = null;
+    let activeDayPicker = null;
+    
+    // Smart Cache for Lines (1-read optimization)
+    const linesCache = {}; 
+    const agentsCache = {};
+
+    // Get Today String
+    const todayStr = daysOfWeek[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+
+    // --- Firebase Error Handler ---
+    window.handleFirebaseError = function(e) {
+      if (!e || !e.message) return;
+      const urlMatch = e.message.match(/(https:\/\/console\.firebase\.google\.com[^\s]+)/);
+      if (urlMatch) {
+        let url = urlMatch[1].replace(/['"\)]$/, '');
+        const container = document.getElementById('index-pill-container');
+        const pill = document.createElement('div');
+        pill.className = 'index-pill';
+        pill.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span>Missing Index! Tap to fix.</span><button class="close-pill">✕</button>`;
+        pill.onclick = (evt) => { if(evt.target.tagName !== 'BUTTON') window.open(url, '_blank'); };
+        pill.querySelector('.close-pill').onclick = (evt) => { evt.stopPropagation(); pill.remove(); };
+        container.appendChild(pill);
+        vibrate([50, 100]);
+      } else {
+        customAlert(e.message, "Error");
+      }
+    };
+
+    // --- Modals & History API ---
+    let alertResolve = null;
+    window.customAlert = function(msg, title="Notice") {
+      return new Promise(resolve => {
+        vibrate(50);
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-msg').innerText = msg;
+        document.getElementById('alert-overlay').classList.add('active');
+        document.getElementById('custom-alert').classList.add('active');
+        window.history.pushState({ alert: true }, '');
+        alertResolve = resolve;
+      });
+    }
+
+    let confirmResolve = null;
+    window.customConfirm = function(msg) {
+      return new Promise(resolve => {
+        vibrate([50,50]);
+        document.getElementById('confirm-msg').innerText = msg;
+        document.getElementById('alert-overlay').classList.add('active');
+        document.getElementById('custom-confirm').classList.add('active');
+        window.history.pushState({ confirm: true }, '');
+        confirmResolve = resolve;
+      });
+    }
+    document.getElementById('btn-confirm-cancel').onclick = () => window.history.back();
+    document.getElementById('btn-confirm-ok').onclick = () => { if(confirmResolve) { confirmResolve(true); confirmResolve = null; } window.history.back(); };
+
+    function openPanel(id, stateData) {
+      document.getElementById(id).classList.add('active');
+      window.history.pushState({ panel: id, ...stateData }, '');
+    }
+    
+    window.openModal = (id) => {
+      vibrate();
+      document.getElementById('modal-overlay').classList.add('active');
+      document.getElementById(id).classList.add('active');
+      window.history.pushState({ modal: id }, '');
+    };
+
+    window.addEventListener('popstate', () => {
+      const activeAlert = document.querySelector('.alert-modal.active');
+      if(activeAlert) {
+        activeAlert.classList.remove('active');
+        document.getElementById('alert-overlay').classList.remove('active');
+        if(alertResolve) { alertResolve(true); alertResolve = null; }
+        if(confirmResolve) { confirmResolve(false); confirmResolve = null; }
+        return;
+      }
+      const activeModal = document.querySelector('.modal.active');
+      if(activeModal) {
+        activeModal.classList.remove('active');
+        document.getElementById('modal-overlay').classList.remove('active');
+        return;
+      }
+      if(document.getElementById('view-schedule').classList.contains('active')) {
+        document.getElementById('view-schedule').classList.remove('active');
+        activeAgentId = null;
+      }
+    });
+    document.getElementById('modal-overlay').addEventListener('click', () => window.history.back());
+    document.querySelector('.modal-handle').addEventListener('click', () => window.history.back());
+
+    let debounceTimer;
+    const debounce = (f, d=400) => (...args) => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => f(...args), d); };
+
+    // --- Smart Cache Fetcher ---
+    async function getLineData(lineId) {
+      if(!lineId) return null;
+      if(linesCache[lineId]) return linesCache[lineId]; // Return from RAM (0 reads)
+      try {
+        const d = await getDoc(doc(db, "lines", lineId)); // 1 Live Read
+        if(d.exists()) {
+          linesCache[lineId] = d.data();
+          return linesCache[lineId];
+        }
+      } catch(e) { console.error(e); }
+      return null;
+    }
+
+    // --- LEVEL 1: STAFF LIST ---
+    function getSkeletons(type) {
+      let h = '';
+      for(let i=0; i<4; i++) {
+        if(type==='staff') h += `<div class="staff-card" style="animation-delay:${i*0.1}s"><div class="avatar skeleton-box"></div><div class="staff-info"><div class="skeleton-box" style="height:20px;width:70%;margin-bottom:5px;"></div><div class="skeleton-box" style="height:15px;width:50%;"></div></div></div>`;
+        if(type==='picker') h += `<div class="picker-line" style="border:1px solid var(--border); animation-delay:${i*0.1}s"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:5px;"></div><div class="skeleton-box" style="height:15px;width:40%;"></div></div>`;
+      }
+      return h;
+    }
+
+    async function loadStaff(isMore = false) {
+      if(staffLoading || (!staffHasMore && isMore)) return;
+      staffLoading = true;
+      const list = document.getElementById('list-staff');
+      const loader = document.getElementById('loading-staff');
+      
+      if(!isMore) { list.innerHTML = getSkeletons('staff'); loader.style.display = 'none'; }
+      else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+
+      try {
+        let q = collection(db, "users");
+        
+        // Smart Search: Mobile vs Name
+        if(staffSearch) {
+          const isNum = /^\d+$/.test(staffSearch.replace('+', ''));
+          const field = isNum ? "phone" : "name";
+          q = query(q, where("role", "in", ["admin", "agent"]), where(field, ">=", staffSearch), where(field, "<=", staffSearch + "\uf8ff"), orderBy(field), limit(10));
+        } else {
+          q = query(q, where("role", "in", ["admin", "agent"]), orderBy("name"), limit(10));
+        }
+        
+        if(isMore && staffLastVisible) q = query(q, startAfter(staffLastVisible));
+
+        const snap = await getDocs(q);
+        if(!isMore) list.innerHTML = '';
+        if(snap.empty) { 
+          staffHasMore = false; 
+          if(!isMore) list.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No staff found.</p>'; 
+          loader.style.display = 'none';
+          staffLoading=false; return; 
+        }
+
+        staffLastVisible = snap.docs[snap.docs.length-1];
+        staffHasMore = snap.docs.length === 10;
+        
+        let html = '';
+        // Pre-fetch today's lines for all loaded agents in parallel for max speed
+        const todayPromises = snap.docs.map(async (d) => {
+          const u = d.data();
+          agentsCache[u.uid] = u;
+          let todayLine = null;
+          if(u.schedule && u.schedule[todayStr]) {
+            todayLine = await getLineData(u.schedule[todayStr]);
+          }
+          return { u, todayLine };
+        });
+
+        const results = await Promise.all(todayPromises);
+
+        results.forEach(({u, todayLine}, idx) => {
+          const dp = u.photoURL || defaultDp;
+          const phone = u.phone || 'No Phone';
+          
+          let badgeHtml = `<span class="today-route-badge grad-none">Today: Off</span>`;
+          if(todayLine) {
+            badgeHtml = `<span class="today-route-badge ${todayLine.color || 'grad-6'}">Today: ${todayLine.name}</span>`;
+          }
+
+          html += `
+            <div class="staff-card" style="animation-delay: ${idx*0.05}s" onclick="openAgentSchedule('${u.uid}')">
+              <img src="${dp}" class="avatar" onerror="this.src='${defaultDp}'">
+              <div class="staff-info">
+                <h3>${u.name || 'Unnamed'}</h3>
+                <p>${u.role.toUpperCase()} • ${phone}</p>
+                ${badgeHtml}
+              </div>
+            </div>`;
+        });
+        
+        list.insertAdjacentHTML('beforeend', html);
+        loader.style.display = staffHasMore ? 'block' : 'none';
+        loader.innerText = staffHasMore ? 'Scroll for more' : '';
+      } catch(e) { handleFirebaseError(e); }
+      staffLoading = false;
+    }
+
+    document.getElementById('search-staff').addEventListener('input', debounce(e => {
+      let val = e.target.value.trim();
+      if(val && !/^\d+$/.test(val.replace('+',''))) val = val.charAt(0).toUpperCase() + val.slice(1);
+      staffSearch = val;
+      staffLastVisible = null; staffHasMore = true; loadStaff();
+    }));
+
+
+    // --- LEVEL 2: UBER STYLE SCHEDULE ---
+    window.openAgentSchedule = async (uid) => {
+      vibrate();
+      activeAgentId = uid;
+      const u = agentsCache[uid];
+      if(!u) return;
+
+      document.getElementById('sched-agent-name').innerText = u.name;
+      document.getElementById('sched-agent-phone').innerText = u.phone || u.email;
+      document.getElementById('sched-agent-dp').src = u.photoURL || defaultDp;
+
+      const listContainer = document.getElementById('list-7days');
+      listContainer.innerHTML = '';
+      
+      // Open Panel instantly for fluid UX
+      openPanel('view-schedule', { uid });
+
+      // Cascade render the 7 days
+      daysOfWeek.forEach(async (day, idx) => {
+        // Create placeholder card
+        const cardId = `card-day-${day}`;
+        const delay = idx * 0.08;
+        listContainer.insertAdjacentHTML('beforeend', `
+          <div class="day-card grad-none" id="${cardId}" style="animation-delay: ${delay}s" onclick="openLinePicker('${day}')">
+            <div class="day-info">
+              <h4>${day}</h4>
+              <p>Loading...</p>
+            </div>
+          </div>
+        `);
+
+        // Fetch Live Truth safely (uses cache if available)
+        const lineIdAssigned = u.schedule ? u.schedule[day] : null;
+        const lineData = await getLineData(lineIdAssigned);
+        
+        const card = document.getElementById(cardId);
+        if(card) {
+          if(lineData) {
+            card.className = `day-card ${lineData.color || 'grad-6'}`;
+            card.innerHTML = `<div class="day-info"><h4>${day}</h4><p>${lineData.id} • ${lineData.name}</p></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>`;
+          } else {
+            card.className = `day-card grad-none`;
+            card.innerHTML = `<div class="day-info"><h4>${day}</h4><p style="opacity:0.6;">Tap to assign route</p></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>`;
+          }
+        }
+      });
+    };
+
+    window.clearEntireSchedule = async () => {
+      if(!(await customConfirm("Clear the entire 7-day schedule for this agent?"))) return;
+      vibrate([50,100]);
+      
+      try {
+        await updateDoc(doc(db, "users", activeAgentId), { schedule: { "Monday": null, "Tuesday": null, "Wednesday": null, "Thursday": null, "Friday": null, "Saturday": null, "Sunday": null } });
+        agentsCache[activeAgentId].schedule = {}; // update local
+        
+        // Re-render visually instantly
+        daysOfWeek.forEach(day => {
+          const card = document.getElementById(`card-day-${day}`);
+          if(card) {
+            card.className = `day-card grad-none`;
+            card.innerHTML = `<div class="day-info"><h4>${day}</h4><p style="opacity:0.6;">Tap to assign route</p></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>`;
+          }
+        });
+        
+        // Silently reload main list in background to fix Today's badge
+        staffLastVisible = null; staffHasMore = true; loadStaff(false);
+      } catch(e) { handleFirebaseError(e); }
+    };
+
+
+    // --- LEVEL 3: LINE PICKER (BOTTOM SHEET) ---
+    window.openLinePicker = (day) => {
+      activeDayPicker = day;
+      document.getElementById('picker-day-title').innerText = day;
+      linesSearch = ""; document.getElementById('search-lines').value = '';
+      linesLastVisible = null; linesHasMore = true;
+      openModal('modal-picker');
+      loadPickerLines();
+    };
+
+    async function loadPickerLines(isMore = false) {
+      if(linesLoading || (!linesHasMore && isMore)) return;
+      linesLoading = true;
+      const list = document.getElementById('picker-list');
+      const loader = document.getElementById('loading-lines');
+      
+      if(!isMore) { list.innerHTML = getSkeletons('picker'); loader.style.display = 'none'; }
+      else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+
+      try {
+        let q = collection(db, "lines");
+        if(linesSearch) {
+          q = query(q, where("name", ">=", linesSearch), where("name", "<=", linesSearch + "\uf8ff"), orderBy("name"), limit(5));
+        } else {
+          q = query(q, orderBy("createdAt", "desc"), limit(5));
+        }
+        if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
+
+        const snap = await getDocs(q);
+        if(!isMore) list.innerHTML = '';
+        if(snap.empty) { 
+          linesHasMore = false; 
+          if(!isMore) list.innerHTML = '<p style="text-align:center;color:var(--text-sub);">No lines found.</p>'; 
+          loader.style.display = 'none';
+          linesLoading=false; return; 
+        }
+
+        linesLastVisible = snap.docs[snap.docs.length-1];
+        linesHasMore = snap.docs.length === 5;
+        
+        let html = '';
+        snap.forEach(d => {
+          const data = d.data();
+          linesCache[data.id] = data; // Cache it!
+          html += `
+            <div class="picker-line ${data.color || 'grad-6'}" onclick="assignRouteToDay('${data.id}')">
+              <h4>${data.name}</h4>
+              <p>${data.id} • ${data.scheduleType}</p>
+            </div>`;
+        });
+        list.insertAdjacentHTML('beforeend', html);
+        loader.style.display = linesHasMore ? 'block' : 'none';
+        loader.innerText = linesHasMore ? 'Scroll for more' : '';
+      } catch(e) { handleFirebaseError(e); }
+      linesLoading = false;
+    }
+
+    document.getElementById('search-lines').addEventListener('input', debounce(e => {
+      let val = e.target.value.trim();
+      linesSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
+      linesLastVisible = null; linesHasMore = true; loadPickerLines();
+    }));
+
+    // Infinite scroll for bottom sheet
+    document.getElementById('picker-list').addEventListener('scroll', function() {
+      if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 50) {
+        if(linesHasMore && !linesLoading) { vibrate(10); loadPickerLines(true); }
+      }
+    });
+
+    window.assignRouteToDay = async (lineId) => {
+      vibrate([30, 50]);
+      
+      try {
+        // Update DB
+        const updatePath = `schedule.${activeDayPicker}`;
+        await updateDoc(doc(db, "users", activeAgentId), { [updatePath]: lineId });
+        
+        // Update Local Agent Cache
+        if(!agentsCache[activeAgentId].schedule) agentsCache[activeAgentId].schedule = {};
+        agentsCache[activeAgentId].schedule[activeDayPicker] = lineId;
+
+        // Update UI Card Instantly
+        const card = document.getElementById(`card-day-${activeDayPicker}`);
+        if(card) {
+          if(lineId && linesCache[lineId]) {
+            const lineData = linesCache[lineId];
+            card.className = `day-card ${lineData.color || 'grad-6'}`;
+            card.innerHTML = `<div class="day-info"><h4>${activeDayPicker}</h4><p>${lineData.id} • ${lineData.name}</p></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>`;
+          } else {
+            card.className = `day-card grad-none`;
+            card.innerHTML = `<div class="day-info"><h4>${activeDayPicker}</h4><p style="opacity:0.6;">Tap to assign route</p></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>`;
+          }
+        }
+
+        // Close Modal
+        window.history.back();
+
+        // If assigned today's route, silently update main list in background
+        if(activeDayPicker === todayStr) {
+          staffLastVisible = null; staffHasMore = true; loadStaff(false);
+        }
+
+      } catch(e) { handleFirebaseError(e); }
+    };
+
+    // Initial Load & Infinite Scroll
+    window.addEventListener('load', () => { loadStaff(); });
+    document.getElementById('view-staff').addEventListener('scroll', function() {
+      if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 100) {
+        if(staffHasMore && !staffLoading) { vibrate(10); loadStaff(true); }
+      }
+    });
+
+  </script>
+</body>
+</html>
