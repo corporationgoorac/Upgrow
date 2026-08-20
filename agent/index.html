@@ -1,346 +1,462 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Up Field - Agent Portal</title>
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#f4f7f6">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <link rel="manifest" href="manifest.json">
+  <title>Up Field - Agent App</title>
+  
+  <style>
+    /* System Default Theming (Matches Admin App) */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+      --nav-height: 65px;
+      --header-height: 60px;
+    }
 
-    <style>
-        :root {
-            --primary: #007aff;
-            --bg-color: #f4f7f6;
-            --surface: #ffffff;
-            --text-main: #1d1d1f;
-            --text-muted: #86868b;
-            --border: #e5e5ea;
-            --danger: #ff3b30;
-            --nav-height: 65px;
-            --header-height: 60px;
-        }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            overflow: hidden; /* Prevent body scrolling, iframe handles it */
-        }
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
 
-        /* --- Full Screen Guards --- */
-        #loading-screen, #permission-screen {
-            position: fixed;
-            inset: 0;
-            background-color: var(--bg-color);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-        }
+    body, html {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      height: 100vh;
+      height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
 
-        #permission-screen {
-            display: none; /* Hidden by default */
-        }
+    /* --- Security Shields (Loading & Permission) --- */
+    #loading-shield, #permission-shield {
+      position: fixed;
+      inset: 0;
+      background-color: var(--bg-color);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 30px;
+    }
 
-        .permission-icon {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 24px;
-            color: var(--danger);
-        }
+    #permission-shield {
+      display: none; /* Hidden until auth fails */
+    }
 
-        .permission-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
+    .shield-icon {
+      width: 100px;
+      height: 100px;
+      color: var(--danger);
+      margin-bottom: 25px;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
 
-        .permission-text {
-            font-size: 16px;
-            color: var(--text-muted);
-            line-height: 1.5;
-            max-width: 300px;
-        }
+    .shield-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 15px;
+      letter-spacing: -0.5px;
+    }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+    .shield-text {
+      font-size: 1rem;
+      color: var(--text-sub);
+      line-height: 1.6;
+      max-width: 320px;
+      font-weight: 500;
+    }
 
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+    .spinner {
+      width: 45px;
+      height: 45px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
 
-        /* --- Header --- */
-        header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--header-height);
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            border-bottom: 1px solid var(--border);
-            z-index: 1000;
-        }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
 
-        .header-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.5px;
-        }
+    /* --- Shell Layout --- */
+    #app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      opacity: 0; /* Hidden until loaded */
+      transition: opacity 0.3s ease;
+    }
 
-        .profile-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    #app-shell.ready {
+      opacity: 1;
+    }
 
-        /* --- Main Content (Iframe Shell) --- */
-        #app-frame {
-            position: fixed;
-            top: var(--header-height);
-            bottom: var(--nav-height);
-            left: 0;
-            width: 100%;
-            border: none;
-            background-color: var(--bg-color);
-        }
+    /* --- Header --- */
+    header {
+      height: var(--header-height);
+      background-color: var(--bg-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+      flex-shrink: 0;
+    }
 
-        /* --- Bottom Navigation --- */
-        nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--nav-height);
-            background: var(--surface);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid var(--border);
-            padding-bottom: env(safe-area-inset-bottom);
-            z-index: 1000;
-        }
+    .app-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .app-title span { color: var(--primary); }
 
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: var(--text-muted);
-            font-size: 11px;
-            font-weight: 500;
-            gap: 4px;
-            width: 25%;
-            cursor: pointer;
-        }
+    /* --- Profile DP Skeleton --- */
+    .profile-wrapper {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid var(--primary);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .profile-wrapper:active { transform: scale(0.9); }
 
-        .nav-item.active {
-            color: var(--primary);
-        }
+    .profile-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
 
-        .nav-item svg {
-            width: 24px;
-            height: 24px;
-            stroke: currentColor;
-            stroke-width: 2;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
+    .skeleton {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
+      background-size: 200% 100%;
+      animation: skeletonLoading 1.5s infinite;
+    }
+    @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        .nav-item.active svg {
-            fill: currentColor;
-            stroke: none;
-        }
+    /* --- Main Content Area (Iframe) --- */
+    main {
+      flex: 1;
+      background-color: var(--bg-color);
+      position: relative;
+      overflow: hidden;
+    }
 
-        /* --- Install PWA Popup --- */
-        #install-popup {
-            position: fixed;
-            bottom: calc(var(--nav-height) + 20px);
-            left: 20px;
-            right: 20px;
-            background: var(--surface);
-            padding: 16px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            z-index: 2000;
-        }
+    #content-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: transparent;
+    }
 
-        .install-text { font-size: 14px; font-weight: 600; }
-        .install-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-    </style>
+    /* --- Mobile Bottom Nav --- */
+    .bottom-nav {
+      display: flex;
+      height: var(--nav-height);
+      min-height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+      flex-shrink: 0;
+      background-color: var(--bg-color);
+      z-index: 50;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav-inner {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 100%;
+      width: 100%;
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      color: var(--text-sub);
+      text-decoration: none;
+      flex: 1;
+      height: 100%;
+    }
+
+    .bottom-nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: all 0.2s; }
+    .bottom-nav-item span { font-size: 0.7rem; font-weight: 700; }
+    
+    .bottom-nav-item.active { color: var(--primary); }
+    .bottom-nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5; }
+
+    /* --- PWA Install Pill --- */
+    #install-pill {
+      position: fixed;
+      bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(150px);
+      background-color: var(--primary);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: 700;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      z-index: 100;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #install-pill.show { transform: translateX(-50%) translateY(0); }
+    #install-pill:active { transform: translateX(-50%) translateY(2px) scale(0.95); }
+  </style>
 </head>
 <body>
 
-    <!-- 1. Loading Screen -->
-    <div id="loading-screen">
-        <div class="spinner"></div>
-    </div>
+  <!-- 1. Initial Loading Shield -->
+  <div id="loading-shield">
+    <div class="spinner"></div>
+  </div>
 
-    <!-- 2. Permission Denied Screen -->
-    <div id="permission-screen">
-        <!-- Beautiful restricted shield SVG -->
-        <svg class="permission-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            <path d="M8 11h8v6H8z"></path>
-            <path d="M10 11V9a2 2 0 0 1 4 0v2"></path>
-        </svg>
-        <div class="permission-title">Access Denied</div>
-        <div class="permission-text">
-            You are not marked as an agent or your permission is missing. Kindly contact the admin to grant you access.
-        </div>
+  <!-- 2. Security Permission Shield -->
+  <div id="permission-shield">
+    <!-- Beautiful SVG Lock/Shield Icon -->
+    <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      <path d="M8 11h8v6H8z"></path>
+      <path d="M10 11V9a2 2 0 0 1 4 0v2"></path>
+    </svg>
+    <div class="shield-title">Access Denied</div>
+    <div class="shield-text">
+      You are not an agent or your permission is missing. Kindly please contact the admin to grant the permission.
     </div>
+  </div>
 
-    <!-- 3. App Header -->
+  <!-- 3. Main App Shell -->
+  <div id="app-shell">
+    
+    <!-- Top Header -->
     <header>
-        <div class="header-title">Up Field</div>
-        <button class="profile-btn" onclick="document.getElementById('app-frame').src='manage.html'">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-        </button>
+      <div class="app-title">Up <span>Field</span></div>
+      <!-- Profile Button dynamically redirects iframe to manage.html -->
+      <div class="profile-wrapper" id="profile-btn">
+        <div class="skeleton" id="dp-skeleton"></div>
+        <img id="user-dp" class="profile-img" alt="Profile">
+      </div>
     </header>
 
-    <!-- 4. Main Tab Content (Iframe) -->
-    <iframe id="app-frame" src="home.html"></iframe>
+    <!-- Main Content Area -->
+    <main>
+      <iframe src="home.html" id="content-frame" name="content-frame" title="Main Content"></iframe>
+    </main>
 
-    <!-- 5. Bottom Navigation -->
-    <nav>
-        <div class="nav-item active" onclick="switchTab(this, 'home.html')">
-            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            Home
-        </div>
-        <div class="nav-item" onclick="switchTab(this, 'entry.html')">
-            <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-            Entry
-        </div>
-        <div class="nav-item" onclick="switchTab(this, 'submit.html')">
-            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            Submit
-        </div>
-        <div class="nav-item" onclick="switchTab(this, 'reports.html')">
-            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-            Reports
-        </div>
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <!-- Home / Map -->
+        <a href="home.html" class="bottom-nav-item active" target="content-frame" onclick="setActiveNav(this, 0)">
+          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>Home</span>
+        </a>
+        <!-- Entry / Log -->
+        <a href="entry.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 1)">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          <span>Entry</span>
+        </a>
+        <!-- Submit / Verify -->
+        <a href="submit.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 2)">
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          <span>Submit</span>
+        </a>
+        <!-- Reports / History -->
+        <a href="reports.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 3)">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span>Reports</span>
+        </a>
+      </div>
     </nav>
+  </div>
 
-    <!-- 6. Install App Popup -->
-    <div id="install-popup">
-        <span class="install-text">Install Up Field App</span>
-        <button class="install-btn" id="install-btn">Install</button>
-    </div>
+  <!-- 4. Install App Pill -->
+  <div id="install-pill">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+    Install App
+  </div>
 
-    <!-- 7. Core Logic & Auth Check -->
-    <script type="module">
-        import { auth, db } from './config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-        const loadingScreen = document.getElementById('loading-screen');
-        const permissionScreen = document.getElementById('permission-screen');
+    // --- PWA Service Worker Registration ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('SW Registered!', reg);
+        }).catch(err => console.log('SW Registration Failed', err));
+      });
+    }
 
-        // Check authentication and Agent Role
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    const userDocRef = doc(db, "users", user.uid);
-                    const userDoc = await getDoc(userDocRef);
+    // --- Core UI Elements ---
+    const loadingShield = document.getElementById('loading-shield');
+    const permissionShield = document.getElementById('permission-shield');
+    const appShell = document.getElementById('app-shell');
+    const dpImg = document.getElementById('user-dp');
+    const dpSkeleton = document.getElementById('dp-skeleton');
 
-                    if (userDoc.exists() && userDoc.data().isAgent === true) {
-                        // User is verified agent -> Hide loading screen
-                        loadingScreen.style.display = 'none';
-                    } else {
-                        // User is authenticated but NOT an agent
-                        loadingScreen.style.display = 'none';
-                        permissionScreen.style.display = 'flex';
-                    }
-                } catch (error) {
-                    console.error("Error fetching user data:", error);
-                    loadingScreen.style.display = 'none';
-                    permissionScreen.style.display = 'flex';
-                }
-            } else {
-                // Not logged in -> Redirect to global login page
-                window.location.href = 'login.html';
-            }
-        });
+    // --- 0ms LocalStorage Profile Picture Loading ---
+    const localDpUrl = localStorage.getItem('upfield_dp');
+    if (localDpUrl) {
+      dpImg.src = localDpUrl;
+      dpImg.style.opacity = '1';
+      dpSkeleton.classList.add('hidden');
+    }
 
-        // Tab Switching Logic
-        window.switchTab = function(element, url) {
-            // Update active styling
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            element.classList.add('active');
-            
-            // Load new page into iframe
-            document.getElementById('app-frame').src = url;
+    // --- Strict Auth & Agent Validation ---
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // Not logged in -> Redirect to global login
+        window.location.replace("login.html");
+        return;
+      }
+
+      try {
+        // User is logged in. Fetch their specific user document.
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        // Security Check: Ensure the user exists AND is explicitly marked as an Agent
+        if (userDoc.exists() && userDoc.data().isAgent === true) {
+          
+          // Access Granted: Hide loader, show app shell
+          loadingShield.style.display = 'none';
+          appShell.classList.add('ready');
+
+          // Handle Profile Picture Sync
+          if (user.photoURL && user.photoURL !== localDpUrl) {
+            const tempImg = new Image();
+            tempImg.onload = () => {
+              dpImg.src = tempImg.src;
+              dpImg.style.opacity = '1';
+              dpSkeleton.classList.add('hidden');
+              localStorage.setItem('upfield_dp', tempImg.src); 
+            };
+            tempImg.src = user.photoURL;
+          } else if (!user.photoURL && !localDpUrl) {
+             dpSkeleton.classList.add('hidden');
+          }
+
+        } else {
+          // Access Denied: User is logged in but `isAgent` is false or missing
+          loadingShield.style.display = 'none';
+          permissionShield.style.display = 'flex';
         }
+      } catch (error) {
+        console.error("Error verifying agent permission:", error);
+        loadingShield.style.display = 'none';
+        permissionShield.style.display = 'flex'; // Fail safe: block access on error
+      }
+    });
 
-        // Service Worker Registration (For Offline PWA)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((reg) => console.log('Service Worker registered.', reg))
-                    .catch((err) => console.log('Service Worker registration failed:', err));
-            });
+    // --- Haptics & UI Interactions ---
+    function triggerVibration() {
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+
+    // Navigation Sync Logic (Switches active state on Bottom Nav)
+    window.setActiveNav = function(clickedElement, index) {
+      triggerVibration();
+      
+      const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+      bottomNavItems.forEach(item => item.classList.remove('active'));
+      
+      if (bottomNavItems[index]) {
+        bottomNavItems[index].classList.add('active');
+      }
+    };
+
+    // Profile Click Navigation (Dynamically redirect to manage.html)
+    document.getElementById('profile-btn').addEventListener('click', () => {
+      triggerVibration();
+      // Load manage.html inside the main content iframe
+      document.getElementById('content-frame').src = 'manage.html';
+      
+      // Clear active states on bottom nav to indicate we are not on a main tab
+      const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+      bottomNavItems.forEach(item => item.classList.remove('active'));
+    });
+
+    // --- PWA Install Pill Logic ---
+    let deferredPrompt;
+    const installPill = document.getElementById('install-pill');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(() => {
+        installPill.classList.add('show');
+      }, 2500); 
+    });
+
+    installPill.addEventListener('click', async () => {
+      triggerVibration();
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('Up Field App Installed');
         }
+        deferredPrompt = null;
+        installPill.classList.remove('show');
+      }
+    });
 
-        // PWA Install Prompt Logic
-        let deferredPrompt;
-        const installPopup = document.getElementById('install-popup');
-        const installBtn = document.getElementById('install-btn');
+    window.addEventListener('appinstalled', () => {
+      installPill.classList.remove('show');
+      deferredPrompt = null;
+    });
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installPopup.style.display = 'flex';
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    installPopup.style.display = 'none';
-                }
-                deferredPrompt = null;
-            }
-        });
-    </script>
+  </script>
 </body>
 </html>
