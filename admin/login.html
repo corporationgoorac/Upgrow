@@ -460,16 +460,6 @@
           name: name,
           email: currentAuthUser.email,
           photoURL: currentAuthUser.photoURL || "",
-          role: "agent", // Default role, Admin can change this in DB
-          schedule: {
-            "Monday": "",
-            "Tuesday": "",
-            "Wednesday": "",
-            "Thursday": "",
-            "Friday": "",
-            "Saturday": "",
-            "Sunday": ""
-          },
           createdAt: serverTimestamp()
         };
 
