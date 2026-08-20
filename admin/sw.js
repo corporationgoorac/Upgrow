@@ -2,18 +2,18 @@ const CACHE_NAME = 'upgrow-cache-v1';
 
 // Add the core files you want to work offline here
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/login.html',
-  '/home.html',
+  './',
+  './index.html',
+  './login.html',
+  './home.html',
   '/lines.html',
-  '/assignLines.html',
-  '/approval.html',
-  '/review.html',
-  '/manage.html',
-  '/config.js',
-  '/manifest.json',
-  '/images/icon.png'
+  './assignLines.html',
+  './approval.html',
+  './review.html',
+  './manage.html',
+  './config.js',
+  './manifest.json',
+  './images/icon.png'
 ];
 
 // 1. Install Event - Caches the files when the app is first loaded
