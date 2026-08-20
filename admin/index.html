@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Native mobile viewport constraints -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <link rel="manifest" href="manifest.json">
+  <title>Up Grow - Dashboard</title>
+  
+  <style>
+    /* System Default Theming (Matches Login Page) */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+      --nav-height: 65px;
+      --header-height: 60px;
+      --sidebar-width: 260px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+    body, html {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden; /* App shell itself doesn't scroll, only the content area */
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+
+    /* --- Shell Layout --- */
+    #app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100%;
+    }
+
+    /* --- Header --- */
+    header {
+      height: var(--header-height);
+      background-color: var(--surface-color);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .menu-btn:active { background: var(--border); }
+
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .app-title span { color: var(--primary); }
+
+    /* --- Profile DP Skeleton --- */
+    .profile-wrapper {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid var(--primary);
+      cursor: pointer;
+    }
+
+    .profile-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .skeleton {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
+      background-size: 200% 100%;
+      animation: skeletonLoading 1.5s infinite;
+    }
+
+    @keyframes skeletonLoading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* --- Main Body Area --- */
+    .body-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* --- Desktop Sidebar --- */
+    aside {
+      width: var(--sidebar-width);
+      background-color: var(--surface-color);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 40;
+    }
+
+    aside.collapsed {
+      transform: translateX(-100%);
+      margin-right: calc(var(--sidebar-width) * -1);
+    }
+
+    .nav-list {
+      list-style: none;
+      padding: 15px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 15px;
+      border-radius: 12px;
+      color: var(--text-sub);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover { background-color: var(--bg-color); color: var(--text-main); }
+    .nav-item.active { background-color: rgba(16, 185, 129, 0.1); color: var(--primary); }
+    .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
+
+    /* --- Main Content Area (Iframe for 0ms navigation feel) --- */
+    main {
+      flex: 1;
+      background-color: var(--bg-color);
+      overflow-y: auto;
+      position: relative;
+    }
+
+    #content-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: transparent;
+    }
+
+    /* --- Mobile Bottom Nav --- */
+    .bottom-nav {
+      display: none;
+      height: var(--nav-height);
+      background-color: var(--surface-color);
+      border-top: 1px solid var(--border);
+      z-index: 50;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav-inner {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 100%;
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: var(--text-sub);
+      text-decoration: none;
+      flex: 1;
+      height: 100%;
+    }
+
+    .bottom-nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: transform 0.2s; }
+    .bottom-nav-item span { font-size: 0.7rem; font-weight: 600; }
+    
+    .bottom-nav-item.active { color: var(--primary); }
+    .bottom-nav-item.active svg { transform: scale(1.1); }
+
+    /* --- PWA Install Pill --- */
+    #install-pill {
+      position: fixed;
+      bottom: 85px; /* Above mobile nav */
+      left: 50%;
+      transform: translateX(-50%) translateY(150px);
+      background-color: var(--primary);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: 700;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      z-index: 100;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #install-pill.show { transform: translateX(-50%) translateY(0); }
+    #install-pill:active { transform: translateX(-50%) translateY(2px) scale(0.95); }
+
+    /* --- Responsive Breakpoints --- */
+    @media (max-width: 768px) {
+      aside { display: none; } /* Hide sidebar completely on mobile */
+      .menu-btn { display: none; } /* Hide hamburger on mobile */
+      .bottom-nav { display: block; } /* Show bottom nav on mobile */
+      #install-pill { bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom)); }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div id="app-shell">
+    
+    <!-- Top Header -->
+    <header>
+      <div class="header-left">
+        <button class="menu-btn" id="sidebar-toggle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="app-title">Up <span>Grow</span></div>
+      </div>
+
+      <div class="profile-wrapper" id="profile-btn">
+        <div class="skeleton" id="dp-skeleton"></div>
+        <img id="user-dp" class="profile-img" alt="Profile">
+      </div>
+    </header>
+
+    <div class="body-wrapper">
+      <!-- Desktop Sidebar -->
+      <aside id="sidebar">
+        <nav class="nav-list">
+          <!-- 0ms Inline SVGs for Navigation -->
+          <a href="home.html" class="nav-item active" target="content-frame" onclick="setActiveNav(this, 0)">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            Dashboard
+          </a>
+          <a href="lines.html" class="nav-item" target="content-frame" onclick="setActiveNav(this, 1)">
+            <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            Master Lines
+          </a>
+          <a href="assignLines.html" class="nav-item" target="content-frame" onclick="setActiveNav(this, 2)">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            Assign Staff
+          </a>
+          <a href="approval.html" class="nav-item" target="content-frame" onclick="setActiveNav(this, 3)">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            Approvals
+          </a>
+          <a href="review.html" class="nav-item" target="content-frame" onclick="setActiveNav(this, 4)">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            Ledger
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main>
+        <!-- Iframe acts as the shell window, keeping the native navbar constantly loaded -->
+        <!-- Will default to a welcome screen or home.html when created -->
+        <iframe src="about:blank" id="content-frame" name="content-frame" title="Main Content"></iframe>
+      </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <a href="home.html" class="bottom-nav-item active" target="content-frame" onclick="setActiveNav(this, 0)">
+          <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="lines.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 1)">
+          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+          <span>Lines</span>
+        </a>
+        <a href="assignLines.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 2)">
+          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          <span>Staff</span>
+        </a>
+        <a href="approval.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 3)">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <span>Verify</span>
+        </a>
+        <a href="review.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 4)">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <span>Ledger</span>
+        </a>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- Install App Pill -->
+  <div id="install-pill">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+    Install App
+  </div>
+
+  <script type="module">
+    import { auth } from './config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+    // 1. Service Worker Registration for PWA Offline & Installability
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('SW Registered!', reg);
+        }).catch(err => console.log('SW Registration Failed', err));
+      });
+    }
+
+    // 2. Auth Protection & 0ms LocalStorage Profile Picture Loading
+    const dpImg = document.getElementById('user-dp');
+    const dpSkeleton = document.getElementById('dp-skeleton');
+
+    // Instantly load DP from local storage if available (0ms load)
+    const localDpUrl = localStorage.getItem('upgrow_dp');
+    if (localDpUrl) {
+      dpImg.src = localDpUrl;
+      dpImg.style.opacity = '1';
+      dpSkeleton.classList.add('hidden');
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // Not logged in, block access and redirect
+        window.location.replace("login.html");
+      } else {
+        // User logged in. Update DP if it's new or wasn't in local storage
+        if (user.photoURL && user.photoURL !== localDpUrl) {
+          const tempImg = new Image();
+          tempImg.onload = () => {
+            dpImg.src = tempImg.src;
+            dpImg.style.opacity = '1';
+            dpSkeleton.classList.add('hidden');
+            localStorage.setItem('upgrow_dp', tempImg.src); // Save for next 0ms load
+          };
+          tempImg.src = user.photoURL;
+        } else if (!user.photoURL && !localDpUrl) {
+           dpSkeleton.classList.add('hidden'); // Hide skeleton if no photo available
+        }
+      }
+    });
+
+    // 3. UI Interactions (Sidebar & Haptics)
+    function triggerVibration() {
+      if (navigator.vibrate) navigator.vibrate(40);
+    }
+
+    // Desktop Sidebar Toggle
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    
+    sidebarToggle.addEventListener('click', () => {
+      triggerVibration();
+      sidebar.classList.toggle('collapsed');
+    });
+
+    // Navigation Sync Logic (Syncs active states between PC Sidebar and Mobile Bottom Nav)
+    window.setActiveNav = function(clickedElement, index) {
+      triggerVibration();
+      
+      // Clear active states on sidebar
+      const sidebarItems = document.querySelectorAll('.nav-list .nav-item');
+      sidebarItems.forEach(item => item.classList.remove('active'));
+      
+      // Clear active states on bottom nav
+      const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+      bottomNavItems.forEach(item => item.classList.remove('active'));
+      
+      // Apply to both (so if you resize the window, they match)
+      if (sidebarItems[index]) sidebarItems[index].classList.add('active');
+      if (bottomNavItems[index]) bottomNavItems[index].classList.add('active');
+    };
+
+    // 4. PWA Install Pill Logic
+    let deferredPrompt;
+    const installPill = document.getElementById('install-pill');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      deferredPrompt = e;
+      // Show the customized install pill
+      setTimeout(() => {
+        installPill.classList.add('show');
+      }, 2000); // Slight delay for UX
+    });
+
+    installPill.addEventListener('click', async () => {
+      triggerVibration();
+      if (deferredPrompt) {
+        // Show the native install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        deferredPrompt = null;
+        installPill.classList.remove('show');
+      }
+    });
+
+    // Hide pill if installed successfully
+    window.addEventListener('appinstalled', () => {
+      installPill.classList.remove('show');
+      deferredPrompt = null;
+    });
+
+  </script>
+</body>
+</html>
