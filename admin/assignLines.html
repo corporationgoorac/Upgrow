@@ -127,6 +127,10 @@
     /* Index Pill */
     #index-pill-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; }
     .index-pill { background: var(--danger); color: white; padding: 14px 18px; border-radius: 14px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4); display: flex; justify-content: space-between; align-items: center; gap: 12px; animation: popIn 0.3s forwards; cursor: pointer; }
+    .index-pill span { flex: 1; line-height: 1.3; }
+    .index-pill svg { flex-shrink: 0; width: 24px; height: 24px; stroke: white; }
+    .index-pill .close-pill { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: background 0.2s; }
+    .index-pill .close-pill:active { background: rgba(255,255,255,0.4); }
   </style>
 </head>
 <body>
@@ -256,7 +260,8 @@
         const container = document.getElementById('index-pill-container');
         const pill = document.createElement('div');
         pill.className = 'index-pill';
-        pill.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span>Missing Index! Tap to fix.</span><button class="close-pill">✕</button>`;
+        // UPGRADED SVG SIZE BUG FIX
+        pill.innerHTML = `<svg width="24" height="24" style="min-width: 24px; min-height: 24px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span>Missing Index! Tap to fix.</span><button class="close-pill">✕</button>`;
         pill.onclick = (evt) => { if(evt.target.tagName !== 'BUTTON') window.open(url, '_blank'); };
         pill.querySelector('.close-pill').onclick = (evt) => { evt.stopPropagation(); pill.remove(); };
         container.appendChild(pill);
@@ -494,7 +499,7 @@
       
       try {
         await updateDoc(doc(db, "users", activeAgentId), { schedule: { "Monday": null, "Tuesday": null, "Wednesday": null, "Thursday": null, "Friday": null, "Saturday": null, "Sunday": null } });
-        agentsCache[activeAgentId].schedule = {}; // update local
+        if(agentsCache[activeAgentId]) agentsCache[activeAgentId].schedule = {}; // update local safely
         
         // Re-render visually instantly
         daysOfWeek.forEach(day => {
