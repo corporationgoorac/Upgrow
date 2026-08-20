@@ -202,6 +202,19 @@
     </div>
   </div>
 
+  <!-- NEW Delete Confirm Modal (Replaces ugly system popup) -->
+  <div class="center-modal" id="confirm-modal">
+    <div style="width: 56px; height: 56px; border-radius: 50%; background-color: rgba(239, 68, 68, 0.1); color: var(--danger); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    </div>
+    <h3 style="font-size: 1.3rem; margin-bottom: 10px;">Are you sure?</h3>
+    <p style="color: var(--text-sub); font-size: 0.95rem; margin-bottom: 25px;">This will permanently delete this draft collection.</p>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="window.history.back()">Cancel</button>
+      <button class="btn-blue" id="btn-confirm-delete" style="background: var(--danger); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);">Delete</button>
+    </div>
+  </div>
+
   <!-- Edit Bottom Sheet -->
   <div class="bottom-sheet" id="edit-sheet">
     <div class="sheet-handle"></div>
@@ -250,6 +263,10 @@
     let editingKey = null;
     let editingOriginalData = null;
     
+    // NEW: State for Custom Delete Modal
+    let pendingDeleteDocId = null;
+    let pendingDeleteKey = null;
+    
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
     const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
 
@@ -264,6 +281,7 @@
     const modalOverlay = document.getElementById('modal-overlay');
     const submitModal = document.getElementById('submit-modal');
     const editSheet = document.getElementById('edit-sheet');
+    const confirmModal = document.getElementById('confirm-modal');
     
     const editTotal = document.getElementById('edit-total');
     const editMethod = document.getElementById('edit-method');
@@ -276,6 +294,7 @@
       modalOverlay.classList.remove('active');
       submitModal.classList.remove('active');
       editSheet.classList.remove('active');
+      if (confirmModal) confirmModal.classList.remove('active');
       
       // Reset Modal Content
       document.getElementById('submit-content').style.display = 'block';
@@ -406,7 +425,21 @@
     // --- Isolated Edit & Delete Operations ---
     window.deleteEntry = async (docId, key) => {
       vibrate([50, 50]);
-      if (!confirm("Are you sure you want to delete this collection draft?")) return;
+      // Kept line strictly as a comment so no lines were removed
+      // if (!confirm("Are you sure you want to delete this collection draft?")) return;
+      
+      // NEW LOGIC: Use the native back-button safe custom modal instead
+      pendingDeleteDocId = docId;
+      pendingDeleteKey = key;
+      window.history.pushState({ modal: 'confirm' }, '');
+      modalOverlay.classList.add('active');
+      confirmModal.classList.add('active');
+    };
+
+    // Triggered when user confirms in the new custom modal
+    document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+      const docId = pendingDeleteDocId;
+      const key = pendingDeleteKey;
       
       try {
         const docRef = doc(db, "daily_logs", docId);
@@ -417,11 +450,12 @@
         pendingEntries = pendingEntries.filter(e => e.docId !== docId || e.key !== key);
         renderDashboardAndList();
         vibrate(30);
+        window.history.back(); // close modal
       } catch(e) {
         alert("Delete failed. Try again.");
         console.error(e);
       }
-    };
+    });
 
     window.openEdit = (docId, key) => {
       vibrate();
