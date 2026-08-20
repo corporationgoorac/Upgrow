@@ -54,6 +54,7 @@
       background-color: var(--bg-color);
       color: var(--text-main);
       height: 100vh;
+      height: 100dvh; /* Fixes mobile browser chrome pushing layout off screen */
       width: 100vw;
       overflow: hidden; /* App shell itself doesn't scroll, only the content area */
       -ms-overflow-style: none !important;
@@ -65,6 +66,7 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh; /* Fixes mobile browser chrome pushing layout off screen */
       width: 100%;
     }
 
@@ -209,6 +211,8 @@
     .bottom-nav {
       display: none;
       height: var(--nav-height);
+      min-height: calc(var(--nav-height) + env(safe-area-inset-bottom)); /* Prevents padding from crushing nav */
+      flex-shrink: 0; /* Ensures navbar isn't crushed by flex container */
       background-color: var(--surface-color);
       border-top: 1px solid var(--border);
       z-index: 50;
@@ -267,7 +271,7 @@
     @media (max-width: 768px) {
       aside { display: none; } /* Hide sidebar completely on mobile */
       .menu-btn { display: none; } /* Hide hamburger on mobile */
-      .bottom-nav { display: block; } /* Show bottom nav on mobile */
+      .bottom-nav { display: flex; } /* Changed from block to flex to ensure proper mobile layout */
       #install-pill { bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom)); }
     }
 
@@ -328,8 +332,8 @@
       <!-- Main Content Area -->
       <main>
         <!-- Iframe acts as the shell window, keeping the native navbar constantly loaded -->
-        <!-- Will default to a welcome screen or home.html when created -->
-        <iframe src="about:blank" id="content-frame" name="content-frame" title="Main Content"></iframe>
+        <!-- Starts on home.html by default -->
+        <iframe src="home.html" id="content-frame" name="content-frame" title="Main Content"></iframe>
       </main>
     </div>
 
@@ -480,6 +484,20 @@
     window.addEventListener('appinstalled', () => {
       installPill.classList.remove('show');
       deferredPrompt = null;
+    });
+
+    // 5. Profile Picture Click Navigation
+    document.getElementById('profile-btn').addEventListener('click', () => {
+      triggerVibration();
+      // Load manage.html inside the main content iframe
+      document.getElementById('content-frame').src = 'manage.html';
+      
+      // Deselect all nav icons since user is on a settings page
+      const sidebarItems = document.querySelectorAll('.nav-list .nav-item');
+      sidebarItems.forEach(item => item.classList.remove('active'));
+      
+      const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+      bottomNavItems.forEach(item => item.classList.remove('active'));
     });
 
   </script>
