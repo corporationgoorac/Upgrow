@@ -59,6 +59,9 @@
       -ms-overflow-style: none !important;
       scrollbar-width: none !important;
     }
+    
+    /* Utility class for hiding the DP skeleton */
+    .hidden { display: none !important; }
 
     /* --- Security Shields (Loading & Permission) --- */
     #loading-shield, #permission-shield {
@@ -72,6 +75,10 @@
       justify-content: center;
       text-align: center;
       padding: 30px;
+    }
+    
+    #loading-shield {
+      display: none; /* Changed from flex to none to allow background check */
     }
 
     #permission-shield {
@@ -119,7 +126,7 @@
       flex-direction: column;
       height: 100%;
       width: 100%;
-      opacity: 0; /* Hidden until loaded */
+      opacity: 1; /* Changed from 0 so it shows instantly while checking in background */
       transition: opacity 0.3s ease;
     }
 
@@ -269,7 +276,7 @@
     </svg>
     <div class="shield-title">Access Denied</div>
     <div class="shield-text">
-      You are not an agent or your permission is missing. Kindly please contact the admin to grant the permission.
+      You are not an agent or your permission is missing. Contact admin for more info to grant the permission.
     </div>
   </div>
 
@@ -282,7 +289,8 @@
       <!-- Profile Button dynamically redirects iframe to manage.html -->
       <div class="profile-wrapper" id="profile-btn">
         <div class="skeleton" id="dp-skeleton"></div>
-        <img id="user-dp" class="profile-img" alt="Profile">
+        <!-- Added referrerpolicy="no-referrer" to fix Google Profile Images -->
+        <img id="user-dp" class="profile-img" alt="Profile" referrerpolicy="no-referrer">
       </div>
     </header>
 
