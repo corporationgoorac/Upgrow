@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Dashboard - Up Grow</title>
+  
+  <style>
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+    input { user-select: auto; }
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+    body { background-color: var(--bg-color); color: var(--text-main); overflow-x: hidden; -ms-overflow-style: none !important; scrollbar-width: none !important; }
+
+    /* Animations */
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+    /* --- Views / Slide Panels --- */
+    .view-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background-color: var(--bg-color); overflow-y: auto; overflow-x: hidden; transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 10; padding: 20px; padding-bottom: 90px; }
+    #view-dashboard { z-index: 1; }
+    .view-panel.active { transform: translateX(0) !important; }
+
+    /* --- Dashboard Specific UI --- */
+    .header-nav { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; margin-bottom: 25px; animation: fadeIn 0.3s; }
+    .header-nav h2 { font-size: 1.8rem; letter-spacing: -0.5px; margin: 0; color: var(--primary); }
+    .header-nav p { font-size: 0.95rem; color: var(--text-sub); font-weight: 600; margin-top: 4px; }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; animation: popIn 0.4s forwards; }
+    .stat-box { background: var(--surface-card); border: 1px solid var(--border); padding: 18px 10px; border-radius: 18px; text-align: center; box-shadow: var(--shadow); transition: transform 0.2s; }
+    .stat-box:active { transform: scale(0.96); }
+    .stat-box h4 { font-size: 1.6rem; color: var(--text-main); margin-bottom: 4px; }
+    .stat-box p { font-size: 0.75rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
+    .stat-box.highlight h4 { color: var(--primary); }
+    .stat-box.danger h4 { color: var(--danger); }
+
+    .section-title { font-size: 1.15rem; font-weight: 800; margin: 30px 0 15px 0; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
+    
+    /* --- Line Cards & Gradients --- */
+    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; border:none!important; }
+    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; border:none!important;}
+    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; border:none!important;}
+    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; border:none!important;}
+    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; border:none!important;}
+    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; border:none!important;}
+    
+    .unassigned-card { background: rgba(239, 68, 68, 0.05) !important; color: var(--text-main) !important; border: 2px dashed var(--danger) !important; }
+
+    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
+    .line-card:active { transform: scale(0.98); }
+    .line-info h3 { font-size: 1.15rem; font-weight: 800; margin-bottom: 5px; }
+    .line-info p { font-size: 0.85rem; font-weight: 600; opacity: 0.9; font-family: monospace; }
+    
+    .badge-danger { background: var(--danger); color: white; padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
+    .badge-danger svg { width: 14px; height: 14px; stroke: white; }
+
+    .agent-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.25); padding: 6px 14px 6px 6px; border-radius: 20px; backdrop-filter: blur(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.3); }
+    .agent-pill img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: var(--skeleton-base); }
+    .agent-pill span { font-size: 0.9rem; font-weight: 700; color: inherit; white-space: nowrap; }
+
+    /* Skeleton UI */
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; }
+    @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .loading-trigger { text-align: center; padding: 15px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
+
+    /* Custom Modals (Confirm & Alert) */
+    .confirm-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(3px); }
+    .confirm-overlay.active { opacity: 1; visibility: visible; }
+    
+    .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
+    .alert-modal.active { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+    .alert-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; }
+    .alert-actions { display: flex; gap: 10px; margin-top: 25px; }
+    .btn-alert { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+
+    /* Index Pill */
+    #index-pill-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; }
+    .index-pill { background: var(--danger); color: white; padding: 14px 18px; border-radius: 14px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4); display: flex; justify-content: space-between; align-items: center; gap: 12px; animation: popIn 0.3s forwards; cursor: pointer; }
+    .index-pill span { flex: 1; line-height: 1.3; }
+    .index-pill svg { flex-shrink: 0; width: 24px; height: 24px; stroke: white; }
+    .index-pill .close-pill { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: background 0.2s; }
+    .index-pill .close-pill:active { background: rgba(255,255,255,0.4); }
+  </style>
+</head>
+<body>
+
+  <!-- Index Pill Container -->
+  <div id="index-pill-container"></div>
+
+  <!-- MAIN DASHBOARD PANEL -->
+  <div id="view-dashboard" class="view-panel active">
+    
+    <div class="header-nav">
+      <h2>Dashboard</h2>
+      <p id="date-display">Loading...</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="summary-grid" id="stats-container">
+      <div class="stat-box">
+        <h4 id="stat-total" class="skeleton-box" style="height: 30px; width: 50%; margin: 0 auto 5px auto; border-radius: 4px;"></h4>
+        <p>Total Routes</p>
+      </div>
+      <div class="stat-box highlight">
+        <h4 id="stat-active" class="skeleton-box" style="height: 30px; width: 50%; margin: 0 auto 5px auto; border-radius: 4px;"></h4>
+        <p>Active</p>
+      </div>
+      <div class="stat-box danger" onclick="scrollToUnassigned()">
+        <h4 id="stat-unassigned" class="skeleton-box" style="height: 30px; width: 50%; margin: 0 auto 5px auto; border-radius: 4px;"></h4>
+        <p>Unassigned</p>
+      </div>
+    </div>
+
+    <!-- Action Required (Unassigned) -->
+    <div id="unassigned-section" style="display: none;">
+      <h3 class="section-title" style="color: var(--danger);">
+        <span>Action Required</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </h3>
+      <div id="list-unassigned"></div>
+    </div>
+
+    <!-- Active Routes (Assigned) -->
+    <h3 class="section-title">
+      <span>Today's Routes</span>
+    </h3>
+    <div id="list-assigned">
+      <!-- Skeletons injected by JS on load -->
+    </div>
+
+  </div>
+
+  <!-- Custom Alert Modal -->
+  <div class="confirm-overlay" id="alert-overlay"></div>
+  <div class="alert-modal" id="alert-modal">
+    <div class="alert-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+    <h3 id="alert-title">Notice</h3>
+    <p id="alert-msg" style="margin-bottom: 25px; color: var(--text-sub);"></p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-primary" id="btn-alert-ok">OK</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+    const defaultDp = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==";
+    
+    // Exact Day Calculation
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const now = new Date();
+    const todayStr = daysOfWeek[now.getDay()]; // Absolute correct day string
+    
+    // Format Display Date
+    const options = { weekday: 'long', month: 'short', day: 'numeric' };
+    document.getElementById('date-display').innerText = now.toLocaleDateString('en-US', options);
+
+    // --- Firebase Error Handler ---
+    window.handleFirebaseError = function(e) {
+      if (!e || !e.message) return;
+      const urlMatch = e.message.match(/(https:\/\/console\.firebase\.google\.com[^\s]+)/);
+      if (urlMatch) {
+        let url = urlMatch[1].replace(/['"\)]$/, '');
+        const container = document.getElementById('index-pill-container');
+        const pill = document.createElement('div');
+        pill.className = 'index-pill';
+        pill.innerHTML = `<svg width="24" height="24" style="min-width: 24px; min-height: 24px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span>Missing Index! Tap to fix.</span><button class="close-pill">✕</button>`;
+        pill.onclick = (evt) => { if(evt.target.tagName !== 'BUTTON') window.open(url, '_blank'); };
+        pill.querySelector('.close-pill').onclick = (evt) => { evt.stopPropagation(); pill.remove(); };
+        container.appendChild(pill);
+        vibrate([50, 100]);
+      } else {
+        customAlert(e.message, "Error");
+      }
+    };
+
+    // --- Custom Alert Logic ---
+    let alertResolve = null;
+    window.customAlert = function(msg, title="Notice") {
+      return new Promise(resolve => {
+        vibrate(50);
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-msg').innerText = msg;
+        document.getElementById('alert-overlay').classList.add('active');
+        document.getElementById('alert-modal').classList.add('active');
+        window.history.pushState({ alertOpen: true }, '');
+        alertResolve = resolve;
+      });
+    }
+    document.getElementById('btn-alert-ok').onclick = () => { window.history.back(); };
+    window.addEventListener('popstate', () => {
+      const alertModal = document.getElementById('alert-modal');
+      if(alertModal && alertModal.classList.contains('active')) {
+        alertModal.classList.remove('active');
+        document.getElementById('alert-overlay').classList.remove('active');
+        if(alertResolve) { alertResolve(true); alertResolve = null; }
+      }
+    });
+
+    // --- Skeletons ---
+    function renderSkeletons() {
+      let h = '';
+      for(let i=0; i<3; i++) {
+        h += `<div class="line-card" style="background: var(--surface-card); animation-delay: ${i*0.1}s; border: 1px solid var(--border);">
+                <div class="line-info"><div class="skeleton-box" style="width: 120px; height: 20px; margin-bottom: 8px;"></div><div class="skeleton-box" style="width: 70px; height: 14px;"></div></div>
+                <div class="skeleton-box" style="width: 100px; height: 44px; border-radius: 20px;"></div>
+              </div>`;
+      }
+      document.getElementById('list-assigned').innerHTML = h;
+    }
+
+    // --- Utility: Scroll to Unassigned ---
+    window.scrollToUnassigned = () => {
+      vibrate(20);
+      const target = document.getElementById('unassigned-section');
+      if(target.style.display !== 'none') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+
+    // --- THE 3-PART SNIPER QUERY & DASHBOARD LOGIC ---
+    async function loadDashboard() {
+      renderSkeletons();
+      
+      try {
+        const linesRef = collection(db, "lines");
+        const usersRef = collection(db, "users");
+
+        // Query 1: All Daily Lines
+        const qDaily = query(linesRef, where("scheduleType", "==", "daily"));
+        
+        // Query 2: All Weekly Lines specifically for Today
+        const qWeekly = query(linesRef, where("scheduleType", "==", "weekly"), where("scheduleDay", "==", todayStr));
+        
+        // Query 3: All Agents who actually have a route assigned for Today
+        const qAgents = query(usersRef, where(`schedule.${todayStr}`, "!=", null));
+
+        // Fire all 3 simultaneously for maximum speed
+        const [snapDaily, snapWeekly, snapAgents] = await Promise.all([
+          getDocs(qDaily),
+          getDocs(qWeekly),
+          getDocs(qAgents)
+        ]);
+
+        // 1. Gather all active lines for today
+        const activeLines = [];
+        snapDaily.forEach(d => activeLines.push(d.data()));
+        snapWeekly.forEach(d => activeLines.push(d.data()));
+
+        // 2. Map the agents by the Line ID they are assigned to today
+        const agentsMap = {}; 
+        snapAgents.forEach(d => {
+          const u = d.data();
+          const assignedLineId = u.schedule[todayStr];
+          if(assignedLineId) {
+            // Push to array in case multiple agents accidentally assigned to same route
+            if(!agentsMap[assignedLineId]) agentsMap[assignedLineId] = [];
+            agentsMap[assignedLineId].push(u);
+          }
+        });
+
+        // 3. The Client-Side Brain: Sort into Assigned and Unassigned
+        const assignedList = [];
+        const unassignedList = [];
+
+        activeLines.forEach(line => {
+          if(agentsMap[line.id]) {
+            assignedList.push({ line, agents: agentsMap[line.id] });
+          } else {
+            unassignedList.push(line);
+          }
+        });
+
+        // --- Render UI ---
+        
+        // Update Top Stats safely
+        document.getElementById('stat-total').innerHTML = activeLines.length;
+        document.getElementById('stat-total').className = '';
+        document.getElementById('stat-active').innerHTML = assignedList.length;
+        document.getElementById('stat-active').className = '';
+        document.getElementById('stat-unassigned').innerHTML = unassignedList.length;
+        document.getElementById('stat-unassigned').className = '';
+
+        // Render Unassigned (Action Required)
+        const unassignedContainer = document.getElementById('unassigned-section');
+        const unassignedListEl = document.getElementById('list-unassigned');
+        
+        if(unassignedList.length > 0) {
+          unassignedContainer.style.display = 'block';
+          let unHTML = '';
+          unassignedList.forEach((line, idx) => {
+            unHTML += `
+              <div class="line-card unassigned-card" style="animation-delay: ${idx*0.05}s" onclick="window.location.href='assignLines.html'">
+                <div class="line-info">
+                  <h3>${line.name}</h3>
+                  <p>${line.id}</p>
+                </div>
+                <div class="badge-danger">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  Needs Agent
+                </div>
+              </div>`;
+          });
+          unassignedListEl.innerHTML = unHTML;
+        } else {
+          unassignedContainer.style.display = 'none';
+          unassignedListEl.innerHTML = '';
+        }
+
+        // Render Assigned (Active Routes)
+        const assignedListEl = document.getElementById('list-assigned');
+        if(assignedList.length > 0) {
+          let asHTML = '';
+          assignedList.forEach((data, idx) => {
+            const line = data.line;
+            const primaryAgent = data.agents[0]; // Take first agent
+            const dp = primaryAgent.photoURL || defaultDp;
+            const extraCount = data.agents.length - 1;
+            
+            let extraHTML = extraCount > 0 ? `<span style="margin-left: 5px; font-size: 0.75rem;">+${extraCount}</span>` : '';
+
+            asHTML += `
+              <div class="line-card ${line.color || 'grad-6'}" style="animation-delay: ${idx*0.05}s">
+                <div class="line-info" style="flex: 1; overflow: hidden; padding-right: 10px;">
+                  <h3 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${line.name}</h3>
+                  <p>${line.id}</p>
+                </div>
+                <div class="agent-pill">
+                  <img src="${dp}" onerror="this.src='${defaultDp}'">
+                  <span style="max-width: 100px; overflow: hidden; text-overflow: ellipsis;">${primaryAgent.name || 'Agent'}${extraHTML}</span>
+                </div>
+              </div>`;
+          });
+          assignedListEl.innerHTML = asHTML;
+        } else {
+          assignedListEl.innerHTML = `
+            <div style="text-align:center; padding: 40px 20px; color: var(--text-sub); border: 2px dashed var(--border); border-radius: 18px; margin-top: 10px;">
+              <p style="font-weight: 700; font-size: 1.1rem; margin-bottom: 5px;">No active routes</p>
+              <p style="font-size: 0.9rem;">Assign routes to agents to see them here.</p>
+            </div>`;
+        }
+
+      } catch (e) {
+        handleFirebaseError(e);
+      }
+    }
+
+    // Fire Dashboard Load instantly on page ready
+    window.addEventListener('load', () => {
+      loadDashboard();
+    });
+
+  </script>
+</body>
+</html>
