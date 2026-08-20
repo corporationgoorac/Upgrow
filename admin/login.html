@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Up Grow - Login</title>
+  
+  <style>
+    /* System Default Theming (Light Mode Default) */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981; /* Growth Green */
+      --primary-hover: #059669;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    /* Soft Dark Mode (Triggered by system settings) */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212; /* Deep Charcoal, not pitch black */
+        --surface-color: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    /* Main Card UI */
+    .card {
+      background-color: var(--surface-color);
+      width: 100%;
+      max-width: 400px;
+      padding: 40px 30px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 15px;
+      object-fit: contain;
+      border-radius: 16px;
+    }
+
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; }
+    p.subtitle { color: var(--text-sub); font-size: 0.95rem; margin-bottom: 30px; }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-google {
+      background-color: var(--surface-color);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .btn-google:hover { background-color: var(--bg-color); }
+    
+    .btn-primary { background-color: var(--primary); color: #fff; margin-top: 15px; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+
+    /* Inputs */
+    .input-group { text-align: left; margin-bottom: 20px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-size: 1rem;
+      outline: none;
+    }
+    .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+
+    /* Avatar & Skeleton Loader */
+    .avatar-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 25px auto;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid var(--primary);
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0; /* Hidden until loaded */
+      transition: opacity 0.3s ease;
+    }
+
+    .skeleton {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
+      background-size: 200% 100%;
+      animation: skeletonLoading 1.5s infinite;
+    }
+
+    @keyframes skeletonLoading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Utility */
+    .hidden { display: none !important; }
+    .error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 10px; display: none; }
+
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <img src="images/icon.png" alt="Up Grow Logo" class="logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjwvc3ZnPg==';">
+    <h1>Up Grow</h1>
+    
+    <!-- SECTION 1: Initial Login -->
+    <div id="login-section">
+      <p class="subtitle">Secure Employee Portal</p>
+      <button id="btn-google-login" class="btn btn-google">
+        <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Sign in with Google
+      </button>
+      <p id="auth-error" class="error-msg"></p>
+    </div>
+
+    <!-- SECTION 2: Profile Completion (Hidden initially) -->
+    <div id="onboarding-section" class="hidden">
+      <p class="subtitle">Complete your profile</p>
+      
+      <div class="avatar-container">
+        <div id="avatar-skeleton" class="skeleton"></div>
+        <img id="user-avatar" class="avatar-img" alt="Profile Picture">
+      </div>
+
+      <div class="input-group">
+        <label for="user-name">Full Name</label>
+        <input type="text" id="user-name" placeholder="Enter your full name" autocomplete="name">
+      </div>
+
+      <button id="btn-save-profile" class="btn btn-primary">Continue to Dashboard</button>
+      <p id="save-error" class="error-msg"></p>
+    </div>
+
+  </div>
+
+  <script type="module">
+    // Import Firebase services from your config file
+    import { auth, db } from './config.js';
+    import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    const provider = new GoogleAuthProvider();
+    let currentAuthUser = null;
+
+    // DOM Elements
+    const loginSection = document.getElementById('login-section');
+    const onboardingSection = document.getElementById('onboarding-section');
+    const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnSaveProfile = document.getElementById('btn-save-profile');
+    const userNameInput = document.getElementById('user-name');
+    const userAvatarImg = document.getElementById('user-avatar');
+    const avatarSkeleton = document.getElementById('avatar-skeleton');
+    const authError = document.getElementById('auth-error');
+    const saveError = document.getElementById('save-error');
+
+    // 1. Handle Google Login Click
+    btnGoogleLogin.addEventListener('click', async () => {
+      try {
+        authError.style.display = 'none';
+        btnGoogleLogin.innerHTML = 'Signing in...';
+        btnGoogleLogin.disabled = true;
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        btnGoogleLogin.innerHTML = 'Sign in with Google';
+        btnGoogleLogin.disabled = false;
+        authError.innerText = error.message;
+        authError.style.display = 'block';
+      }
+    });
+
+    // 2. Listen for Auth State Changes
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentAuthUser = user;
+        
+        // Check if user exists in Firestore
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userDocRef);
+
+          if (userSnap.exists()) {
+            // User already registered, redirect to app
+            window.location.replace("index.html");
+          } else {
+            // New User: Show Onboarding Screen
+            loginSection.classList.add('hidden');
+            onboardingSection.classList.remove('hidden');
+
+            // Pre-fill data
+            userNameInput.value = user.displayName || "";
+            
+            // Handle Profile Picture with Skeleton Loading
+            if (user.photoURL) {
+              userAvatarImg.src = user.photoURL;
+              userAvatarImg.onload = () => {
+                avatarSkeleton.classList.add('hidden');
+                userAvatarImg.style.opacity = '1';
+              };
+              userAvatarImg.onerror = () => {
+                avatarSkeleton.classList.add('hidden');
+                // Fallback image if Google URL breaks
+                userAvatarImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==';
+                userAvatarImg.style.opacity = '1';
+              };
+            } else {
+              avatarSkeleton.classList.add('hidden');
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching user document:", error);
+        }
+      }
+    });
+
+    // 3. Save New User Profile
+    btnSaveProfile.addEventListener('click', async () => {
+      const name = userNameInput.value.trim();
+      
+      if (!name) {
+        saveError.innerText = "Please enter your name.";
+        saveError.style.display = 'block';
+        return;
+      }
+
+      try {
+        btnSaveProfile.innerText = 'Saving...';
+        btnSaveProfile.disabled = true;
+
+        const userDocRef = doc(db, "users", currentAuthUser.uid);
+        
+        // Define the default agent structure
+        const newUserProfile = {
+          uid: currentAuthUser.uid,
+          name: name,
+          email: currentAuthUser.email,
+          photoURL: currentAuthUser.photoURL || "",
+          role: "agent", // Default role, Admin can change this in DB
+          schedule: {
+            "Monday": "",
+            "Tuesday": "",
+            "Wednesday": "",
+            "Thursday": "",
+            "Friday": "",
+            "Saturday": "",
+            "Sunday": ""
+          },
+          createdAt: serverTimestamp()
+        };
+
+        // Save to Firestore
+        await setDoc(userDocRef, newUserProfile);
+
+        // Redirect to main app
+        window.location.replace("index.html");
+
+      } catch (error) {
+        btnSaveProfile.innerText = 'Continue to Dashboard';
+        btnSaveProfile.disabled = false;
+        saveError.innerText = "Error saving profile: " + error.message;
+        saveError.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
