@@ -78,7 +78,7 @@
     .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
     .line-card:active { transform: scale(0.98); }
     .line-info h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 5px; }
-    .line-info p { font-size: 0.9rem; opacity: 0.9; font-weight: 500; font-family: monospace; }
+    .line-info p { font-size: 0.95rem; opacity: 0.95; font-weight: 600; font-family: monospace; }
     
     /* --- Customer Cards --- */
     .customer-card { background-color: var(--surface-card); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; display: flex; flex-direction: column; gap: 12px; cursor: pointer; animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
@@ -107,9 +107,10 @@
     tr:last-child td { border-bottom: none; }
 
     /* --- Action Icons --- */
-    .icon-btn { background: transparent; border: none; padding: 8px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-    .icon-btn.delete { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
-    .icon-btn.add { color: var(--primary); background: rgba(16, 185, 129, 0.1); }
+    .icon-btn { background: var(--surface-card); border: none; padding: 8px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .icon-btn.delete { color: var(--danger); }
+    .icon-btn.add { color: var(--primary); }
+    .icon-btn.edit { color: #3b82f6; } /* Professional blue edit button */
     .icon-btn:active { transform: scale(0.9); }
     .actions-wrap { display: flex; gap: 8px; }
 
@@ -139,7 +140,9 @@
 
     .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; }
     @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    #loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
+    
+    /* Fixed loader class */
+    .loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
 
     /* Custom Confirm Modal */
     .confirm-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
@@ -170,7 +173,7 @@
     </div>
 
     <div id="list-lines"></div>
-    <div id="loading-lines" id="loading-trigger">Loading...</div>
+    <div id="loading-lines" class="loading-trigger">Loading...</div>
   </div>
 
   <!-- LEVEL 2: CUSTOMERS IN LINE -->
@@ -194,7 +197,7 @@
     </div>
 
     <div id="list-customers"></div>
-    <div id="loading-customers" id="loading-trigger">Loading...</div>
+    <div id="loading-customers" class="loading-trigger">Loading...</div>
   </div>
 
   <!-- LEVEL 3: CUSTOMER LEDGER -->
@@ -300,6 +303,52 @@
     <button class="btn-full" id="btn-save-line">Create Line</button>
   </div>
 
+  <!-- Edit Line Modal -->
+  <div class="modal" id="modal-edit-line">
+    <div class="modal-handle"></div>
+    <h3>Edit Line</h3>
+    
+    <div class="input-group">
+      <label>Line ID (Read-only)</label>
+      <input type="text" id="edit-line-id" readonly style="background-color: var(--skeleton-base);">
+    </div>
+    
+    <div class="input-group">
+      <label>Line Name</label>
+      <input type="text" id="edit-line-name" placeholder="e.g. North Market Area">
+    </div>
+
+    <div class="input-group">
+      <label>Schedule Type</label>
+      <select id="edit-line-schedule-type">
+        <option value="weekly">Weekly</option>
+        <option value="daily">Daily</option>
+      </select>
+    </div>
+
+    <div class="input-group" id="edit-line-day-group">
+      <label>Collection Day</label>
+      <select id="edit-line-day">
+        <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option>
+        <option value="Wednesday">Wednesday</option><option value="Thursday">Thursday</option>
+        <option value="Friday">Friday</option><option value="Saturday">Saturday</option>
+        <option value="Sunday">Sunday</option>
+      </select>
+    </div>
+
+    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px;">Card Color</label>
+    <div class="color-picker" id="edit-line-color-picker">
+      <div class="color-option grad-1 selected" data-grad="grad-1"></div>
+      <div class="color-option grad-2" data-grad="grad-2"></div>
+      <div class="color-option grad-3" data-grad="grad-3"></div>
+      <div class="color-option grad-4" data-grad="grad-4"></div>
+      <div class="color-option grad-5" data-grad="grad-5"></div>
+      <div class="color-option grad-6" data-grad="grad-6"></div>
+    </div>
+
+    <button class="btn-full" id="btn-update-line">Update Line</button>
+  </div>
+
   <!-- Create/Edit Customer Modal -->
   <div class="modal" id="modal-customer">
     <div class="modal-handle"></div>
@@ -372,6 +421,8 @@
     
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let custLastVisible = null, custHasMore = true, custLoading = false, custSearch = "";
+    let linesDataMap = {}; // Added to support 0-read editing
+    let editingLineId = null;
     
     // Custom Confirm Logic
     let confirmResolve = null;
@@ -482,12 +533,27 @@
     // ==========================================
     // LEVEL 1: LINES
     // ==========================================
+    function createLineCardHTML(data) {
+      // Show Mon, Tue instead of Weekly
+      const schedText = data.scheduleType === 'weekly' && data.scheduleDay ? data.scheduleDay.substring(0,3) : 'Daily';
+      return `
+        <div class="line-card ${data.color || 'grad-6'}" id="line-card-${data.id}" onclick="openCustomersView('${data.id}', '${data.name.replace(/'/g,"\\'")}')">
+          <div class="line-info"><h3>${data.name}</h3><p>${data.id} • ${schedText}</p></div>
+          <div class="actions-wrap">
+            <button class="icon-btn edit" onclick="event.stopPropagation(); openEditLineModal('${data.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+            <button class="icon-btn delete" onclick="event.stopPropagation(); deleteLine('${data.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+          </div>
+        </div>`;
+    }
+
     async function loadLines(isMore = false) {
       if(linesLoading || (!linesHasMore && isMore)) return;
       linesLoading = true;
       const list = document.getElementById('list-lines');
+      const loader = document.getElementById('loading-lines');
       
-      if(!isMore) { list.innerHTML = getSkeletons('line'); }
+      if(!isMore) { list.innerHTML = getSkeletons('line'); loader.style.display = 'none'; }
+      else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
 
       try {
         let q = collection(db, "lines");
@@ -500,7 +566,13 @@
 
         const snap = await getDocs(q);
         if(!isMore) list.innerHTML = '';
-        if(snap.empty) { linesHasMore = false; if(!isMore) list.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No lines found.</p>'; linesLoading=false; return; }
+        if(snap.empty) { 
+          linesHasMore = false; 
+          if(!isMore) list.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No lines found.</p>'; 
+          loader.style.display = 'none';
+          linesLoading=false; 
+          return; 
+        }
 
         linesLastVisible = snap.docs[snap.docs.length-1];
         linesHasMore = snap.docs.length === 10;
@@ -508,13 +580,13 @@
         let html = '';
         snap.forEach(d => {
           const data = d.data();
-          html += `
-            <div class="line-card ${data.color || 'grad-6'}" onclick="openCustomersView('${data.id}', '${data.name.replace(/'/g,"\\'")}')">
-              <div class="line-info"><h3>${data.name}</h3><p>${data.id} • ${data.scheduleType}</p></div>
-              <button class="icon-btn delete" onclick="event.stopPropagation(); deleteLine('${data.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-            </div>`;
+          linesDataMap[data.id] = data; // Save to map for 0-read edits
+          html += createLineCardHTML(data);
         });
         list.insertAdjacentHTML('beforeend', html);
+        
+        loader.style.display = linesHasMore ? 'block' : 'none';
+        loader.innerText = linesHasMore ? 'Scroll for more' : '';
       } catch(e) { console.error(e); }
       linesLoading = false;
     }
@@ -527,11 +599,19 @@
 
     // Color picker
     document.querySelectorAll('.color-option').forEach(el => {
-      el.onclick = () => { document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); };
+      el.onclick = () => { 
+        // Need to target siblings in the specific picker container
+        el.parentElement.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); 
+        el.classList.add('selected'); 
+      };
     });
 
     document.getElementById('line-schedule-type').onchange = (e) => {
       document.getElementById('line-day-group').style.display = e.target.value === 'weekly' ? 'block' : 'none';
+    };
+
+    document.getElementById('edit-line-schedule-type').onchange = (e) => {
+      document.getElementById('edit-line-day-group').style.display = e.target.value === 'weekly' ? 'block' : 'none';
     };
 
     document.getElementById('btn-save-line').onclick = async () => {
@@ -540,7 +620,7 @@
       const name = document.getElementById('line-name').value.trim();
       const stype = document.getElementById('line-schedule-type').value;
       const sday = document.getElementById('line-day').value;
-      const color = document.querySelector('.color-option.selected').dataset.grad;
+      const color = document.querySelector('#line-color-picker .color-option.selected').dataset.grad;
 
       if(!id || !name) return alert("Fill ID and Name");
       const isAvail = await checkIdAvailability('lines', id, document.getElementById('line-id-tick'), document.getElementById('line-id-cross'));
@@ -553,6 +633,54 @@
         linesLastVisible = null; loadLines(); // reload
       } catch(e) { alert(e.message); }
       btn.disabled = false; btn.innerText = "Create Line";
+    };
+
+    // Edit Line Logic
+    window.openEditLineModal = (id) => {
+      vibrate();
+      const line = linesDataMap[id];
+      if(!line) return;
+      editingLineId = id;
+      
+      document.getElementById('edit-line-id').value = line.id;
+      document.getElementById('edit-line-name').value = line.name;
+      document.getElementById('edit-line-schedule-type').value = line.scheduleType || 'daily';
+      document.getElementById('edit-line-day').value = line.scheduleDay || 'Monday';
+      document.getElementById('edit-line-day-group').style.display = line.scheduleType === 'weekly' ? 'block' : 'none';
+      
+      document.querySelectorAll('#edit-line-color-picker .color-option').forEach(c => {
+         c.classList.remove('selected');
+         if(c.dataset.grad === (line.color || 'grad-6')) c.classList.add('selected');
+      });
+
+      openModal('modal-edit-line');
+    };
+
+    document.getElementById('btn-update-line').onclick = async () => {
+      vibrate();
+      const name = document.getElementById('edit-line-name').value.trim();
+      const stype = document.getElementById('edit-line-schedule-type').value;
+      const sday = document.getElementById('edit-line-day').value;
+      const color = document.querySelector('#edit-line-color-picker .color-option.selected').dataset.grad;
+
+      if(!name) return alert("Fill Name");
+      const btn = document.getElementById('btn-update-line'); btn.disabled = true; btn.innerText = "Saving...";
+      
+      try {
+        await updateDoc(doc(db, "lines", editingLineId), { name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color });
+        
+        // update local map and DOM directly (0 reads)
+        linesDataMap[editingLineId].name = name;
+        linesDataMap[editingLineId].scheduleType = stype;
+        linesDataMap[editingLineId].scheduleDay = stype==='weekly'?sday:null;
+        linesDataMap[editingLineId].color = color;
+        
+        const card = document.getElementById('line-card-'+editingLineId);
+        if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
+
+        window.history.back(); // close modal
+      } catch(e) { alert(e.message); }
+      btn.disabled = false; btn.innerText = "Update Line";
     };
 
     // Safe 480 Batch Delete
@@ -590,7 +718,10 @@
       if(custLoading || (!custHasMore && isMore)) return;
       custLoading = true;
       const list = document.getElementById('list-customers');
-      if(!isMore) list.innerHTML = getSkeletons('cust');
+      const loader = document.getElementById('loading-customers');
+      
+      if(!isMore) { list.innerHTML = getSkeletons('cust'); loader.style.display = 'none'; }
+      else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
 
       try {
         let q = query(collection(db, "customers"), where("lineId", "==", activeLineId));
@@ -601,7 +732,13 @@
         
         const snap = await getDocs(q);
         if(!isMore) list.innerHTML = '';
-        if(snap.empty) { custHasMore=false; if(!isMore) list.innerHTML='<p style="text-align:center;color:var(--text-sub);">No customers found.</p>'; custLoading=false; return; }
+        if(snap.empty) { 
+          custHasMore=false; 
+          if(!isMore) list.innerHTML='<p style="text-align:center;color:var(--text-sub);">No customers found.</p>'; 
+          loader.style.display = 'none';
+          custLoading=false; 
+          return; 
+        }
 
         custLastVisible = snap.docs[snap.docs.length-1];
         custHasMore = snap.docs.length === 10;
@@ -623,6 +760,9 @@
             </div>`;
         });
         list.insertAdjacentHTML('beforeend', html);
+        
+        loader.style.display = custHasMore ? 'block' : 'none';
+        loader.innerText = custHasMore ? 'Scroll for more' : '';
       } catch(e) { console.error(e); }
       custLoading = false;
     }
@@ -636,6 +776,7 @@
     window.openCreateCustomerModal = () => {
       document.getElementById('modal-cust-title').innerText = "Create Customer";
       document.getElementById('cust-id').readOnly = false; document.getElementById('cust-id').value = '';
+      document.getElementById('cust-id-tick').style.display = 'none'; document.getElementById('cust-id-cross').style.display = 'none';
       document.getElementById('cust-name').value = ''; document.getElementById('cust-phone').value = ''; document.getElementById('cust-loc').value = '';
       document.getElementById('initial-product-section').style.display = 'block';
       document.getElementById('btn-save-cust').onclick = saveNewCustomer;
@@ -781,10 +922,10 @@
     // Initial Load
     window.addEventListener('load', () => { loadLines(); });
 
-    // Infinite Scroll logic for active panel
+    // Infinite Scroll logic for active panel (Increased buffer to 150px to fix mobile scrolling triggers)
     document.querySelectorAll('.view-panel').forEach(panel => {
       panel.addEventListener('scroll', () => {
-        if((panel.clientHeight + panel.scrollTop) >= panel.scrollHeight - 100) {
+        if((panel.clientHeight + panel.scrollTop) >= panel.scrollHeight - 150) {
           if(panel.id === 'view-lines' && linesHasMore && !linesLoading) { vibrate(10); loadLines(true); }
           if(panel.id === 'view-customers' && custHasMore && !custLoading) { vibrate(10); loadCustomers(true); }
         }
