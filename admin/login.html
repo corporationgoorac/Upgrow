@@ -54,12 +54,14 @@
       user-select: auto;
     }
     
-    /* Hide scrollbar for Chrome, Safari and Opera */
+    /* Hide scrollbar for Chrome, Safari and Opera completely */
     ::-webkit-scrollbar {
-      display: none;
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
     }
 
-    body {
+    html, body {
       background-color: var(--bg-color);
       color: var(--text-main);
       display: flex;
@@ -68,8 +70,9 @@
       min-height: 100vh;
       padding: 20px;
       /* Hide scrollbar for IE, Edge and Firefox */
-      -ms-overflow-style: none;  
-      scrollbar-width: none;  
+      -ms-overflow-style: none !important;  
+      scrollbar-width: none !important;
+      overflow: hidden; /* Hard lock to prevent any scrolling */
     }
 
     /* --- Animations --- */
@@ -88,6 +91,23 @@
       0% { opacity: 0; transform: scale(0.9); }
       100% { opacity: 1; transform: scale(1); }
     }
+
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    @keyframes pulseClick {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Staggered entrance classes */
+    .stagger-1 { animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+    .stagger-2 { animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
+    .stagger-3 { animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both; }
 
     /* Main Card UI */
     .card {
@@ -147,7 +167,9 @@
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
     
-    .btn-google:active { transform: translateY(1px); }
+    .btn-google:active { 
+      transform: scale(0.96); 
+    }
 
     .btn-primary { background-color: var(--primary); color: #fff; margin-top: 15px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
     .btn-primary:hover { 
@@ -155,7 +177,10 @@
       transform: translateY(-3px);
       box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
     }
-    .btn-primary:active { transform: translateY(1px); }
+    .btn-primary:active { 
+      transform: scale(0.96); 
+      animation: pulseClick 0.4s ease-out;
+    }
 
     /* Inputs */
     .input-group { text-align: left; margin-bottom: 20px; animation: popIn 0.5s ease-out forwards; animation-delay: 0.1s; opacity: 0; }
@@ -218,7 +243,7 @@
 
     /* Utility */
     .hidden { display: none !important; }
-    .error-msg { color: #ef4444; font-size: 0.9rem; margin-top: 15px; display: none; font-weight: 500; animation: popIn 0.3s ease-out; }
+    .error-msg { color: #ef4444; font-size: 0.9rem; margin-top: 15px; display: none; font-weight: 500; animation: shakeError 0.4s ease-out; }
 
   </style>
 </head>
@@ -226,13 +251,13 @@
 
   <div class="card">
     <img src="images/icon.png" alt="Up Grow Logo" class="logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjwvc3ZnPg==';">
-    <h1>Up Grow</h1>
+    <h1 class="stagger-1">Up Grow</h1>
     
     <!-- SECTION 1: Initial Login -->
     <div id="login-section">
       <!-- Updated Subtitle -->
-      <p class="subtitle">from Goorac Corporation</p>
-      <button id="btn-google-login" class="btn btn-google">
+      <p class="subtitle stagger-2">from Goorac Corporation</p>
+      <button id="btn-google-login" class="btn btn-google stagger-3">
         <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
           <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -246,19 +271,19 @@
 
     <!-- SECTION 2: Profile Completion (Hidden initially) -->
     <div id="onboarding-section" class="hidden">
-      <p class="subtitle">Complete your profile</p>
+      <p class="subtitle stagger-1">Complete your profile</p>
       
-      <div class="avatar-container">
+      <div class="avatar-container stagger-2">
         <div id="avatar-skeleton" class="skeleton"></div>
         <img id="user-avatar" class="avatar-img" alt="Profile Picture">
       </div>
 
-      <div class="input-group">
+      <div class="input-group stagger-3">
         <label for="user-name">Full Name</label>
         <input type="text" id="user-name" placeholder="Enter your full name" autocomplete="name">
       </div>
 
-      <button id="btn-save-profile" class="btn btn-primary">Continue to Dashboard</button>
+      <button id="btn-save-profile" class="btn btn-primary stagger-3">Continue to Dashboard</button>
       <p id="save-error" class="error-msg"></p>
     </div>
 
@@ -284,14 +309,23 @@
     const authError = document.getElementById('auth-error');
     const saveError = document.getElementById('save-error');
 
+    // Haptic Feedback Helper
+    function triggerVibration(pattern) {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    }
+
     // 1. Handle Google Login Click
     btnGoogleLogin.addEventListener('click', async () => {
+      triggerVibration(50); // Light tap vibration
       try {
         authError.style.display = 'none';
         btnGoogleLogin.innerHTML = 'Signing in...';
         btnGoogleLogin.disabled = true;
         await signInWithPopup(auth, provider);
       } catch (error) {
+        triggerVibration([100, 50, 100]); // Error double vibration pattern
         btnGoogleLogin.innerHTML = `
           <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -318,6 +352,7 @@
           const userSnap = await getDoc(userDocRef);
 
           if (userSnap.exists()) {
+            triggerVibration([50, 100, 50]); // Success vibration
             // User already registered, redirect to app
             window.location.replace("index.html");
           } else {
@@ -357,9 +392,11 @@
 
     // 3. Save New User Profile
     btnSaveProfile.addEventListener('click', async () => {
+      triggerVibration(50); // Light tap vibration
       const name = userNameInput.value.trim();
       
       if (!name) {
+        triggerVibration([100, 50, 100]); // Error vibration
         saveError.innerText = "Please enter your name.";
         saveError.style.display = 'block';
         return;
@@ -393,10 +430,12 @@
         // Save to Firestore
         await setDoc(userDocRef, newUserProfile);
 
+        triggerVibration([50, 100, 50]); // Success vibration
         // Redirect to main app
         window.location.replace("index.html");
 
       } catch (error) {
+        triggerVibration([100, 50, 100]); // Error vibration
         btnSaveProfile.innerText = 'Continue to Dashboard';
         btnSaveProfile.disabled = false;
         saveError.innerText = "Error saving profile: " + error.message;
