@@ -258,6 +258,11 @@
       <input type="text" id="modal-name">
     </div>
 
+    <div class="input-group">
+      <label for="modal-phone">Mobile Number (Optional)</label>
+      <input type="tel" id="modal-phone" placeholder="e.g. +91 9876543210">
+    </div>
+
     <div class="toggle-container">
       <div class="toggle-label">
         <span>Admin Privileges</span>
@@ -330,6 +335,7 @@
     const modalEmail = document.getElementById('modal-email');
     const modalUid = document.getElementById('modal-uid');
     const modalName = document.getElementById('modal-name');
+    const modalPhone = document.getElementById('modal-phone');
     const modalRoleToggle = document.getElementById('modal-role-toggle');
     const modalAgentToggle = document.getElementById('modal-agent-toggle'); // New Element
     const btnSaveUser = document.getElementById('btn-save-user');
@@ -413,7 +419,7 @@
           <img src="${dpUrl}" alt="DP" class="avatar" onerror="this.src='${fallbackAvatar}'">
           <div class="card-info">
             <h3>${userData.name || 'Unnamed User'}</h3>
-            <p>${userData.email}</p>
+            <p>${userData.email}${userData.phone ? ' • ' + userData.phone : ''}</p>
             <div class="role-badges">
               ${badgesHTML}
             </div>
@@ -556,6 +562,7 @@
       modalEmail.innerText = uData.email;
       modalUid.innerText = uData.uid.substring(0, 10) + '...';
       modalName.value = uData.name || '';
+      modalPhone.value = uData.phone || '';
       
       // Setup toggles based on new boolean fields or legacy role field
       modalRoleToggle.checked = uData.isAdmin !== undefined ? uData.isAdmin : uData.role === 'admin';
@@ -607,6 +614,7 @@
       vibrate(50);
       
       const newName = modalName.value.trim();
+      const newPhone = modalPhone.value.trim();
       const isAdmin = modalRoleToggle.checked;
       const isAgent = modalAgentToggle.checked;
       const newRole = isAdmin ? 'admin' : (isAgent ? 'agent' : 'none'); // Legacy compat
@@ -618,6 +626,7 @@
         const userRef = doc(db, "users", editingUid);
         await updateDoc(userRef, {
           name: newName,
+          phone: newPhone,
           role: newRole,
           isAdmin: isAdmin,
           isAgent: isAgent
@@ -625,6 +634,7 @@
 
         // Update local map
         usersDataMap[editingUid].name = newName;
+        usersDataMap[editingUid].phone = newPhone;
         usersDataMap[editingUid].role = newRole;
         usersDataMap[editingUid].isAdmin = isAdmin;
         usersDataMap[editingUid].isAgent = isAgent;
