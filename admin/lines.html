@@ -110,7 +110,7 @@
     .icon-btn { background: var(--surface-card); border: none; padding: 8px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .icon-btn.delete { color: var(--danger); }
     .icon-btn.add { color: var(--primary); }
-    .icon-btn.edit { color: #3b82f6; } /* Professional blue edit button */
+    .icon-btn.edit { color: #3b82f6; } 
     .icon-btn:active { transform: scale(0.9); }
     .actions-wrap { display: flex; gap: 8px; }
 
@@ -141,7 +141,6 @@
     .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; }
     @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     
-    /* Fixed loader class */
     .loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
 
     /* Custom Confirm Modal */
@@ -151,9 +150,20 @@
     .confirm-actions { display: flex; gap: 10px; margin-top: 25px; }
     .btn-confirm-cancel { flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-weight: 700; cursor: pointer; }
     .btn-confirm-action { flex: 1; padding: 14px; border-radius: 12px; border: none; background: var(--danger); color: #fff; font-weight: 700; cursor: pointer; }
+
+    /* Firebase Index Error Pill container */
+    #index-pill-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; }
+    .index-pill { background: var(--danger); color: white; padding: 14px 18px; border-radius: 14px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4); display: flex; justify-content: space-between; align-items: center; gap: 12px; animation: popIn 0.3s forwards; cursor: pointer; }
+    .index-pill span { flex: 1; line-height: 1.3; }
+    .index-pill svg { flex-shrink: 0; width: 24px; height: 24px; stroke: white; }
+    .index-pill .close-pill { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: background 0.2s; }
+    .index-pill .close-pill:active { background: rgba(255,255,255,0.4); }
   </style>
 </head>
 <body>
+  
+  <!-- Index Pill Container -->
+  <div id="index-pill-container"></div>
 
   <!-- LEVEL 1: MASTER LINES -->
   <div id="view-lines" class="view-panel active">
@@ -414,6 +424,34 @@
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
     const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
 
+    // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
+    window.handleFirebaseError = function(e, fallbackToAlert = false) {
+      if (!e || !e.message) return;
+      const urlMatch = e.message.match(/(https:\/\/console\.firebase\.google\.com[^\s]+)/);
+      if (urlMatch) {
+        let url = urlMatch[1].replace(/['"\)]$/, ''); // Clean up trailing chars
+        const container = document.getElementById('index-pill-container');
+        const pill = document.createElement('div');
+        pill.className = 'index-pill';
+        pill.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          <span>Missing Database Index!<br>Tap to create instantly.</span>
+          <button class="close-pill">✕</button>
+        `;
+        pill.onclick = (evt) => {
+          if (evt.target.tagName !== 'BUTTON') window.open(url, '_blank');
+        };
+        pill.querySelector('.close-pill').onclick = (evt) => {
+          evt.stopPropagation();
+          pill.remove();
+        };
+        container.appendChild(pill);
+        vibrate([50, 100, 50]);
+      } else if (fallbackToAlert) {
+        alert(e.message);
+      }
+    };
+
     // State
     let activeLineId = null;
     let activeCustId = null;
@@ -587,7 +625,10 @@
         
         loader.style.display = linesHasMore ? 'block' : 'none';
         loader.innerText = linesHasMore ? 'Scroll for more' : '';
-      } catch(e) { console.error(e); }
+      } catch(e) { 
+        console.error(e); 
+        if(e.message && e.message.includes('index')) handleFirebaseError(e); else if(!isMore) list.innerHTML = `<p style="text-align:center; color:var(--danger);">${e.message}</p>`;
+      }
       linesLoading = false;
     }
 
@@ -631,7 +672,7 @@
         await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
         window.history.back(); // close modal
         linesLastVisible = null; loadLines(); // reload
-      } catch(e) { alert(e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
       btn.disabled = false; btn.innerText = "Create Line";
     };
 
@@ -679,7 +720,7 @@
         if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
 
         window.history.back(); // close modal
-      } catch(e) { alert(e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
       btn.disabled = false; btn.innerText = "Update Line";
     };
 
@@ -700,7 +741,7 @@
         await deleteDoc(doc(db, "lines", id));
         vibrate([50,50,50]);
         linesLastVisible = null; loadLines();
-      } catch(e) { alert("Error: " + e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert("Error: " + e.message); }
     };
 
     // ==========================================
@@ -763,7 +804,10 @@
         
         loader.style.display = custHasMore ? 'block' : 'none';
         loader.innerText = custHasMore ? 'Scroll for more' : '';
-      } catch(e) { console.error(e); }
+      } catch(e) { 
+        console.error(e); 
+        if(e.message && e.message.includes('index')) handleFirebaseError(e); else if(!isMore) list.innerHTML = `<p style="text-align:center; color:var(--danger);">${e.message}</p>`; 
+      }
       custLoading = false;
     }
 
@@ -806,7 +850,7 @@
         if(pPaid > 0) await setDoc(doc(db, "payments", 'PAY_'+Date.now()), { custId: id, lineId: activeLineId, prodId: initProduct.id, amount: pPaid, date: new Date().toISOString(), type: 'advance' });
 
         window.history.back(); custLastVisible = null; loadCustomers();
-      } catch(e) { alert(e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
       btn.disabled = false; btn.innerText = "Save Customer";
     }
 
@@ -814,7 +858,7 @@
       vibrate([50,100]);
       if(!(await customConfirm(`Delete Customer ${id}?`))) return;
       try { await deleteDoc(doc(db, "customers", id)); vibrate([50,50]); custLastVisible = null; loadCustomers(); } 
-      catch(e) { alert(e.message); }
+      catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
     };
 
     // ==========================================
@@ -862,7 +906,7 @@
         });
         document.getElementById('ledger-payments').innerHTML = payHtml || '<tr><td colspan="3" style="text-align:center;">No history.</td></tr>';
 
-      } catch(e) { console.error(e); }
+      } catch(e) { console.error(e); if(e.message && e.message.includes('index')) handleFirebaseError(e); }
     }
 
     // Edit Customer
@@ -882,7 +926,7 @@
         try {
           await updateDoc(doc(db,"customers",activeCustId), { name: document.getElementById('cust-name').value, phone: document.getElementById('cust-phone').value, location: document.getElementById('cust-loc').value });
           window.history.back(); loadLedgerData(); custLastVisible=null; loadCustomers();
-        } catch(e){ alert(e.message); }
+        } catch(e){ if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
         btn.disabled=false;
       };
       openModal('modal-customer');
@@ -915,7 +959,7 @@
         window.history.back();
         if(document.getElementById('view-ledger').classList.contains('active')) loadLedgerData();
         custLastVisible = null; loadCustomers(); // refresh level 2 list
-      } catch(e) { alert(e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
       btn.disabled = false; btn.innerText = "Add Product";
     };
 
