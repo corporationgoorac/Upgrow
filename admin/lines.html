@@ -1070,7 +1070,26 @@
     };
 
     // Initial Load
-    window.addEventListener('load', () => { loadLines(); });
+    window.addEventListener('load', async () => { 
+      loadLines(); 
+      
+      // Auto-open Line from Query Parameter (Routing Integration)
+      const urlParams = new URLSearchParams(window.location.search);
+      const autoLineId = urlParams.get('lineId');
+      if (autoLineId) {
+        try {
+          const lineDoc = await getDoc(doc(db, "lines", autoLineId));
+          if (lineDoc.exists()) {
+            // Open the customers view automatically
+            window.openCustomersView(lineDoc.data().id, lineDoc.data().name);
+            // Clean the URL so refreshing doesn't cause weird history stacks
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } catch (error) {
+          console.error("Error auto-loading line:", error);
+        }
+      }
+    });
 
     // Infinite Scroll logic for active panel
     document.querySelectorAll('.view-panel').forEach(panel => {
