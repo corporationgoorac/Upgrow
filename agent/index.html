@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Up Field - Agent Portal</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f4f7f6">
+
+    <style>
+        :root {
+            --primary: #007aff;
+            --bg-color: #f4f7f6;
+            --surface: #ffffff;
+            --text-main: #1d1d1f;
+            --text-muted: #86868b;
+            --border: #e5e5ea;
+            --danger: #ff3b30;
+            --nav-height: 65px;
+            --header-height: 60px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden; /* Prevent body scrolling, iframe handles it */
+        }
+
+        /* --- Full Screen Guards --- */
+        #loading-screen, #permission-screen {
+            position: fixed;
+            inset: 0;
+            background-color: var(--bg-color);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #permission-screen {
+            display: none; /* Hidden by default */
+        }
+
+        .permission-icon {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 24px;
+            color: var(--danger);
+        }
+
+        .permission-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .permission-text {
+            font-size: 16px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            max-width: 300px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- Header --- */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .profile-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Main Content (Iframe Shell) --- */
+        #app-frame {
+            position: fixed;
+            top: var(--header-height);
+            bottom: var(--nav-height);
+            left: 0;
+            width: 100%;
+            border: none;
+            background-color: var(--bg-color);
+        }
+
+        /* --- Bottom Navigation --- */
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background: var(--surface);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 500;
+            gap: 4px;
+            width: 25%;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .nav-item.active svg {
+            fill: currentColor;
+            stroke: none;
+        }
+
+        /* --- Install PWA Popup --- */
+        #install-popup {
+            position: fixed;
+            bottom: calc(var(--nav-height) + 20px);
+            left: 20px;
+            right: 20px;
+            background: var(--surface);
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 2000;
+        }
+
+        .install-text { font-size: 14px; font-weight: 600; }
+        .install-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Loading Screen -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 2. Permission Denied Screen -->
+    <div id="permission-screen">
+        <!-- Beautiful restricted shield SVG -->
+        <svg class="permission-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M8 11h8v6H8z"></path>
+            <path d="M10 11V9a2 2 0 0 1 4 0v2"></path>
+        </svg>
+        <div class="permission-title">Access Denied</div>
+        <div class="permission-text">
+            You are not marked as an agent or your permission is missing. Kindly contact the admin to grant you access.
+        </div>
+    </div>
+
+    <!-- 3. App Header -->
+    <header>
+        <div class="header-title">Up Field</div>
+        <button class="profile-btn" onclick="document.getElementById('app-frame').src='manage.html'">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </button>
+    </header>
+
+    <!-- 4. Main Tab Content (Iframe) -->
+    <iframe id="app-frame" src="home.html"></iframe>
+
+    <!-- 5. Bottom Navigation -->
+    <nav>
+        <div class="nav-item active" onclick="switchTab(this, 'home.html')">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Home
+        </div>
+        <div class="nav-item" onclick="switchTab(this, 'entry.html')">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            Entry
+        </div>
+        <div class="nav-item" onclick="switchTab(this, 'submit.html')">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Submit
+        </div>
+        <div class="nav-item" onclick="switchTab(this, 'reports.html')">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            Reports
+        </div>
+    </nav>
+
+    <!-- 6. Install App Popup -->
+    <div id="install-popup">
+        <span class="install-text">Install Up Field App</span>
+        <button class="install-btn" id="install-btn">Install</button>
+    </div>
+
+    <!-- 7. Core Logic & Auth Check -->
+    <script type="module">
+        import { auth, db } from './config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const loadingScreen = document.getElementById('loading-screen');
+        const permissionScreen = document.getElementById('permission-screen');
+
+        // Check authentication and Agent Role
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
+
+                    if (userDoc.exists() && userDoc.data().isAgent === true) {
+                        // User is verified agent -> Hide loading screen
+                        loadingScreen.style.display = 'none';
+                    } else {
+                        // User is authenticated but NOT an agent
+                        loadingScreen.style.display = 'none';
+                        permissionScreen.style.display = 'flex';
+                    }
+                } catch (error) {
+                    console.error("Error fetching user data:", error);
+                    loadingScreen.style.display = 'none';
+                    permissionScreen.style.display = 'flex';
+                }
+            } else {
+                // Not logged in -> Redirect to global login page
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Tab Switching Logic
+        window.switchTab = function(element, url) {
+            // Update active styling
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            element.classList.add('active');
+            
+            // Load new page into iframe
+            document.getElementById('app-frame').src = url;
+        }
+
+        // Service Worker Registration (For Offline PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('Service Worker registered.', reg))
+                    .catch((err) => console.log('Service Worker registration failed:', err));
+            });
+        }
+
+        // PWA Install Prompt Logic
+        let deferredPrompt;
+        const installPopup = document.getElementById('install-popup');
+        const installBtn = document.getElementById('install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installPopup.style.display = 'flex';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installPopup.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+    </script>
+</body>
+</html>
