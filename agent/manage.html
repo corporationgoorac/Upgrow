@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Manage Profile - Up Field</title>
+  
+  <style>
+    /* Shared Theme Variables */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 20px;
+      padding-bottom: 90px; /* Space for mobile bottom nav in iframe */
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+    
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+    /* Animations */
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+    /* --- Profile Header Area --- */
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 10px;
+      margin-bottom: 30px;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 4px solid var(--primary);
+      padding: 2px;
+      margin-bottom: 15px;
+      background-color: var(--bg-color);
+      box-shadow: var(--shadow);
+    }
+
+    .avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      background-color: var(--skeleton-base);
+    }
+
+    .profile-header h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    .profile-header p {
+      color: var(--text-sub);
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .role-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background-color: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+
+    /* --- Form Card --- */
+    .card {
+      background-color: var(--surface-card);
+      padding: 25px 20px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      margin-bottom: 25px;
+      animation: fadeIn 0.6s ease forwards;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+      transition: color 0.3s;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 15px;
+      border-radius: 14px;
+      border: 2px solid var(--border);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-size: 1.05rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .input-group input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+      background-color: var(--surface-card);
+    }
+
+    .input-group input:focus + label {
+      color: var(--primary);
+    }
+    
+    .input-group input:disabled {
+      opacity: 0.6;
+      background-color: var(--border);
+      cursor: not-allowed;
+    }
+
+    /* --- Buttons --- */
+    .btn-full {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-save {
+      background-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      margin-top: 10px;
+    }
+
+    .btn-save:active {
+      transform: scale(0.96);
+    }
+
+    .btn-logout {
+      background-color: transparent;
+      border: 2px solid var(--danger);
+      color: var(--danger);
+      margin-top: 15px;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    .btn-logout:active {
+      background-color: rgba(239, 68, 68, 0.1);
+      transform: scale(0.96);
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Profile Header -->
+  <div class="profile-header">
+    <div class="avatar-wrapper">
+      <img id="profile-pic" class="avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==" alt="Profile" referrerpolicy="no-referrer">
+    </div>
+    <h2 id="display-name">Loading...</h2>
+    <p id="display-email">...</p>
+    <div class="role-badge">Field Agent</div>
+  </div>
+
+  <!-- Settings Form -->
+  <div class="card">
+    <div class="input-group">
+      <label for="input-name">Full Name</label>
+      <input type="text" id="input-name" placeholder="Enter your full name">
+    </div>
+
+    <div class="input-group">
+      <label for="input-phone">Mobile Number</label>
+      <input type="tel" id="input-phone" placeholder="e.g. +91 9876543210">
+    </div>
+
+    <div class="input-group">
+      <label for="input-email">Email Address (Read Only)</label>
+      <input type="email" id="input-email" disabled>
+    </div>
+
+    <button id="btn-save" class="btn-full btn-save">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+      Save Changes
+    </button>
+  </div>
+
+  <!-- Logout Button -->
+  <button id="btn-logout" class="btn-full btn-logout">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+    Logout of Up Field
+  </button>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // DOM Elements
+    const profilePic = document.getElementById('profile-pic');
+    const displayName = document.getElementById('display-name');
+    const displayEmail = document.getElementById('display-email');
+    const inputName = document.getElementById('input-name');
+    const inputPhone = document.getElementById('input-phone');
+    const inputEmail = document.getElementById('input-email');
+    const btnSave = document.getElementById('btn-save');
+    const btnLogout = document.getElementById('btn-logout');
+
+    let currentUserUid = null;
+
+    // Haptics
+    function vibrate(pattern = 30) {
+      if (navigator.vibrate) navigator.vibrate(pattern);
+    }
+
+    // 1. Fetch User Data
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUserUid = user.uid;
+        
+        // Load Google Profile Picture if available
+        if (user.photoURL) {
+          profilePic.src = user.photoURL;
+        } else {
+          // Check local storage for quick load just like index shell
+          const localDpUrl = localStorage.getItem('upfield_dp');
+          if (localDpUrl) profilePic.src = localDpUrl;
+        }
+
+        // Set Auth Email
+        displayEmail.innerText = user.email;
+        inputEmail.value = user.email;
+
+        try {
+          // Fetch additional data from Firestore
+          const userDoc = await getDoc(doc(db, "users", currentUserUid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            
+            // Populate UI
+            displayName.innerText = data.name || "Agent";
+            inputName.value = data.name || "";
+            inputPhone.value = data.phone || "";
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      }
+    });
+
+    // 2. Save Changes
+    btnSave.addEventListener('click', async () => {
+      if (!currentUserUid) return;
+      vibrate(40);
+      
+      const newName = inputName.value.trim();
+      const newPhone = inputPhone.value.trim();
+
+      // UI Update to loading state
+      const originalBtnHTML = btnSave.innerHTML;
+      btnSave.innerHTML = `Saving...`;
+      btnSave.disabled = true;
+
+      try {
+        await updateDoc(doc(db, "users", currentUserUid), {
+          name: newName,
+          phone: newPhone
+        });
+
+        // Instant UI Update
+        displayName.innerText = newName || "Agent";
+        vibrate([30, 50, 30]); // Success vibration
+        
+        // Success State
+        btnSave.style.backgroundColor = "#059669"; // Darker green
+        btnSave.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Saved Successfully!`;
+        
+      } catch (error) {
+        console.error("Error saving profile:", error);
+        alert("Could not save profile. Please try again.");
+      }
+
+      // Reset button after 2 seconds
+      setTimeout(() => {
+        btnSave.style.backgroundColor = "";
+        btnSave.innerHTML = originalBtnHTML;
+        btnSave.disabled = false;
+      }, 2000);
+    });
+
+    // 3. Logout Logic
+    btnLogout.addEventListener('click', async () => {
+      vibrate([50, 50, 50]);
+      
+      // Basic confirmation before logging out
+      if(confirm("Are you sure you want to log out?")) {
+        try {
+          // Clear cached images to prevent next user seeing them instantly
+          localStorage.removeItem('upfield_dp'); 
+          
+          await signOut(auth);
+          // Redirect the *parent window* to login, not just the iframe
+          window.parent.location.href = "login.html";
+        } catch (error) {
+          console.error("Error logging out:", error);
+          alert("Error logging out. Please check your internet connection.");
+        }
+      }
+    });
+
+  </script>
+</body>
+</html>
