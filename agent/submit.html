@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Submit - Up Field</title>
+  
+  <style>
+    /* Shared Theme Variables */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none !important; }
+    body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; }
+
+    /* --- Top Header --- */
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; }
+    .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    
+    .sync-pill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); border-radius: 20px; color: var(--primary); font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .sync-dot { width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+    .screen-content { flex: 1; height: calc(100vh - 60px); overflow-y: auto; padding: 0 20px 120px 20px; }
+
+    /* --- Dashboard SVG Stats --- */
+    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; margin-bottom: 25px; }
+    .dash-card { background: var(--surface-card); padding: 16px; border-radius: 18px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
+    .dash-card.total { grid-column: 1 / -1; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent); border-color: rgba(16, 185, 129, 0.3); }
+    
+    .dash-icon { width: 28px; height: 28px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .dash-icon svg { width: 16px; height: 16px; stroke-width: 2.5; }
+    .icon-total { background: rgba(16, 185, 129, 0.15); color: var(--primary); }
+    .icon-cash { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .icon-online { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+
+    .dash-title { font-size: 0.8rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
+    .dash-value { font-size: 1.4rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+    .dash-card.total .dash-value { font-size: 1.8rem; color: var(--primary); }
+
+    /* --- List Cards --- */
+    .card { background-color: var(--surface-card); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; transition: transform 0.2s; }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.3px; }
+    .card-time { font-size: 0.75rem; color: var(--text-sub); font-weight: 700; background: var(--bg-color); padding: 4px 8px; border-radius: 8px; }
+    
+    .card-amount { font-size: 1.25rem; font-weight: 800; color: var(--primary); }
+    .badge-method { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; width: fit-content; }
+    .badge-cash { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .badge-online { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+    .badge-split { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+
+    .split-breakdown { display: flex; gap: 15px; background: var(--bg-color); padding: 10px 14px; border-radius: 10px; border: 1px dashed var(--border); margin-top: 5px; }
+    .split-item { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .split-lbl { font-size: 0.7rem; color: var(--text-sub); font-weight: 800; text-transform: uppercase; }
+    .split-val { font-size: 0.95rem; font-weight: 700; color: var(--text-main); }
+
+    .card-actions { display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 5px; }
+    .btn-act { background: transparent; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
+    .btn-act.edit { color: var(--text-main); background: var(--bg-color); }
+    .btn-act.delete { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+    .btn-act:active { transform: scale(0.95); }
+    .btn-act svg { width: 16px; height: 16px; stroke-width: 2.5; }
+
+    /* --- Floating Action Button (FAB) --- */
+    .fab { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 90px); right: 20px; background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 30px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 90; transition: transform 0.2s; }
+    .fab:active { transform: scale(0.95); }
+    .fab svg { width: 22px; height: 22px; stroke-width: 2.5; fill: none; stroke: currentColor; }
+
+    /* --- Modals & Overlays --- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    
+    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
+    .bottom-sheet.active { transform: translateY(0); }
+    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 0 auto 25px auto; }
+
+    .center-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: var(--surface-card); padding: 30px; border-radius: 24px; z-index: 102; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 85%; max-width: 340px; }
+    .center-modal.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+    
+    .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
+    .btn-outline { flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--border); background: transparent; color: var(--text-main); font-weight: 800; cursor: pointer; }
+    .btn-blue { flex: 1; padding: 14px; border-radius: 12px; border: none; background: #3b82f6; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
+    .btn-blue:active, .btn-outline:active { transform: scale(0.96); }
+
+    /* Inputs */
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
+
+    /* --- Animations (Google Play Success) --- */
+    .loader-circle { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px auto; display: none; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .success-svg { display: none; width: 80px; height: 80px; margin: 0 auto 20px auto; }
+    .success-svg.active { display: block; }
+    .success-circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 4; stroke-miterlimit: 10; stroke: var(--primary); fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+    .success-check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; stroke: var(--primary); stroke-width: 5; stroke-linecap: round; fill: none; animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards; }
+    @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+    
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); display: none; }
+    .empty-state svg { width: 64px; height: 64px; stroke: var(--border); margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <div class="header">
+    <h2>Submit</h2>
+    <div class="sync-pill" id="sync-status">
+      <div class="sync-dot"></div> Live Sync
+    </div>
+  </div>
+
+  <div class="screen-content">
+    
+    <!-- Dashboard Stats -->
+    <div class="dashboard" id="dashboard">
+      <div class="dash-card total">
+        <div class="dash-icon icon-total"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg></div>
+        <div class="dash-title">Total Collected</div>
+        <div class="dash-value" id="dash-val-total">₹0</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-icon icon-cash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+        <div class="dash-title">Cash</div>
+        <div class="dash-value" id="dash-val-cash">₹0</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-icon icon-online"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></div>
+        <div class="dash-title">Online</div>
+        <div class="dash-value" id="dash-val-online">₹0</div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      <h3 style="color:var(--text-main); margin-bottom:5px;">All Caught Up!</h3>
+      <p>You have no pending collections to submit.</p>
+    </div>
+
+    <!-- List of Drafts -->
+    <div id="draft-list"></div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="btn-fab" onclick="openSubmitModal()" style="display: none;">
+    Submit Now
+    <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+  </button>
+
+  <!-- Modals & Overlays -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <!-- Submit Confirm Modal -->
+  <div class="center-modal" id="submit-modal">
+    <div class="loader-circle" id="submit-loader"></div>
+    
+    <!-- Google Play Checkmark -->
+    <svg class="success-svg" id="submit-success" viewBox="0 0 152 152">
+      <circle class="success-circle" cx="76" cy="76" r="24"/>
+      <path class="success-check" d="M63 76l10 10 18-18"/>
+    </svg>
+
+    <div id="submit-content">
+      <h3 style="font-size: 1.4rem;">Submit Collections?</h3>
+      <p>Do you want to submit all pending entries to the Admin for review?</p>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="window.history.back()">Cancel</button>
+        <button class="btn-blue" onclick="runBatchSubmit()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Bottom Sheet -->
+  <div class="bottom-sheet" id="edit-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="edit-customer-name">Customer Name</h3>
+    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700;" id="edit-timestamp">Time</p>
+    
+    <div class="input-group">
+      <label>Total Amount (₹)</label>
+      <input type="number" id="edit-total" inputmode="numeric">
+    </div>
+
+    <div class="input-group">
+      <label>Payment Method</label>
+      <select id="edit-method">
+        <option value="cash">Cash</option>
+        <option value="online">Online / UPI</option>
+        <option value="split">Split (Cash + Online)</option>
+      </select>
+    </div>
+
+    <!-- Side-by-Side Split Inputs -->
+    <div id="edit-split-container" style="display: none; gap: 15px; margin-bottom: 20px;">
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label>Cash (₹)</label>
+        <input type="number" id="edit-cash-split" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label>Online (₹)</label>
+        <input type="number" id="edit-online-split" placeholder="0" inputmode="numeric">
+      </div>
+    </div>
+
+    <button class="btn-full" id="btn-save-edit">Save Changes</button>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { collection, query, where, getDocs, doc, updateDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { documentId } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // --- Global State & Formatting ---
+    let currentUser = null;
+    let pendingEntries = []; // Holds flattened array of all pending items
+    let editingDocId = null;
+    let editingKey = null;
+    let editingOriginalData = null;
+    
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // --- DOM Elements ---
+    const valTotal = document.getElementById('dash-val-total');
+    const valCash = document.getElementById('dash-val-cash');
+    const valOnline = document.getElementById('dash-val-online');
+    const draftList = document.getElementById('draft-list');
+    const emptyState = document.getElementById('empty-state');
+    const fab = document.getElementById('btn-fab');
+    
+    const modalOverlay = document.getElementById('modal-overlay');
+    const submitModal = document.getElementById('submit-modal');
+    const editSheet = document.getElementById('edit-sheet');
+    
+    const editTotal = document.getElementById('edit-total');
+    const editMethod = document.getElementById('edit-method');
+    const editSplitContainer = document.getElementById('edit-split-container');
+    const editCashSplit = document.getElementById('edit-cash-split');
+    const editOnlineSplit = document.getElementById('edit-online-split');
+
+    // --- History API Management ---
+    window.addEventListener('popstate', (e) => {
+      modalOverlay.classList.remove('active');
+      submitModal.classList.remove('active');
+      editSheet.classList.remove('active');
+      
+      // Reset Modal Content
+      document.getElementById('submit-content').style.display = 'block';
+      document.getElementById('submit-loader').style.display = 'none';
+      document.getElementById('submit-success').classList.remove('active');
+    });
+
+    // --- Auth Listener & Initialization ---
+    onAuthStateChanged(auth, (user) => { 
+      if (user) {
+        currentUser = user; 
+        loadPendingEntries();
+      }
+    });
+
+    // --- Fetch All Pending Entries (Zero Date Filter) ---
+    async function loadPendingEntries() {
+      draftList.innerHTML = '<div class="skeleton-box" style="height:100px;"></div><div class="skeleton-box" style="height:100px;"></div>';
+      
+      try {
+        // Highly optimized query: Fetch any log document starting with the user's UID
+        const q = query(collection(db, "daily_logs"), 
+                  where(documentId(), ">=", currentUser.uid + "_"), 
+                  where(documentId(), "<=", currentUser.uid + "_\uf8ff"));
+        
+        const snap = await getDocs(q);
+        pendingEntries = [];
+
+        snap.forEach(d => {
+          const docData = d.data();
+          const docId = d.id;
+          
+          // Loop through keys (e.g., customerId_0)
+          Object.keys(docData).forEach(key => {
+             const item = docData[key];
+             if (item.status === 'pending') {
+                 pendingEntries.push({ docId, key, ...item });
+             }
+          });
+        });
+
+        // Sort Newest at Top
+        pendingEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        renderDashboardAndList();
+
+      } catch (error) {
+        console.error("Error fetching logs:", error);
+        draftList.innerHTML = '<p style="text-align:center; color:var(--danger);">Failed to load entries.</p>';
+      }
+    }
+
+    // --- Render UI (Calculates Math for Free) ---
+    function renderDashboardAndList() {
+      let tTotal = 0, tCash = 0, tOnline = 0;
+      draftList.innerHTML = '';
+
+      if (pendingEntries.length === 0) {
+          emptyState.style.display = 'block';
+          fab.style.display = 'none';
+          document.getElementById('dashboard').style.opacity = '0.5';
+      } else {
+          emptyState.style.display = 'none';
+          fab.style.display = 'flex';
+          document.getElementById('dashboard').style.opacity = '1';
+      }
+
+      pendingEntries.forEach(entry => {
+        // 1. Math Aggregation
+        const amt = parseInt(entry.amount) || 0;
+        tTotal += amt;
+        
+        if (entry.method === 'cash') tCash += amt;
+        else if (entry.method === 'online') tOnline += amt;
+        else if (entry.method === 'split') {
+            tCash += (parseInt(entry.cash_split) || 0);
+            tOnline += (parseInt(entry.online_split) || 0);
+        }
+
+        // 2. Formatting UI variables
+        const dateStr = new Date(entry.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        let methodBadge = '';
+        let splitHTML = '';
+
+        if (entry.method === 'cash') methodBadge = '<span class="badge-method badge-cash">Cash</span>';
+        else if (entry.method === 'online') methodBadge = '<span class="badge-method badge-online">Online</span>';
+        else if (entry.method === 'split') {
+            methodBadge = '<span class="badge-method badge-split">Split</span>';
+            splitHTML = `
+              <div class="split-breakdown">
+                 <div class="split-item"><span class="split-lbl">Cash</span><span class="split-val">${fmt(entry.cash_split)}</span></div>
+                 <div class="split-item"><span class="split-lbl">Online</span><span class="split-val">${fmt(entry.online_split)}</span></div>
+              </div>
+            `;
+        }
+
+        // 3. Create Card
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-top">
+            <div class="card-title">${entry.customer_name || 'Customer'}</div>
+            <div class="card-time">${dateStr}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 10px;">
+            <div class="card-amount">${fmt(amt)}</div>
+            ${methodBadge}
+          </div>
+          ${splitHTML}
+          <div class="card-actions">
+            <button class="btn-act edit" onclick="openEdit('${entry.docId}', '${entry.key}')">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit
+            </button>
+            <button class="btn-act delete" onclick="deleteEntry('${entry.docId}', '${entry.key}')">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Delete
+            </button>
+          </div>
+        `;
+        draftList.appendChild(card);
+      });
+
+      // Update Dashboard UI
+      valTotal.innerText = fmt(tTotal);
+      valCash.innerText = fmt(tCash);
+      valOnline.innerText = fmt(tOnline);
+    }
+
+    // --- Isolated Edit & Delete Operations ---
+    window.deleteEntry = async (docId, key) => {
+      vibrate([50, 50]);
+      if (!confirm("Are you sure you want to delete this collection draft?")) return;
+      
+      try {
+        const docRef = doc(db, "daily_logs", docId);
+        // Safe nested deletion using field paths
+        await updateDoc(docRef, { [key]: deleteField() });
+        
+        // Remove from local array and re-render instantly
+        pendingEntries = pendingEntries.filter(e => e.docId !== docId || e.key !== key);
+        renderDashboardAndList();
+        vibrate(30);
+      } catch(e) {
+        alert("Delete failed. Try again.");
+        console.error(e);
+      }
+    };
+
+    window.openEdit = (docId, key) => {
+      vibrate();
+      const entry = pendingEntries.find(e => e.docId === docId && e.key === key);
+      if (!entry) return;
+
+      editingDocId = docId;
+      editingKey = key;
+      editingOriginalData = entry;
+
+      document.getElementById('edit-customer-name').innerText = entry.customer_name;
+      document.getElementById('edit-timestamp').innerText = new Date(entry.timestamp).toLocaleString();
+      
+      editTotal.value = entry.amount;
+      editMethod.value = entry.method;
+      editCashSplit.value = entry.cash_split || '';
+      editOnlineSplit.value = entry.online_split || '';
+      
+      editSplitContainer.style.display = entry.method === 'split' ? 'flex' : 'none';
+
+      window.history.pushState({ modal: 'edit' }, '');
+      modalOverlay.classList.add('active');
+      editSheet.classList.add('active');
+    };
+
+    // Auto-Calculate Math for Edit Sheet
+    editMethod.addEventListener('change', (e) => {
+      editSplitContainer.style.display = e.target.value === 'split' ? 'flex' : 'none';
+      if(e.target.value !== 'split') { editCashSplit.value = ''; editOnlineSplit.value = ''; }
+    });
+    editCashSplit.addEventListener('input', () => {
+      const total = parseInt(editTotal.value) || 0;
+      const cash = parseInt(editCashSplit.value) || 0;
+      if (total > 0 && cash <= total) editOnlineSplit.value = total - cash;
+    });
+    editOnlineSplit.addEventListener('input', () => {
+      const total = parseInt(editTotal.value) || 0;
+      const online = parseInt(editOnlineSplit.value) || 0;
+      if (total > 0 && online <= total) editCashSplit.value = total - online;
+    });
+    editTotal.addEventListener('input', () => {
+      if (editMethod.value === 'split') {
+         const total = parseInt(editTotal.value) || 0;
+         const cash = parseInt(editCashSplit.value) || 0;
+         if (cash <= total) editOnlineSplit.value = total - cash;
+      }
+    });
+
+    document.getElementById('btn-save-edit').addEventListener('click', async () => {
+      vibrate();
+      const amt = parseInt(editTotal.value);
+      if (!amt || amt <= 0) return alert("Enter valid amount");
+
+      const btn = document.getElementById('btn-save-edit');
+      btn.innerText = "Saving..."; btn.disabled = true;
+
+      const updatedPayload = {
+        amount: amt,
+        method: editMethod.value,
+        cash_split: editMethod.value === 'split' ? (parseInt(editCashSplit.value) || 0) : (editMethod.value === 'cash' ? amt : 0),
+        online_split: editMethod.value === 'split' ? (parseInt(editOnlineSplit.value) || 0) : (editMethod.value === 'online' ? amt : 0),
+        status: "pending",
+        timestamp: editingOriginalData.timestamp, // Keep original timestamp
+        customer_name: editingOriginalData.customer_name
+      };
+
+      try {
+        await updateDoc(doc(db, "daily_logs", editingDocId), { [editingKey]: updatedPayload });
+        
+        // Update local array & UI instantly
+        const index = pendingEntries.findIndex(e => e.docId === editingDocId && e.key === editingKey);
+        if (index !== -1) {
+            pendingEntries[index] = { docId: editingDocId, key: editingKey, ...updatedPayload };
+        }
+        
+        vibrate([30,50]);
+        window.history.back(); // close modal
+        renderDashboardAndList();
+
+      } catch (error) {
+        alert("Edit failed."); console.error(error);
+      }
+      btn.innerText = "Save Changes"; btn.disabled = false;
+    });
+
+    // --- Submit to Admin (480-Batch Process) ---
+    window.openSubmitModal = () => {
+      vibrate();
+      window.history.pushState({ modal: 'submit' }, '');
+      modalOverlay.classList.add('active');
+      submitModal.classList.add('active');
+    };
+
+    window.runBatchSubmit = async () => {
+      vibrate();
+      document.getElementById('submit-content').style.display = 'none';
+      document.getElementById('submit-loader').style.display = 'block';
+
+      try {
+        const batch = writeBatch(db);
+        
+        // Group updates by Document ID to prevent overwriting
+        let updatesByDoc = {};
+        pendingEntries.forEach(item => {
+           if(!updatesByDoc[item.docId]) updatesByDoc[item.docId] = {};
+           
+           // Keep exact nested structure but update status and attach tracking
+           updatesByDoc[item.docId][`${item.key}.status`] = "submitted";
+           updatesByDoc[item.docId][`${item.key}.submittedAt`] = new Date().toISOString();
+        });
+
+        // Add to batch
+        Object.keys(updatesByDoc).forEach(docId => {
+           batch.update(doc(db, "daily_logs", docId), updatesByDoc[docId]);
+        });
+
+        await batch.commit();
+
+        // Show Success Animation (Google Play Style)
+        vibrate([30, 80, 30]);
+        document.getElementById('submit-loader').style.display = 'none';
+        
+        const successSvg = document.getElementById('submit-success');
+        successSvg.classList.add('active');
+        
+        // Clear UI array
+        pendingEntries = [];
+        renderDashboardAndList();
+
+        // Auto close after animation
+        setTimeout(() => {
+          window.history.back();
+        }, 1800);
+
+      } catch (error) {
+        alert("Batch Submit Failed. Please check connection.");
+        console.error(error);
+        window.history.back();
+      }
+    };
+
+    // Close Modals on Overlay Click
+    modalOverlay.addEventListener('click', () => window.history.back());
+  </script>
+</body>
+</html>
