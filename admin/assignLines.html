@@ -237,9 +237,12 @@
     const defaultDp = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==";
     const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     
-    // State
+    // State Variables (Including Dual Search Cursors)
     let staffLastVisible = null, staffHasMore = true, staffLoading = false, staffSearch = "";
+    
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
+    let linesNameLastVisible = null, linesNameHasMore = true;
+    let linesIdLastVisible = null, linesIdHasMore = true;
     
     let activeAgentId = null;
     let activeDayPicker = null;
@@ -516,18 +519,27 @@
     };
 
 
-    // --- LEVEL 3: LINE PICKER (BOTTOM SHEET) ---
+    // --- LEVEL 3: LINE PICKER (BOTTOM SHEET) (ADVANCED PARALLEL SEARCH) ---
     window.openLinePicker = (day) => {
       activeDayPicker = day;
       document.getElementById('picker-day-title').innerText = day;
+      
       linesSearch = ""; document.getElementById('search-lines').value = '';
       linesLastVisible = null; linesHasMore = true;
+      linesNameLastVisible = null; linesNameHasMore = true;
+      linesIdLastVisible = null; linesIdHasMore = true;
+      
       openModal('modal-picker');
       loadPickerLines();
     };
 
     async function loadPickerLines(isMore = false) {
-      if(linesLoading || (!linesHasMore && isMore)) return;
+      if(linesLoading) return;
+      
+      const isSearch = linesSearch.trim() !== "";
+      if (isSearch && isMore && !linesNameHasMore && !linesIdHasMore) return;
+      if (!isSearch && isMore && !linesHasMore) return;
+
       linesLoading = true;
       const list = document.getElementById('picker-list');
       const loader = document.getElementById('loading-lines');
@@ -536,36 +548,76 @@
       else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
 
       try {
-        let q = collection(db, "lines");
-        if(linesSearch) {
-          // SMART SEARCH DETECTOR: If it contains a number or is fully uppercase, search by ID. Otherwise, search Name.
-          let isIdSearch = /\d/.test(linesSearch) || (linesSearch === linesSearch.toUpperCase() && linesSearch.length > 1);
-          let searchField = isIdSearch ? "id" : "name";
-          let searchTerm = isIdSearch ? linesSearch.toUpperCase() : (linesSearch.charAt(0).toUpperCase() + linesSearch.slice(1));
-          
-          q = query(q, where(searchField, ">=", searchTerm), where(searchField, "<=", searchTerm + "\uf8ff"), orderBy(searchField), limit(5));
-        } else {
-          q = query(q, orderBy("createdAt", "desc"), limit(5));
-        }
-        
-        if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
+        let results = [];
+        const linesRef = collection(db, "lines");
 
-        const snap = await getDocs(q);
+        if(isSearch) {
+          let nameTerm = linesSearch.charAt(0).toUpperCase() + linesSearch.slice(1);
+          let idTerm = linesSearch.toUpperCase();
+          
+          let nameSnap = null;
+          let idSnap = null;
+          const promises = [];
+          
+          // PARALLEL QUERY A: Search by Name (Max 3)
+          if (linesNameHasMore) {
+            let qName = query(linesRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(3));
+            if (isMore && linesNameLastVisible) qName = query(qName, startAfter(linesNameLastVisible));
+            promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
+          }
+          
+          // PARALLEL QUERY B: Search by ID (Max 3)
+          if (linesIdHasMore) {
+            let qId = query(linesRef, where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(3));
+            if (isMore && linesIdLastVisible) qId = query(qId, startAfter(linesIdLastVisible));
+            promises.push(getDocs(qId).then(snap => { idSnap = snap; }));
+          }
+          
+          await Promise.all(promises);
+          
+          if (nameSnap) {
+            linesNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
+            linesNameHasMore = nameSnap.docs.length === 3;
+            nameSnap.forEach(d => results.push(d.data()));
+          }
+          
+          if (idSnap) {
+            linesIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
+            linesIdHasMore = idSnap.docs.length === 3;
+            idSnap.forEach(d => results.push(d.data()));
+          }
+          
+        } else {
+          // Standard Load without Search
+          let q = query(linesRef, orderBy("createdAt", "desc"), limit(6));
+          if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
+
+          const snap = await getDocs(q);
+          linesLastVisible = snap.docs[snap.docs.length-1];
+          linesHasMore = snap.docs.length === 6;
+          snap.forEach(d => results.push(d.data()));
+        }
+
+        // Smart De-duplication (Removes overlapping matches)
+        const uniqueMap = {};
+        const finalResults = [];
+        results.forEach(data => {
+            if(!uniqueMap[data.id]) {
+                uniqueMap[data.id] = true;
+                finalResults.push(data);
+                linesCache[data.id] = data; // Cache it!
+            }
+        });
+
         if(!isMore) list.innerHTML = '';
-        if(snap.empty) { 
-          linesHasMore = false; 
-          if(!isMore) list.innerHTML = '<p style="text-align:center;color:var(--text-sub);">No lines found.</p>'; 
+        if(finalResults.length === 0 && !isMore) { 
+          list.innerHTML = '<p style="text-align:center;color:var(--text-sub);">No lines found.</p>'; 
           loader.style.display = 'none';
           linesLoading=false; return; 
         }
 
-        linesLastVisible = snap.docs[snap.docs.length-1];
-        linesHasMore = snap.docs.length === 5;
-        
         let html = '';
-        snap.forEach(d => {
-          const data = d.data();
-          linesCache[data.id] = data; // Cache it!
+        finalResults.forEach(data => {
           html += `
             <div class="picker-line ${data.color || 'grad-6'}" onclick="assignRouteToDay('${data.id}')">
               <h4>${data.name}</h4>
@@ -573,8 +625,11 @@
             </div>`;
         });
         list.insertAdjacentHTML('beforeend', html);
-        loader.style.display = linesHasMore ? 'block' : 'none';
-        loader.innerText = linesHasMore ? 'Scroll for more' : '';
+        
+        const anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
+        loader.style.display = anyMore ? 'block' : 'none';
+        loader.innerText = anyMore ? 'Scroll for more' : '';
+        
       } catch(e) { handleFirebaseError(e); }
       linesLoading = false;
     }
@@ -582,13 +637,20 @@
     document.getElementById('search-lines').addEventListener('input', debounce(e => {
       let val = e.target.value.trim();
       linesSearch = val; // Store raw value, parsing handled in loadPickerLines
-      linesLastVisible = null; linesHasMore = true; loadPickerLines();
+      
+      linesLastVisible = null; linesHasMore = true;
+      linesNameLastVisible = null; linesNameHasMore = true;
+      linesIdLastVisible = null; linesIdHasMore = true;
+      
+      loadPickerLines();
     }));
 
     // Infinite scroll for bottom sheet
     document.getElementById('picker-list').addEventListener('scroll', function() {
       if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 50) {
-        if(linesHasMore && !linesLoading) { vibrate(10); loadPickerLines(true); }
+        let isSearch = linesSearch.trim() !== "";
+        let anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
+        if(anyMore && !linesLoading) { vibrate(10); loadPickerLines(true); }
       }
     });
 
