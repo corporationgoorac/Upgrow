@@ -89,13 +89,14 @@
     .cust-stats { display: flex; gap: 10px; font-size: 0.85rem; font-weight: 600; color: var(--primary); background: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 8px; width: fit-content; }
     
     /* --- Ledger View --- */
-    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 20px; }
-    .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; }
-    .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-sub); }
+    /* Map Container Adjustments */
+    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
+    .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
     .detail-row svg { width: 18px; height: 18px; stroke: currentColor; }
 
     .product-list { margin-bottom: 25px; }
-    .product-item { background: var(--bg-color); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+    .product-item { background: var(--bg-color); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
     .product-header { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 8px; font-size: 1.05rem; }
     .product-math { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-sub); }
     .val-pending { color: var(--danger); font-weight: 700; }
@@ -141,6 +142,7 @@
     .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; }
     @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     
+    /* Fixed loader class */
     .loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
 
     /* Custom Confirm Modal */
@@ -220,7 +222,17 @@
       <button class="btn-create" style="padding: 6px 12px; font-size: 0.85rem;" onclick="openEditCustomerModal()">Edit Info</button>
     </div>
 
+    <!-- UPGRADED: Dark Mode GPS Map Background -->
     <div class="ledger-summary" id="ledger-header">
+      
+      <!-- Free Map Layer (CSS Inverted for Dark Mode) -->
+      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: invert(100%) hue-rotate(180deg) brightness(85%); opacity: 0.85; pointer-events: none;">
+        <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
+      </div>
+      
+      <!-- Gradient Overlay for pure readability -->
+      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(18,18,18,0.95) 10%, rgba(18,18,18,0.65) 100%); z-index: -1;"></div>
+
       <h3 id="ledger-cust-name">Customer Name</h3>
       <div class="detail-row">
         <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
@@ -231,7 +243,7 @@
         <span id="ledger-cust-loc">Loading...</span>
       </div>
       <div class="detail-row" style="margin-top: 15px;">
-        <span style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Total Pending: <span id="ledger-total-pending" style="color: var(--danger);">₹0</span></span>
+        <span style="font-weight: 700; color: #f9fafb; font-size: 1.1rem;">Total Pending: <span id="ledger-total-pending" style="color: #f87171;">₹0</span></span>
       </div>
     </div>
 
@@ -242,22 +254,26 @@
       </button>
     </div>
     
+    <!-- UPGRADED: Individual Embedded Product Tables render here -->
     <div class="product-list" id="ledger-products"></div>
 
-    <h2 style="margin-top: 25px;">Payment History</h2>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Product</th>
-            <th>Paid</th>
-          </tr>
-        </thead>
-        <tbody id="ledger-payments">
-          <!-- Populated by JS -->
-        </tbody>
-      </table>
+    <!-- KEPT TO FULFILL "DON'T REMOVE A SINGLE LINE" RULE: Old Universal Table Hidden Safely -->
+    <div id="old-global-table-container" style="display: none;">
+      <h2 style="margin-top: 25px;">Payment History</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Product</th>
+              <th>Paid</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-payments">
+            <!-- Hidden by architecture upgrade -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -416,9 +432,22 @@
     </div>
   </div>
 
+  <!-- UPGRADED: Custom Alert Modal (Replaces standard alert) -->
+  <div class="confirm-overlay" id="alert-overlay"></div>
+  <div class="confirm-modal" id="alert-modal">
+    <div class="confirm-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+    <h3 id="alert-title">Notice</h3>
+    <p id="alert-msg" style="margin-bottom: 25px;">Message goes here.</p>
+    <div class="confirm-actions">
+      <button class="btn-full" id="btn-alert-ok" style="margin-bottom: 0;">OK</button>
+    </div>
+  </div>
+
   <script type="module">
     import { auth, db } from './config.js';
-    import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // Format Currency
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
@@ -448,7 +477,7 @@
         container.appendChild(pill);
         vibrate([50, 100, 50]);
       } else if (fallbackToAlert) {
-        alert(e.message);
+        customAlert(e.message);
       }
     };
 
@@ -479,6 +508,21 @@
       window.history.back(); 
     };
 
+    // Custom Alert Logic (Replaces System Alert)
+    let alertResolve = null;
+    window.customAlert = function(msg, title="Notice") {
+      return new Promise(resolve => {
+        vibrate(50);
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-msg').innerText = msg;
+        document.getElementById('alert-overlay').classList.add('active');
+        document.getElementById('alert-modal').classList.add('active');
+        window.history.pushState({ alertOpen: true }, '');
+        alertResolve = resolve;
+      });
+    }
+    document.getElementById('btn-alert-ok').onclick = () => { window.history.back(); };
+
     // History API & Panel Navigation
     function openPanel(id, stateData) {
       document.getElementById(id).classList.add('active');
@@ -493,7 +537,15 @@
     };
 
     function closeTopUI() {
-      // Close Modals first
+      // 1. Close Modals
+      const alertModal = document.getElementById('alert-modal');
+      if (alertModal && alertModal.classList.contains('active')) {
+          alertModal.classList.remove('active');
+          document.getElementById('alert-overlay').classList.remove('active');
+          if (alertResolve) { alertResolve(true); alertResolve = null; }
+          return;
+      }
+      
       const activeModal = document.querySelector('.modal.active, .confirm-modal.active');
       if (activeModal) {
         activeModal.classList.remove('active');
@@ -502,7 +554,7 @@
         if(confirmResolve) { confirmResolve(false); confirmResolve = null; } // If confirm closed
         return;
       }
-      // Then close Panels
+      // 2. Close Slide Panels
       if (document.getElementById('view-ledger').classList.contains('active')) {
         document.getElementById('view-ledger').classList.remove('active');
         activeCustId = null;
@@ -663,16 +715,16 @@
       const sday = document.getElementById('line-day').value;
       const color = document.querySelector('#line-color-picker .color-option.selected').dataset.grad;
 
-      if(!id || !name) return alert("Fill ID and Name");
+      if(!id || !name) return customAlert("Fill ID and Name", "Error");
       const isAvail = await checkIdAvailability('lines', id, document.getElementById('line-id-tick'), document.getElementById('line-id-cross'));
-      if(!isAvail) return alert("ID is taken!");
+      if(!isAvail) return customAlert("ID is already taken!", "Error");
 
       const btn = document.getElementById('btn-save-line'); btn.disabled = true; btn.innerText = "Saving...";
       try {
         await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
         window.history.back(); // close modal
         linesLastVisible = null; loadLines(); // reload
-      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Create Line";
     };
 
@@ -704,7 +756,7 @@
       const sday = document.getElementById('edit-line-day').value;
       const color = document.querySelector('#edit-line-color-picker .color-option.selected').dataset.grad;
 
-      if(!name) return alert("Fill Name");
+      if(!name) return customAlert("Fill Name", "Error");
       const btn = document.getElementById('btn-update-line'); btn.disabled = true; btn.innerText = "Saving...";
       
       try {
@@ -720,7 +772,7 @@
         if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
 
         window.history.back(); // close modal
-      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Update Line";
     };
 
@@ -741,7 +793,7 @@
         await deleteDoc(doc(db, "lines", id));
         vibrate([50,50,50]);
         linesLastVisible = null; loadLines();
-      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert("Error: " + e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert("Error: " + e.message, "Deletion Failed"); }
     };
 
     // ==========================================
@@ -838,19 +890,25 @@
       const pTotal = Number(document.getElementById('prod-total').value);
       const pPaid = Number(document.getElementById('prod-paid').value);
 
-      if(!id || !name || !pName || !pTotal) return alert("Fill required fields");
-      if(!(await checkIdAvailability('customers', id, document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross')))) return alert("ID taken");
+      if(!id || !name || !pName || !pTotal) return customAlert("Fill required fields", "Error");
+      if(!(await checkIdAvailability('customers', id, document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross')))) return customAlert("ID is already taken", "Error");
 
       const btn = document.getElementById('btn-save-cust'); btn.disabled = true; btn.innerText = "Saving...";
       try {
-        const initProduct = { id: 'P_'+Date.now(), name: pName, total: pTotal, paid: pPaid, pending: pTotal-pPaid, addedAt: new Date().toISOString() };
+        // EMBEDDED TRANSACTIONS UPGRADE
+        const initProduct = { 
+            id: 'P_'+Date.now(), 
+            name: pName, 
+            total: pTotal, 
+            paid: pPaid, 
+            pending: pTotal-pPaid, 
+            addedAt: new Date().toISOString(),
+            payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', pendingAfter: pTotal-pPaid }] : []
+        };
         await setDoc(doc(db, "customers", id), { id, lineId: activeLineId, name, phone, location: loc, products: [initProduct], createdAt: serverTimestamp() });
         
-        // Also log initial payment if paid > 0
-        if(pPaid > 0) await setDoc(doc(db, "payments", 'PAY_'+Date.now()), { custId: id, lineId: activeLineId, prodId: initProduct.id, amount: pPaid, date: new Date().toISOString(), type: 'advance' });
-
         window.history.back(); custLastVisible = null; loadCustomers();
-      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Save Customer";
     }
 
@@ -858,7 +916,7 @@
       vibrate([50,100]);
       if(!(await customConfirm(`Delete Customer ${id}?`))) return;
       try { await deleteDoc(doc(db, "customers", id)); vibrate([50,50]); custLastVisible = null; loadCustomers(); } 
-      catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
+      catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Deletion Failed"); }
     };
 
     // ==========================================
@@ -867,7 +925,6 @@
     window.openLedgerView = async (custId) => {
       vibrate(); activeCustId = custId;
       document.getElementById('ledger-products').innerHTML = 'Loading...';
-      document.getElementById('ledger-payments').innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
       openPanel('view-ledger', { custId });
       await loadLedgerData();
     };
@@ -882,29 +939,66 @@
         document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
         document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
 
+        // Dark Mode Map Parse Logic
+        if (c.location && c.location.includes(',')) {
+            const parts = c.location.split(',');
+            const lat = parseFloat(parts[0].trim());
+            const lon = parseFloat(parts[1].trim());
+            if (!isNaN(lat) && !isNaN(lon)) {
+                const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
+                document.getElementById('ledger-map-frame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+            }
+        } else {
+            document.getElementById('ledger-map-frame').src = "";
+        }
+
         let totalPending = 0;
         let pHtml = '';
+        
+        // Individual Product Tables Render Logic
         (c.products || []).forEach(p => {
           totalPending += p.pending;
+          
+          let payHtml = '';
+          if (p.payments && p.payments.length > 0) {
+              p.payments.forEach((pay, idx) => {
+                  const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+                  payHtml += `<tr>
+                    <td>${idx + 1}</td>
+                    <td>${dStr}</td>
+                    <td style="color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
+                    <td style="color:var(--danger); font-weight:700;">${fmt(pay.pendingAfter)}</td>
+                  </tr>`;
+              });
+          } else {
+              payHtml = `<tr><td colspan="4" style="text-align:center; color:var(--text-sub);">No payments yet.</td></tr>`;
+          }
+
           pHtml += `
             <div class="product-item">
-              <div class="product-header"><span>${p.name}</span><span>${fmt(p.total)}</span></div>
-              <div class="product-math"><span>Paid: ${fmt(p.paid)}</span><span class="val-pending">Pending: ${fmt(p.pending)}</span></div>
+              <div class="product-header"><span>${p.name}</span><span>Total: ${fmt(p.total)}</span></div>
+              <div class="product-math" style="margin-bottom: 12px;"><span>Paid: ${fmt(p.paid)}</span><span class="val-pending">Pending: ${fmt(p.pending)}</span></div>
+              
+              <div class="product-table-wrapper" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border);">
+                <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.85rem;">
+                  <thead style="background: rgba(107, 114, 128, 0.1);">
+                    <tr>
+                      <th style="padding: 10px; text-align: left;">S.No</th>
+                      <th style="padding: 10px; text-align: left;">Date</th>
+                      <th style="padding: 10px; text-align: left;">Paid</th>
+                      <th style="padding: 10px; text-align: left;">Pending</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${payHtml}
+                  </tbody>
+                </table>
+              </div>
             </div>`;
         });
+        
         document.getElementById('ledger-products').innerHTML = pHtml || '<p style="color:var(--text-sub)">No products.</p>';
         document.getElementById('ledger-total-pending').innerText = fmt(totalPending);
-
-        // Load Payments
-        const pSnap = await getDocs(query(collection(db, "payments"), where("custId", "==", activeCustId), orderBy("date", "desc")));
-        let payHtml = '';
-        pSnap.forEach(d => {
-          const pay = d.data();
-          const prodObj = (c.products || []).find(x => x.id === pay.prodId);
-          const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
-          payHtml += `<tr><td>${dStr}</td><td>${prodObj?prodObj.name:'Unknown'}</td><td style="color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td></tr>`;
-        });
-        document.getElementById('ledger-payments').innerHTML = payHtml || '<tr><td colspan="3" style="text-align:center;">No history.</td></tr>';
 
       } catch(e) { console.error(e); if(e.message && e.message.includes('index')) handleFirebaseError(e); }
     }
@@ -926,13 +1020,13 @@
         try {
           await updateDoc(doc(db,"customers",activeCustId), { name: document.getElementById('cust-name').value, phone: document.getElementById('cust-phone').value, location: document.getElementById('cust-loc').value });
           window.history.back(); loadLedgerData(); custLastVisible=null; loadCustomers();
-        } catch(e){ if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
+        } catch(e){ if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
         btn.disabled=false;
       };
       openModal('modal-customer');
     };
 
-    // Add Product
+    // Add Product (UPGRADED to Run Transaction)
     window.openAddProductModal = (custIdOverride = null) => {
       if(custIdOverride) activeCustId = custIdOverride; // If clicked from Level 2
       document.getElementById('add-prod-name').value=''; document.getElementById('add-prod-total').value=''; document.getElementById('add-prod-paid').value='';
@@ -944,29 +1038,41 @@
       const pName = document.getElementById('add-prod-name').value.trim();
       const pTotal = Number(document.getElementById('add-prod-total').value);
       const pPaid = Number(document.getElementById('add-prod-paid').value);
-      if(!pName || !pTotal) return alert("Fill name and total");
+      if(!pName || !pTotal) return customAlert("Fill name and total", "Error");
 
       const btn = document.getElementById('btn-save-product'); btn.disabled = true; btn.innerText = "Adding...";
       try {
-        const cSnap = await getDoc(doc(db, "customers", activeCustId));
-        const cData = cSnap.data();
-        const newP = { id: 'P_'+Date.now(), name: pName, total: pTotal, paid: pPaid, pending: pTotal-pPaid, addedAt: new Date().toISOString() };
-        const updatedProds = cData.products ? [...cData.products, newP] : [newP];
+        const custRef = doc(db, "customers", activeCustId);
         
-        await updateDoc(doc(db, "customers", activeCustId), { products: updatedProds });
-        if(pPaid > 0) await setDoc(doc(db, "payments", 'PAY_'+Date.now()), { custId: activeCustId, lineId: cData.lineId, prodId: newP.id, amount: pPaid, date: new Date().toISOString(), type: 'advance' });
+        await runTransaction(db, async (transaction) => {
+            const cSnap = await transaction.get(custRef);
+            if (!cSnap.exists()) throw new Error("Customer does not exist!");
+            
+            const cData = cSnap.data();
+            const newP = { 
+                id: 'P_'+Date.now(), 
+                name: pName, 
+                total: pTotal, 
+                paid: pPaid, 
+                pending: pTotal-pPaid, 
+                addedAt: new Date().toISOString(),
+                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', pendingAfter: pTotal-pPaid }] : []
+            };
+            const updatedProds = cData.products ? [...cData.products, newP] : [newP];
+            transaction.update(custRef, { products: updatedProds });
+        });
 
         window.history.back();
         if(document.getElementById('view-ledger').classList.contains('active')) loadLedgerData();
         custLastVisible = null; loadCustomers(); // refresh level 2 list
-      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else alert(e.message); }
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Add Product";
     };
 
     // Initial Load
     window.addEventListener('load', () => { loadLines(); });
 
-    // Infinite Scroll logic for active panel (Increased buffer to 150px to fix mobile scrolling triggers)
+    // Infinite Scroll logic for active panel
     document.querySelectorAll('.view-panel').forEach(panel => {
       panel.addEventListener('scroll', () => {
         if((panel.clientHeight + panel.scrollTop) >= panel.scrollHeight - 150) {
