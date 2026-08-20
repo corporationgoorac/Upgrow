@@ -44,6 +44,7 @@
     /* Animations */
     @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
     @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    @keyframes pulseBadge { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
     /* --- Views / Slide Panels --- */
     .view-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background-color: var(--bg-color); overflow-y: auto; overflow-x: hidden; transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 10; padding: 20px; padding-bottom: 90px; }
@@ -52,16 +53,20 @@
 
     /* --- Dashboard Specific UI --- */
     .header-nav { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; margin-bottom: 25px; animation: fadeIn 0.3s; }
-    .header-nav h2 { font-size: 1.8rem; letter-spacing: -0.5px; margin: 0; color: var(--primary); }
+    .header-nav h2 { font-size: 1.8rem; letter-spacing: -0.5px; margin: 0; color: var(--primary); transition: color 0.3s; }
     .header-nav p { font-size: 0.95rem; color: var(--text-sub); font-weight: 600; margin-top: 4px; }
 
-    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; animation: popIn 0.4s forwards; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 15px; animation: popIn 0.4s forwards; }
     .stat-box { background: var(--surface-card); border: 1px solid var(--border); padding: 18px 10px; border-radius: 18px; text-align: center; box-shadow: var(--shadow); transition: transform 0.2s; }
     .stat-box:active { transform: scale(0.96); }
     .stat-box h4 { font-size: 1.6rem; color: var(--text-main); margin-bottom: 4px; }
     .stat-box p { font-size: 0.75rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
     .stat-box.highlight h4 { color: var(--primary); }
     .stat-box.danger h4 { color: var(--danger); }
+
+    /* Progress Bar Upgrade */
+    .progress-wrapper { width: 100%; background: var(--border); border-radius: 10px; height: 8px; margin-bottom: 25px; overflow: hidden; animation: fadeIn 0.6s forwards; }
+    .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 1.2s cubic-bezier(0.175, 0.885, 0.32, 1); border-radius: 10px; }
 
     .section-title { font-size: 1.15rem; font-weight: 800; margin: 30px 0 15px 0; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
     
@@ -75,16 +80,17 @@
     
     .unassigned-card { background: rgba(239, 68, 68, 0.05) !important; color: var(--text-main) !important; border: 2px dashed var(--danger) !important; }
 
-    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
-    .line-card:active { transform: scale(0.98); }
+    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s, box-shadow 0.2s; }
+    .line-card:hover { transform: translateY(-3px); box-shadow: 0 12px 25px -5px rgba(0,0,0,0.15); }
+    .line-card:active { transform: scale(0.96); box-shadow: var(--shadow); }
     .line-info h3 { font-size: 1.15rem; font-weight: 800; margin-bottom: 5px; }
     .line-info p { font-size: 0.85rem; font-weight: 600; opacity: 0.9; font-family: monospace; }
     
-    .badge-danger { background: var(--danger); color: white; padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
+    .badge-danger { background: var(--danger); color: white; padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 4px; animation: pulseBadge 2s infinite; }
     .badge-danger svg { width: 14px; height: 14px; stroke: white; }
 
     .agent-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.25); padding: 6px 14px 6px 6px; border-radius: 20px; backdrop-filter: blur(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.3); }
-    .agent-pill img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: var(--skeleton-base); }
+    .agent-pill img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: var(--skeleton-base); flex-shrink: 0; }
     .agent-pill span { font-size: 0.9rem; font-weight: 700; color: inherit; white-space: nowrap; }
 
     /* Skeleton UI */
@@ -121,7 +127,7 @@
   <div id="view-dashboard" class="view-panel active">
     
     <div class="header-nav">
-      <h2>Dashboard</h2>
+      <h2 id="greeting-text">Dashboard</h2>
       <p id="date-display">Loading...</p>
     </div>
 
@@ -139,6 +145,11 @@
         <h4 id="stat-unassigned" class="skeleton-box" style="height: 30px; width: 50%; margin: 0 auto 5px auto; border-radius: 4px;"></h4>
         <p>Unassigned</p>
       </div>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="progress-wrapper">
+      <div class="progress-fill" id="progress-fill"></div>
     </div>
 
     <!-- Action Required (Unassigned) -->
@@ -178,16 +189,33 @@
     import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
-    const defaultDp = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==";
+    window.vibrate = vibrate; // Make globally accessible for click events
     
-    // Exact Day Calculation
+    // Exact Day & Greeting Calculation
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const now = new Date();
     const todayStr = daysOfWeek[now.getDay()]; // Absolute correct day string
     
+    // Apply Dynamic Greeting
+    const hours = now.getHours();
+    let greeting = "Good Evening";
+    if (hours < 12) greeting = "Good Morning";
+    else if (hours < 18) greeting = "Good Afternoon";
+    document.getElementById('greeting-text').innerText = greeting;
+    
     // Format Display Date
     const options = { weekday: 'long', month: 'short', day: 'numeric' };
     document.getElementById('date-display').innerText = now.toLocaleDateString('en-US', options);
+
+    // Dynamic Route Navigators with Physics
+    window.goToAssignLines = () => {
+      vibrate(30);
+      window.location.href = 'assignLines.html';
+    };
+    window.goToLineDetail = (id) => {
+      vibrate(30);
+      window.location.href = 'lines.html?lineId=' + id;
+    };
 
     // --- Firebase Error Handler ---
     window.handleFirebaseError = function(e) {
@@ -315,6 +343,13 @@
         document.getElementById('stat-unassigned').innerHTML = unassignedList.length;
         document.getElementById('stat-unassigned').className = '';
 
+        // Animate Progress Bar
+        const totalRoutes = activeLines.length;
+        const progressPct = totalRoutes === 0 ? 0 : (assignedList.length / totalRoutes) * 100;
+        setTimeout(() => {
+          document.getElementById('progress-fill').style.width = progressPct + '%';
+        }, 100);
+
         // Render Unassigned (Action Required)
         const unassignedContainer = document.getElementById('unassigned-section');
         const unassignedListEl = document.getElementById('list-unassigned');
@@ -324,7 +359,7 @@
           let unHTML = '';
           unassignedList.forEach((line, idx) => {
             unHTML += `
-              <div class="line-card unassigned-card" style="animation-delay: ${idx*0.05}s" onclick="window.location.href='assignLines.html'">
+              <div class="line-card unassigned-card" style="animation-delay: ${idx*0.05}s" onclick="window.goToAssignLines()">
                 <div class="line-info">
                   <h3>${line.name}</h3>
                   <p>${line.id}</p>
@@ -351,17 +386,19 @@
             const dp = primaryAgent.photoURL || defaultDp;
             const extraCount = data.agents.length - 1;
             
-            let extraHTML = extraCount > 0 ? `<span style="margin-left: 5px; font-size: 0.75rem;">+${extraCount}</span>` : '';
+            // SMART FIX: Extract First Name Only to prevent overflow
+            const firstName = (primaryAgent.name || 'Agent').trim().split(' ')[0];
+            let extraHTML = extraCount > 0 ? `<span style="margin-left: 5px; font-size: 0.75rem; color: #fff;">+${extraCount}</span>` : '';
 
             asHTML += `
-              <div class="line-card ${line.color || 'grad-6'}" style="animation-delay: ${idx*0.05}s">
+              <div class="line-card ${line.color || 'grad-6'}" style="animation-delay: ${idx*0.05}s" onclick="window.goToLineDetail('${line.id}')">
                 <div class="line-info" style="flex: 1; overflow: hidden; padding-right: 10px;">
                   <h3 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${line.name}</h3>
                   <p>${line.id}</p>
                 </div>
                 <div class="agent-pill">
                   <img src="${dp}" onerror="this.src='${defaultDp}'">
-                  <span style="max-width: 100px; overflow: hidden; text-overflow: ellipsis;">${primaryAgent.name || 'Agent'}${extraHTML}</span>
+                  <span style="max-width: 90px; overflow: hidden; text-overflow: ellipsis;">${firstName}${extraHTML}</span>
                 </div>
               </div>`;
           });
