@@ -1,7 +1,7 @@
 {
-  "name": "Up Grow",
-  "short_name": "Up Grow",
-  "description": "Secure Employee Portal for Line Management",
+  "name": "Up Field",
+  "short_name": "Up Field",
+  "description": "Agent Field Portal for Route and Collection Management",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait-primary",
