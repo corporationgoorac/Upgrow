@@ -18,7 +18,7 @@
       --primary-hover: #059669;
       --danger: #ef4444;
       --danger-hover: #dc2626;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
       --skeleton-base: #e5e7eb;
       --skeleton-highlight: #f3f4f6;
     }
@@ -31,7 +31,7 @@
         --text-main: #f9fafb;
         --text-sub: #9ca3af;
         --border: #2d3748;
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
       }
@@ -62,9 +62,10 @@
     h2 { font-size: 1.3rem; margin-bottom: 15px; letter-spacing: -0.5px; }
 
     /* Animations */
-    @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.92) translateY(15px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
     @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
     @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    @keyframes pulseShadow { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
     /* --- Cards --- */
     .card {
@@ -76,85 +77,105 @@
       align-items: center;
       gap: 15px;
       margin-bottom: 15px;
-      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
       opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: var(--shadow);
     }
 
-    .my-card-header { margin-bottom: 10px; font-size: 0.9rem; color: var(--text-sub); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .my-card-header { margin-bottom: 10px; font-size: 0.9rem; color: var(--text-sub); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; animation: fadeIn 0.5s ease forwards; }
 
-    .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); background-color: var(--skeleton-base); flex-shrink: 0; }
+    .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); background-color: var(--skeleton-base); flex-shrink: 0; transition: transform 0.3s ease; }
+    .card:hover .avatar { transform: scale(1.1) rotate(5deg); }
     
     .card-info { flex: 1; overflow: hidden; }
-    .card-info h3 { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .card-info h3 { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; transition: color 0.2s; }
     .card-info p { font-size: 0.85rem; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
-    .role-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; margin-top: 5px; text-transform: uppercase; }
+    .role-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .role-badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s ease; }
     .role-admin { background-color: rgba(16, 185, 129, 0.15); color: var(--primary); }
-    .role-agent { background-color: rgba(107, 114, 128, 0.15); color: var(--text-sub); }
+    .role-agent { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; } /* Differentiated agent color */
 
-    .btn-edit { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
-    .btn-edit:active { transform: scale(0.95); background-color: var(--border); }
+    .btn-edit { background: transparent; border: 2px solid var(--border); color: var(--text-main); padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); flex-shrink: 0; }
+    .btn-edit:hover { background-color: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-edit:active { transform: scale(0.9); }
 
     /* --- Search Bar --- */
-    .search-container { position: relative; margin-bottom: 20px; margin-top: 10px; animation: popIn 0.4s 0.1s forwards; opacity: 0; }
-    .search-container svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: var(--text-sub); }
-    .search-container input { width: 100%; padding: 14px 14px 14px 45px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--surface-card); color: var(--text-main); font-size: 1rem; outline: none; transition: all 0.3s ease; }
-    .search-container input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); }
+    .search-container { position: relative; margin-bottom: 25px; margin-top: 15px; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s forwards; opacity: 0; }
+    .search-container svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; fill: var(--text-sub); transition: fill 0.3s; }
+    .search-container input { width: 100%; padding: 15px 15px 15px 48px; border-radius: 16px; border: 2px solid var(--border); background-color: var(--surface-card); color: var(--text-main); font-size: 1.05rem; outline: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .search-container input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); transform: translateY(-2px); }
+    .search-container input:focus + svg { fill: var(--primary); } /* Will target sibling if rearranged, keeping original structure */
 
     /* --- Skeleton Loader --- */
-    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 4px; }
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 6px; }
     @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
     /* --- Mobile Modal (Bottom Sheet) --- */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(3px); }
     .modal-overlay.active { opacity: 1; visibility: visible; }
     
-    .modal { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--surface-card); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 25px 20px 35px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -10px 25px rgba(0,0,0,0.2); }
+    .modal { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
     .modal.active { transform: translateY(0); }
-    .modal-handle { width: 40px; height: 5px; background-color: var(--border); border-radius: 10px; margin: 0 auto 20px auto; }
+    .modal-handle { width: 45px; height: 6px; background-color: var(--border); border-radius: 10px; margin: 0 auto 25px auto; transition: background-color 0.3s; }
+    .modal-handle:active { background-color: var(--text-sub); }
     
-    .modal-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
-    .modal-header .avatar { width: 60px; height: 60px; }
-    .modal-header h3 { font-size: 1.2rem; }
+    .modal-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; animation: fadeIn 0.4s 0.1s both; }
+    .modal-header .avatar { width: 65px; height: 65px; border-width: 3px; }
+    .modal-header h3 { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; }
 
-    .input-group { margin-bottom: 20px; }
-    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
-    .input-group input { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid var(--border); background-color: var(--bg-color); color: var(--text-main); font-size: 1rem; outline: none; }
-    .input-group input:focus { border-color: var(--primary); }
+    .input-group { margin-bottom: 20px; animation: fadeIn 0.4s 0.15s both; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px; transition: color 0.3s; }
+    .input-group input { width: 100%; padding: 15px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--bg-color); color: var(--text-main); font-size: 1.05rem; outline: none; transition: all 0.3s; }
+    .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); background-color: var(--surface-card); }
+    .input-group input:focus + label { color: var(--primary); }
 
     /* --- Toggle Switch --- */
-    .toggle-container { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 25px; background-color: var(--bg-color); }
+    .toggle-container { display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 14px; border: 2px solid var(--border); margin-bottom: 15px; background-color: var(--bg-color); transition: border-color 0.3s, background-color 0.3s; animation: fadeIn 0.4s 0.2s both; }
+    .toggle-container:hover { border-color: var(--primary-hover); }
     .toggle-label { display: flex; flex-direction: column; }
-    .toggle-label span { font-weight: 600; font-size: 1rem; }
-    .toggle-label small { font-size: 0.75rem; color: var(--text-sub); }
+    .toggle-label span { font-weight: 700; font-size: 1.05rem; margin-bottom: 2px; }
+    .toggle-label small { font-size: 0.8rem; color: var(--text-sub); font-weight: 500; }
     
-    .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+    .switch { position: relative; display: inline-block; width: 54px; height: 30px; }
     .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 34px; }
-    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-radius: 34px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+    .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
     input:checked + .slider { background-color: var(--primary); }
-    input:checked + .slider:before { transform: translateX(22px); }
+    input:checked + .slider:before { transform: translateX(24px); }
 
-    .btn-full { width: 100%; padding: 14px; border-radius: 12px; font-size: 1.05rem; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; margin-bottom: 10px; }
-    .btn-save { background-color: var(--primary); color: #fff; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
-    .btn-save:active { transform: scale(0.96); }
-    .btn-delete { background-color: transparent; border: 1px solid var(--danger); color: var(--danger); }
-    .btn-delete:active { background-color: var(--danger); color: #fff; }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-bottom: 12px; animation: fadeIn 0.4s 0.3s both; }
+    .btn-save { background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+    .btn-save:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
+    .btn-save:active { transform: scale(0.96); animation: pulseShadow 0.4s ease-out; }
+    .btn-delete { background-color: transparent; border: 2px solid var(--danger); color: var(--danger); }
+    .btn-delete:hover { background-color: var(--danger); color: #fff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3); }
+    .btn-delete:active { transform: scale(0.96); }
 
-    #loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.85rem; font-weight: 600; }
+    #loading-trigger { text-align: center; padding: 25px; color: var(--text-sub); font-size: 0.9rem; font-weight: 700; letter-spacing: 0.5px; animation: pulseShadow 2s infinite; }
   </style>
 </head>
 <body>
 
   <div class="my-card-header">Logged In As</div>
   <div id="my-card-container">
-    <!-- Current User Card Skeletons -->
+    <!-- Current User Card Skeletons (UPGRADED TO MATCH REAL CARD) -->
     <div class="card" style="animation-delay: 0s;">
-      <div class="avatar skeleton-box"></div>
+      <div class="avatar skeleton-box" style="border-color: transparent;"></div>
       <div class="card-info">
-        <div class="skeleton-box" style="height: 18px; width: 60%; margin-bottom: 6px;"></div>
-        <div class="skeleton-box" style="height: 14px; width: 40%;"></div>
+        <div class="skeleton-box" style="height: 20px; width: 65%; margin-bottom: 8px;"></div>
+        <div class="skeleton-box" style="height: 14px; width: 80%; margin-bottom: 10px;"></div>
+        <div style="display: flex; gap: 6px;">
+          <div class="skeleton-box" style="height: 22px; width: 55px; border-radius: 6px;"></div>
+          <div class="skeleton-box" style="height: 22px; width: 55px; border-radius: 6px;"></div>
+        </div>
       </div>
+      <div class="skeleton-box" style="height: 35px; width: 55px; border-radius: 10px;"></div>
     </div>
   </div>
 
@@ -163,7 +184,7 @@
     <input type="text" id="search-input" placeholder="Search staff by name...">
   </div>
 
-  <div class="my-card-header" style="margin-top: 10px;">All Staff</div>
+  <div class="my-card-header" style="margin-top: 15px;">All Staff</div>
   <div id="users-list">
     <!-- Skeletons loaded via JS -->
   </div>
@@ -179,7 +200,7 @@
       <img id="modal-dp" class="avatar" src="" alt="Profile" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==';">
       <div>
         <h3 id="modal-email">user@email.com</h3>
-        <p style="font-size: 0.8rem; color: var(--text-sub);">Staff ID: <span id="modal-uid">...</span></p>
+        <p style="font-size: 0.85rem; color: var(--text-sub); font-weight: 500; margin-top: 2px;">Staff ID: <span id="modal-uid" style="font-family: monospace;">...</span></p>
       </div>
     </div>
 
@@ -199,9 +220,21 @@
       </label>
     </div>
 
+    <!-- NEW FIELD AGENT TOGGLE -->
+    <div class="toggle-container" style="animation-delay: 0.25s;">
+      <div class="toggle-label">
+        <span>Field Agent</span>
+        <small>Assign routes & daily collections</small>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="modal-agent-toggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
     <button class="btn-full btn-save" id="btn-save-user">Save Changes</button>
-    <button class="btn-full btn-delete" id="btn-delete-user">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+    <button class="btn-full btn-delete" id="btn-delete-user" style="animation-delay: 0.35s;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
       Delete User
     </button>
   </div>
@@ -235,6 +268,7 @@
     const modalUid = document.getElementById('modal-uid');
     const modalName = document.getElementById('modal-name');
     const modalRoleToggle = document.getElementById('modal-role-toggle');
+    const modalAgentToggle = document.getElementById('modal-agent-toggle'); // New Element
     const btnSaveUser = document.getElementById('btn-save-user');
     const btnDeleteUser = document.getElementById('btn-delete-user');
 
@@ -274,9 +308,15 @@
     // 3. Create Card HTML
     function createUserCardHTML(userData, isMe = false) {
       const delay = isMe ? 0 : 0.1;
-      const isAdmin = userData.role === 'admin';
-      const roleClass = isAdmin ? 'role-admin' : 'role-agent';
-      const roleText = isAdmin ? 'Admin' : 'Agent';
+      // Evaluate new booleans, fallback to legacy text role if booleans not yet saved
+      const isAdmin = userData.isAdmin !== undefined ? userData.isAdmin : userData.role === 'admin';
+      const isAgent = userData.isAgent !== undefined ? userData.isAgent : userData.role === 'agent';
+      
+      let badgesHTML = '';
+      if (isAdmin) badgesHTML += `<span class="role-badge role-admin">Admin</span>`;
+      if (isAgent) badgesHTML += `<span class="role-badge role-agent">Agent</span>`;
+      if (!isAdmin && !isAgent) badgesHTML = `<span class="role-badge" style="background:rgba(107, 114, 128, 0.15); color:var(--text-sub);">No Access</span>`;
+
       const dpUrl = userData.photoURL || fallbackAvatar;
 
       return `
@@ -285,7 +325,9 @@
           <div class="card-info">
             <h3>${userData.name || 'Unnamed User'}</h3>
             <p>${userData.email}</p>
-            <span class="role-badge ${roleClass}">${roleText}</span>
+            <div class="role-badges">
+              ${badgesHTML}
+            </div>
           </div>
           <button class="btn-edit" onclick="window.openEditModal('${userData.uid}')">Edit</button>
         </div>
@@ -297,12 +339,15 @@
       for(let i=0; i<count; i++) {
         html += `
           <div class="card" style="animation-delay: ${i*0.1}s;">
-            <div class="avatar skeleton-box"></div>
+            <div class="avatar skeleton-box" style="border-color: transparent;"></div>
             <div class="card-info">
-              <div class="skeleton-box" style="height: 18px; width: 60%; margin-bottom: 6px;"></div>
-              <div class="skeleton-box" style="height: 14px; width: 40%; margin-bottom: 6px;"></div>
-              <div class="skeleton-box" style="height: 20px; width: 50px; border-radius: 6px;"></div>
+              <div class="skeleton-box" style="height: 20px; width: 65%; margin-bottom: 8px;"></div>
+              <div class="skeleton-box" style="height: 14px; width: 80%; margin-bottom: 10px;"></div>
+              <div style="display: flex; gap: 6px;">
+                <div class="skeleton-box" style="height: 22px; width: 55px; border-radius: 6px;"></div>
+              </div>
             </div>
+            <div class="skeleton-box" style="height: 35px; width: 55px; border-radius: 10px;"></div>
           </div>
         `;
       }
@@ -351,7 +396,7 @@
         if (querySnapshot.empty) {
           hasMore = false;
           if (!isLoadMore) {
-            usersListContainer.innerHTML = `<p style="text-align:center; color:var(--text-sub); margin-top:20px;">No staff found.</p>`;
+            usersListContainer.innerHTML = `<p style="text-align:center; color:var(--text-sub); margin-top:20px; font-weight:600;">No staff found.</p>`;
           }
           loadingTrigger.style.display = 'none';
           isLoading = false;
@@ -413,7 +458,7 @@
 
     // 7. Modal Logic & History API integration for physical back button
     window.openEditModal = (uid) => {
-      vibrate();
+      vibrate([30, 40]);
       const uData = usersDataMap[uid];
       if (!uData) return;
 
@@ -422,7 +467,10 @@
       modalEmail.innerText = uData.email;
       modalUid.innerText = uData.uid.substring(0, 10) + '...';
       modalName.value = uData.name || '';
-      modalRoleToggle.checked = (uData.role === 'admin');
+      
+      // Setup toggles based on new boolean fields or legacy role field
+      modalRoleToggle.checked = uData.isAdmin !== undefined ? uData.isAdmin : uData.role === 'admin';
+      modalAgentToggle.checked = uData.isAgent !== undefined ? uData.isAgent : uData.role === 'agent';
 
       // Prevent deleting yourself
       btnDeleteUser.style.display = (uid === currentUser.uid) ? 'none' : 'flex';
@@ -459,10 +507,12 @@
     // 8. Save User Changes
     btnSaveUser.addEventListener('click', async () => {
       if (!editingUid) return;
-      vibrate();
+      vibrate(50);
       
       const newName = modalName.value.trim();
-      const newRole = modalRoleToggle.checked ? 'admin' : 'agent';
+      const isAdmin = modalRoleToggle.checked;
+      const isAgent = modalAgentToggle.checked;
+      const newRole = isAdmin ? 'admin' : (isAgent ? 'agent' : 'none'); // Legacy compat
       
       btnSaveUser.innerText = "Saving...";
       btnSaveUser.disabled = true;
@@ -471,12 +521,16 @@
         const userRef = doc(db, "users", editingUid);
         await updateDoc(userRef, {
           name: newName,
-          role: newRole
+          role: newRole,
+          isAdmin: isAdmin,
+          isAgent: isAgent
         });
 
         // Update local map
         usersDataMap[editingUid].name = newName;
         usersDataMap[editingUid].role = newRole;
+        usersDataMap[editingUid].isAdmin = isAdmin;
+        usersDataMap[editingUid].isAgent = isAgent;
 
         // Re-render specifically that card without reloading DB
         const existingCard = document.getElementById(`card-${editingUid}`);
@@ -484,7 +538,7 @@
           existingCard.outerHTML = createUserCardHTML(usersDataMap[editingUid], editingUid === currentUser.uid);
         }
 
-        vibrate([50, 50]);
+        vibrate([50, 50, 50]);
         window.history.back(); // Close modal
 
       } catch (error) {
@@ -500,7 +554,7 @@
     btnDeleteUser.addEventListener('click', async () => {
       if (!editingUid || editingUid === currentUser.uid) return;
       
-      vibrate([50, 100, 50]); // Warning pattern
+      vibrate([50, 100, 50, 100]); // Danger warning pattern
       const confirmDelete = confirm("Are you sure you want to permanently delete this user? They will lose access to the app.");
       if (!confirmDelete) return;
 
@@ -512,7 +566,11 @@
         
         // Remove from UI instantly
         const existingCard = document.getElementById(`card-${editingUid}`);
-        if (existingCard) existingCard.remove();
+        if (existingCard) {
+          existingCard.style.transform = 'scale(0.8)';
+          existingCard.style.opacity = '0';
+          setTimeout(() => existingCard.remove(), 300);
+        }
         
         delete usersDataMap[editingUid];
 
@@ -525,7 +583,7 @@
       }
 
       btnDeleteUser.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         Delete User
       `;
       btnDeleteUser.disabled = false;
