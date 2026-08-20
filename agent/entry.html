@@ -41,7 +41,8 @@
     body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; } /* Controlled scrolling per screen */
 
     /* --- Top Header & Live Sync Pill --- */
-    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); border-bottom: 1px solid var(--border); z-index: 10; position: relative; }
+    /* REMOVED border-bottom to make it perfectly flush with the search bar */
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); border-bottom: none; z-index: 10; position: relative; }
     .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
     .sync-pill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); border-radius: 20px; color: var(--primary); font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -53,7 +54,6 @@
     /* --- Screen Management (Sliding History API) --- */
     .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; }
     .screen.hidden-right { transform: translateX(100%); }
-    /* REMOVED top padding so content is flush with the header */
     .screen-content { flex: 1; overflow-y: auto; padding: 0 20px 100px 20px; }
 
     /* --- Search Area --- */
@@ -162,9 +162,16 @@
       </select>
     </div>
 
-    <div class="input-group" id="split-container" style="display: none;">
-      <label>How much of the total was Cash? (₹)</label>
-      <input type="number" id="pay-cash-split" placeholder="Cash amount" inputmode="numeric">
+    <!-- UPGRADED SPLIT CONTAINER: Side by Side Inputs -->
+    <div id="split-container" style="display: none; gap: 15px; margin-bottom: 20px;">
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label>Cash (₹)</label>
+        <input type="number" id="pay-cash-split" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="input-group" style="flex: 1; margin-bottom: 0;">
+        <label>Online (₹)</label>
+        <input type="number" id="pay-online-split" placeholder="0" inputmode="numeric">
+      </div>
     </div>
 
     <button class="btn-full" id="btn-save-payment">Save Entry</button>
@@ -207,8 +214,8 @@
     const payTotal = document.getElementById('pay-total');
     const payMethod = document.getElementById('pay-method');
     const splitContainer = document.getElementById('split-container');
-    // ADDED EXPLICIT DEFINITION TO PREVENT JS CRASH
     const payCashSplit = document.getElementById('pay-cash-split'); 
+    const payOnlineSplit = document.getElementById('pay-online-split');
 
     // Focus Keyboard on Load
     window.addEventListener('load', () => {
@@ -320,6 +327,7 @@
       payTotal.value = '';
       payMethod.value = 'cash';
       payCashSplit.value = '';
+      payOnlineSplit.value = '';
       splitContainer.style.display = 'none';
 
       window.history.pushState({ screen: 'modal' }, '');
@@ -420,9 +428,41 @@
       }
     }
 
-    // --- Payment Flow & Transaction ---
+    // --- Payment Flow & Auto-Calculate Math Engine ---
     payMethod.addEventListener('change', (e) => {
-      splitContainer.style.display = e.target.value === 'split' ? 'block' : 'none';
+      // Changed to 'flex' for side-by-side layout
+      splitContainer.style.display = e.target.value === 'split' ? 'flex' : 'none';
+      if(e.target.value !== 'split') {
+          payCashSplit.value = '';
+          payOnlineSplit.value = '';
+      }
+    });
+
+    // Auto-calculate Online when Cash is typed
+    payCashSplit.addEventListener('input', () => {
+      const total = parseInt(payTotal.value) || 0;
+      const cash = parseInt(payCashSplit.value) || 0;
+      if (total > 0 && cash <= total) {
+          payOnlineSplit.value = total - cash;
+      }
+    });
+
+    // Auto-calculate Cash when Online is typed
+    payOnlineSplit.addEventListener('input', () => {
+      const total = parseInt(payTotal.value) || 0;
+      const online = parseInt(payOnlineSplit.value) || 0;
+      if (total > 0 && online <= total) {
+          payCashSplit.value = total - online;
+      }
+    });
+
+    // Auto-calculate if they change the main total while Split is open
+    payTotal.addEventListener('input', () => {
+      if (payMethod.value === 'split') {
+         const total = parseInt(payTotal.value) || 0;
+         const cash = parseInt(payCashSplit.value) || 0;
+         if (cash <= total) payOnlineSplit.value = total - cash;
+      }
     });
 
     document.getElementById('btn-save-payment').addEventListener('click', async () => {
@@ -443,7 +483,8 @@
       const paymentPayload = {
         amount: amt,
         method: payMethod.value,
-        cash_split: payMethod.value === 'split' ? parseInt(payCashSplit.value) || 0 : (payMethod.value === 'cash' ? amt : 0),
+        cash_split: payMethod.value === 'split' ? (parseInt(payCashSplit.value) || 0) : (payMethod.value === 'cash' ? amt : 0),
+        online_split: payMethod.value === 'split' ? (parseInt(payOnlineSplit.value) || 0) : (payMethod.value === 'online' ? amt : 0),
         status: "pending",
         timestamp: new Date().toISOString(),
         customer_name: selectedCustomer.name
@@ -521,13 +562,13 @@
           // Generate Map iframe Preview (Zero Cost via Google Maps Embed)
           const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
 
-          // Show Map & OK Button (Removed CSS filter to show normal Google Maps colors)
+          // Show Map & OK Button (Added CSS filter for Dark Mode & allowed scrolling)
           document.getElementById('loc-loader').style.display = 'none';
           document.getElementById('loc-content').style.display = 'block';
           document.getElementById('loc-content').innerHTML = `
             <h3 style="color:var(--primary); font-size:1.4rem; font-weight:800; margin-bottom:15px;">Location Saved!</h3>
             <div style="width:100%; height:180px; border-radius:16px; overflow:hidden; margin-bottom:15px; border:1px solid var(--border); background:var(--skeleton-base); position:relative;">
-                <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="${mapUrl}"></iframe>
+                <iframe width="100%" height="100%" frameborder="0" scrolling="yes" marginheight="0" marginwidth="0" src="${mapUrl}" style="filter: invert(90%) hue-rotate(180deg); touch-action: auto;"></iframe>
             </div>
             <p style="color:var(--text-sub); font-size:0.95rem; font-weight:700; margin-bottom:20px; font-family:monospace;">${coords}</p>
             <button class="btn-full" onclick="window.history.back()" style="margin-top:0;">OK</button>
