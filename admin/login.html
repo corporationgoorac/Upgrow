@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Up Grow - Login</title>
   
   <style>
@@ -34,7 +34,18 @@
       }
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: system-ui, -apple-system, sans-serif;
+      /* Prevent Copy and Select */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
     
     body {
       background-color: var(--bg-color);
@@ -44,6 +55,8 @@
       justify-content: center;
       min-height: 100vh;
       padding: 20px;
+      /* Smooth background transition if theme changes */
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     /* Main Card UI */
@@ -56,6 +69,17 @@
       box-shadow: var(--shadow);
       text-align: center;
       border: 1px solid var(--border);
+      /* Entry Animation */
+      animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    @keyframes slideUpFade {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .logo {
@@ -64,10 +88,18 @@
       margin-bottom: 15px;
       object-fit: contain;
       border-radius: 16px;
+      /* Subtle pulse on load */
+      animation: gentlePulse 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes gentlePulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.03); }
     }
 
     h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; }
     p.subtitle { color: var(--text-sub); font-size: 0.95rem; margin-bottom: 30px; }
+    p.corp-tag { font-size: 0.75rem; color: var(--text-sub); margin-top: -25px; margin-bottom: 30px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
 
     /* Buttons */
     .btn {
@@ -81,8 +113,13 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       border: none;
+      /* Re-enable selection for button text if needed, but keeping global none is fine for buttons */
+    }
+
+    .btn:active {
+      transform: scale(0.98);
     }
 
     .btn-google {
@@ -92,7 +129,10 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
-    .btn-google:hover { background-color: var(--bg-color); }
+    .btn-google:hover { 
+      background-color: var(--bg-color); 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);
+    }
     
     .btn-primary { background-color: var(--primary); color: #fff; margin-top: 15px; }
     .btn-primary:hover { background-color: var(--primary-hover); }
@@ -109,6 +149,12 @@
       color: var(--text-main);
       font-size: 1rem;
       outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      /* Allow typing in inputs */
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
     }
     .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
 
@@ -121,6 +167,7 @@
       border-radius: 50%;
       overflow: hidden;
       border: 3px solid var(--primary);
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
     }
 
     .avatar-img {
@@ -128,7 +175,7 @@
       height: 100%;
       object-fit: cover;
       opacity: 0; /* Hidden until loaded */
-      transition: opacity 0.3s ease;
+      transition: opacity 0.4s ease-in;
     }
 
     .skeleton {
@@ -136,7 +183,7 @@
       top: 0; left: 0; width: 100%; height: 100%;
       background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
       background-size: 200% 100%;
-      animation: skeletonLoading 1.5s infinite;
+      animation: skeletonLoading 1.5s infinite linear;
     }
 
     @keyframes skeletonLoading {
@@ -144,9 +191,25 @@
       100% { background-position: -200% 0; }
     }
 
+    /* Section Animations */
+    .fade-enter {
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
     /* Utility */
     .hidden { display: none !important; }
-    .error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 10px; display: none; }
+    .error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 10px; display: none; animation: shake 0.4s ease-in-out; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
 
   </style>
 </head>
@@ -155,10 +218,10 @@
   <div class="card">
     <img src="images/icon.png" alt="Up Grow Logo" class="logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjwvc3ZnPg==';">
     <h1>Up Grow</h1>
+    <p class="corp-tag">From Goorac Corporation</p>
     
     <!-- SECTION 1: Initial Login -->
     <div id="login-section">
-      <p class="subtitle">Secure Employee Portal</p>
       <button id="btn-google-login" class="btn btn-google">
         <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -211,6 +274,9 @@
     const authError = document.getElementById('auth-error');
     const saveError = document.getElementById('save-error');
 
+    // Prevent default context menu (copy/paste restrictions)
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
     // 1. Handle Google Login Click
     btnGoogleLogin.addEventListener('click', async () => {
       try {
@@ -243,6 +309,7 @@
             // New User: Show Onboarding Screen
             loginSection.classList.add('hidden');
             onboardingSection.classList.remove('hidden');
+            onboardingSection.classList.add('fade-enter');
 
             // Pre-fill data
             userNameInput.value = user.displayName || "";
