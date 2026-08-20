@@ -46,7 +46,7 @@
     @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
 
     /* --- Views / Slide Panels --- */
-    .view-panel { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background-color: var(--bg-color); overflow-y: auto; transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 10; }
+    .view-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background-color: var(--bg-color); overflow-y: auto; overflow-x: hidden; transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 10; }
     #view-staff { z-index: 1; padding: 20px; padding-bottom: 90px; }
     #view-schedule { transform: translateX(100%); z-index: 2; background: transparent; padding: 0 !important; } /* Parallax Overlay Fix */
     .view-panel.active { transform: translateX(0) !important; }
@@ -80,8 +80,8 @@
 
     /* --- UBER-STYLE PARALLAX MAP & SCHEDULE --- */
     /* UPGRADED: Fixed sticky math and removed default iframe borders so it sits perfectly */
-    #parallax-map { position: -webkit-sticky; position: sticky; top: 0; left: 0; width: 100vw; height: 35vh; z-index: 0; border: none !important; margin: 0; padding: 0; display: block; filter: invert(100%) hue-rotate(180deg) brightness(80%); pointer-events: none; }
-    #parallax-map-overlay { position: -webkit-sticky; position: sticky; top: 0; left: 0; width: 100vw; height: 35vh; background: linear-gradient(to bottom, rgba(18,18,18,0.2) 0%, var(--bg-color) 95%); z-index: 1; pointer-events: none; margin-top: -35vh; border: none !important; display: block; }
+    #parallax-map { position: -webkit-sticky; position: sticky; top: 0; left: 0; width: 100%; height: 35vh; z-index: 0; border: none !important; margin: 0; padding: 0; display: block; filter: invert(100%) hue-rotate(180deg) brightness(80%); pointer-events: none; }
+    #parallax-map-overlay { position: -webkit-sticky; position: sticky; top: 0; left: 0; width: 100%; height: 35vh; background: linear-gradient(to bottom, rgba(18,18,18,0.2) 0%, var(--bg-color) 95%); z-index: 1; pointer-events: none; margin-top: -35vh; border: none !important; display: block; }
     
     .btn-back-map { position: -webkit-sticky; position: sticky; top: 20px; margin-left: 20px; margin-top: calc(-35vh + 20px); margin-bottom: calc(35vh - 60px); z-index: 20; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); border: none; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .btn-back-map svg { width: 24px; height: 24px; stroke: white; }
@@ -265,6 +265,7 @@
         const container = document.getElementById('index-pill-container');
         const pill = document.createElement('div');
         pill.className = 'index-pill';
+        // UPGRADED SVG SIZE BUG FIX
         pill.innerHTML = `<svg width="24" height="24" style="min-width: 24px; min-height: 24px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span>Missing Index! Tap to fix.</span><button class="close-pill">✕</button>`;
         pill.onclick = (evt) => { if(evt.target.tagName !== 'BUTTON') window.open(url, '_blank'); };
         pill.querySelector('.close-pill').onclick = (evt) => { evt.stopPropagation(); pill.remove(); };
