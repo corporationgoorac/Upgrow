@@ -190,6 +190,7 @@
 
     const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
     window.vibrate = vibrate; // Make globally accessible for click events
+    const defaultDp = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==";
     
     // Exact Day & Greeting Calculation
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
