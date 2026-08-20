@@ -72,7 +72,9 @@
       /* Hide scrollbar for IE, Edge and Firefox */
       -ms-overflow-style: none !important;  
       scrollbar-width: none !important;
-      overflow: hidden; /* Hard lock to prevent any scrolling */
+      /* Changed from hidden to auto to allow vertical scrolling on small screens */
+      overflow-y: auto; 
+      overflow-x: hidden;
     }
 
     /* --- Animations --- */
@@ -102,6 +104,12 @@
       0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
       70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
       100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    
+    @keyframes floatElement {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+      100% { transform: translateY(0px); }
     }
 
     /* Staggered entrance classes */
@@ -188,17 +196,40 @@
       animation: pulseClick 0.4s ease-out;
     }
 
+    /* Setup/Onboarding Section Specific Layout */
+    #onboarding-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
     /* Inputs */
-    .input-group { text-align: left; margin-bottom: 20px; animation: popIn 0.5s ease-out forwards; animation-delay: 0.1s; opacity: 0; }
-    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; transition: color 0.3s; }
+    .input-group { 
+      text-align: center; /* Centered label */
+      margin-bottom: 25px; 
+      width: 100%; /* Ensure full width in flex container */
+      animation: popIn 0.5s ease-out forwards; 
+      animation-delay: 0.1s; 
+      opacity: 0; 
+    }
+    .input-group label { 
+      display: block; 
+      font-size: 0.9rem; 
+      font-weight: 600; 
+      color: var(--text-sub); 
+      margin-bottom: 12px; 
+      transition: color 0.3s; 
+    }
     .input-group input {
       width: 100%;
-      padding: 14px;
+      padding: 16px; /* Slightly larger padding for better touch targets */
       border-radius: 12px;
       border: 2px solid var(--border);
       background-color: transparent; /* Made transparent for full-screen feel */
       color: var(--text-main);
-      font-size: 1.05rem;
+      font-size: 1.1rem; /* Slightly larger font */
+      text-align: center; /* Center the typed text */
       outline: none;
       transition: all 0.3s ease;
     }
@@ -206,20 +237,21 @@
       border-color: var(--primary); 
       box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); 
       background-color: transparent;
+      transform: scale(1.02); /* Slight pop when typing */
     }
     .input-group input:focus + label { color: var(--primary); }
 
     /* Avatar & Skeleton Loader */
     .avatar-container {
       position: relative;
-      width: 100px;
-      height: 100px;
-      margin: 0 auto 25px auto;
+      width: 110px; /* Slightly larger in setup */
+      height: 110px;
+      margin: 10px auto 35px auto; /* Better spacing */
       border-radius: 50%;
       overflow: hidden;
       border: 3px solid var(--primary);
-      box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
-      animation: popIn 0.5s ease-out forwards;
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+      animation: popIn 0.5s ease-out forwards, floatElement 6s ease-in-out infinite; /* Added float animation */
     }
 
     .avatar-img {
