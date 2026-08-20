@@ -202,10 +202,43 @@
 
   <div class="my-card-header" style="margin-top: 15px;">All Staff</div>
   <div id="users-list">
-    <!-- Skeletons loaded via JS -->
+    <!-- Skeletons loaded via JS, pre-filled for 0ms render -->
+    <div class="card" style="animation-delay: 0s;">
+      <div class="avatar skeleton-box" style="border-color: transparent;"></div>
+      <div class="card-info">
+        <div class="skeleton-box" style="height: 20px; width: 65%; margin-bottom: 8px;"></div>
+        <div class="skeleton-box" style="height: 14px; width: 80%; margin-bottom: 10px;"></div>
+        <div style="display: flex; gap: 6px;">
+          <div class="skeleton-box" style="height: 22px; width: 55px; border-radius: 6px;"></div>
+        </div>
+      </div>
+      <div class="skeleton-box" style="height: 35px; width: 55px; border-radius: 10px;"></div>
+    </div>
+    <div class="card" style="animation-delay: 0.1s;">
+      <div class="avatar skeleton-box" style="border-color: transparent;"></div>
+      <div class="card-info">
+        <div class="skeleton-box" style="height: 20px; width: 65%; margin-bottom: 8px;"></div>
+        <div class="skeleton-box" style="height: 14px; width: 80%; margin-bottom: 10px;"></div>
+        <div style="display: flex; gap: 6px;">
+          <div class="skeleton-box" style="height: 22px; width: 55px; border-radius: 6px;"></div>
+        </div>
+      </div>
+      <div class="skeleton-box" style="height: 35px; width: 55px; border-radius: 10px;"></div>
+    </div>
+    <div class="card" style="animation-delay: 0.2s;">
+      <div class="avatar skeleton-box" style="border-color: transparent;"></div>
+      <div class="card-info">
+        <div class="skeleton-box" style="height: 20px; width: 65%; margin-bottom: 8px;"></div>
+        <div class="skeleton-box" style="height: 14px; width: 80%; margin-bottom: 10px;"></div>
+        <div style="display: flex; gap: 6px;">
+          <div class="skeleton-box" style="height: 22px; width: 55px; border-radius: 6px;"></div>
+        </div>
+      </div>
+      <div class="skeleton-box" style="height: 35px; width: 55px; border-radius: 10px;"></div>
+    </div>
   </div>
   
-  <div id="loading-trigger">Loading more...</div>
+  <div id="loading-trigger" style="display: none;">Loading more...</div>
 
   <!-- Mobile Bottom Sheet Modal -->
   <div class="modal-overlay" id="modal-overlay"></div>
