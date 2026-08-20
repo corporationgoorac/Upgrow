@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Master Lines - Up Grow</title>
+  
+  <style>
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+    input, select { user-select: auto; }
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+    body { background-color: var(--bg-color); color: var(--text-main); overflow-x: hidden; -ms-overflow-style: none !important; scrollbar-width: none !important; }
+
+    /* Animations */
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+    /* --- Views / Slide Panels --- */
+    .view-panel { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background-color: var(--bg-color); overflow-y: auto; transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 10; padding: 20px; padding-bottom: 90px; }
+    #view-lines { z-index: 1; }
+    #view-customers { transform: translateX(100%); z-index: 2; }
+    #view-ledger { transform: translateX(100%); z-index: 3; }
+    .view-panel.active { transform: translateX(0) !important; }
+
+    .header-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; animation: fadeIn 0.3s; }
+    .header-nav h2 { font-size: 1.3rem; letter-spacing: -0.5px; margin: 0; }
+    .btn-back { background: transparent; border: none; color: var(--text-main); display: flex; align-items: center; gap: 5px; font-weight: 600; cursor: pointer; font-size: 1rem; padding: 5px 0; }
+    .btn-back svg { width: 22px; height: 22px; stroke: currentColor; }
+
+    /* --- Top Actions --- */
+    .action-row { display: flex; gap: 10px; margin-bottom: 20px; animation: popIn 0.4s forwards; }
+    .search-container { position: relative; flex: 1; }
+    .search-container svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: var(--text-sub); }
+    .search-container input { width: 100%; padding: 14px 14px 14px 45px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--surface-card); color: var(--text-main); font-size: 1rem; outline: none; transition: all 0.3s; }
+    .search-container input:focus { border-color: var(--primary); }
+    .btn-create { background-color: var(--primary); color: #fff; border: none; border-radius: 14px; padding: 0 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); flex-shrink: 0; }
+    .btn-create:active { transform: scale(0.95); }
+
+    /* --- Line Cards & Gradients --- */
+    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; }
+    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; }
+    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; }
+    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; }
+    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; }
+    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; }
+
+    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
+    .line-card:active { transform: scale(0.98); }
+    .line-info h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 5px; }
+    .line-info p { font-size: 0.9rem; opacity: 0.9; font-weight: 500; font-family: monospace; }
+    
+    /* --- Customer Cards --- */
+    .customer-card { background-color: var(--surface-card); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; display: flex; flex-direction: column; gap: 12px; cursor: pointer; animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
+    .customer-card:active { transform: scale(0.98); }
+    .cust-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .cust-info h3 { font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+    .cust-info p { font-size: 0.85rem; color: var(--text-sub); font-family: monospace; }
+    .cust-stats { display: flex; gap: 10px; font-size: 0.85rem; font-weight: 600; color: var(--primary); background: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 8px; width: fit-content; }
+    
+    /* --- Ledger View --- */
+    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 20px; }
+    .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; }
+    .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-sub); }
+    .detail-row svg { width: 18px; height: 18px; stroke: currentColor; }
+
+    .product-list { margin-bottom: 25px; }
+    .product-item { background: var(--bg-color); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+    .product-header { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 8px; font-size: 1.05rem; }
+    .product-math { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-sub); }
+    .val-pending { color: var(--danger); font-weight: 700; }
+
+    .table-wrapper { background: var(--surface-card); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: rgba(107, 114, 128, 0.05); padding: 12px 15px; font-size: 0.8rem; text-transform: uppercase; color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 0.9rem; font-weight: 500; }
+    tr:last-child td { border-bottom: none; }
+
+    /* --- Action Icons --- */
+    .icon-btn { background: transparent; border: none; padding: 8px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .icon-btn.delete { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+    .icon-btn.add { color: var(--primary); background: rgba(16, 185, 129, 0.1); }
+    .icon-btn:active { transform: scale(0.9); }
+    .actions-wrap { display: flex; gap: 8px; }
+
+    /* --- Modals --- */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(3px); }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+    .modal.active { transform: translateY(0); }
+    .modal-handle { width: 45px; height: 6px; background-color: var(--border); border-radius: 10px; margin: 0 auto 25px auto; }
+    .modal h3 { font-size: 1.3rem; margin-bottom: 20px; }
+
+    .input-group { margin-bottom: 20px; position: relative; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px; }
+    .input-group input, .input-group select { width: 100%; padding: 14px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--bg-color); color: var(--text-main); font-size: 1rem; outline: none; transition: all 0.3s; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
+    
+    .id-check-icon { position: absolute; right: 15px; top: 40px; width: 22px; height: 22px; display: none; }
+    .id-check-icon.valid { fill: var(--primary); display: block; }
+    .id-check-icon.invalid { fill: var(--danger); display: block; }
+
+    .color-picker { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform 0.2s; }
+    .color-option.selected { transform: scale(1.15); border-color: var(--text-main); }
+
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; transition: all 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+    .btn-full:active { transform: scale(0.96); }
+
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; }
+    @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    #loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
+
+    /* Custom Confirm Modal */
+    .confirm-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
+    .confirm-modal.active { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+    .confirm-icon { width: 56px; height: 56px; border-radius: 50%; background-color: rgba(239, 68, 68, 0.1); color: var(--danger); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; }
+    .confirm-actions { display: flex; gap: 10px; margin-top: 25px; }
+    .btn-confirm-cancel { flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-weight: 700; cursor: pointer; }
+    .btn-confirm-action { flex: 1; padding: 14px; border-radius: 12px; border: none; background: var(--danger); color: #fff; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- LEVEL 1: MASTER LINES -->
+  <div id="view-lines" class="view-panel active">
+    <div class="header-nav">
+      <h2>Master Lines</h2>
+    </div>
+    
+    <div class="action-row">
+      <div class="search-container">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="search-lines" placeholder="Search line name or ID...">
+      </div>
+      <button class="btn-create" onclick="openModal('modal-create-line')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        New
+      </button>
+    </div>
+
+    <div id="list-lines"></div>
+    <div id="loading-lines" id="loading-trigger">Loading...</div>
+  </div>
+
+  <!-- LEVEL 2: CUSTOMERS IN LINE -->
+  <div id="view-customers" class="view-panel">
+    <div class="header-nav">
+      <button class="btn-back" onclick="window.history.back()">
+        <svg viewBox="0 0 24 24" fill="none"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        Back
+      </button>
+      <h2 id="title-line-name">Line Name</h2>
+    </div>
+
+    <div class="action-row">
+      <div class="search-container">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="search-customers" placeholder="Search customer...">
+      </div>
+      <button class="btn-create" onclick="openCreateCustomerModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+    </div>
+
+    <div id="list-customers"></div>
+    <div id="loading-customers" id="loading-trigger">Loading...</div>
+  </div>
+
+  <!-- LEVEL 3: CUSTOMER LEDGER -->
+  <div id="view-ledger" class="view-panel">
+    <div class="header-nav">
+      <button class="btn-back" onclick="window.history.back()">
+        <svg viewBox="0 0 24 24" fill="none"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        Back
+      </button>
+      <button class="btn-create" style="padding: 6px 12px; font-size: 0.85rem;" onclick="openEditCustomerModal()">Edit Info</button>
+    </div>
+
+    <div class="ledger-summary" id="ledger-header">
+      <h3 id="ledger-cust-name">Customer Name</h3>
+      <div class="detail-row">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+        <span id="ledger-cust-phone">Loading...</span>
+      </div>
+      <div class="detail-row">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <span id="ledger-cust-loc">Loading...</span>
+      </div>
+      <div class="detail-row" style="margin-top: 15px;">
+        <span style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Total Pending: <span id="ledger-total-pending" style="color: var(--danger);">₹0</span></span>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h2 style="margin:0;">Active Products</h2>
+      <button class="icon-btn add" onclick="openAddProductModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+    </div>
+    
+    <div class="product-list" id="ledger-products"></div>
+
+    <h2 style="margin-top: 25px;">Payment History</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Product</th>
+            <th>Paid</th>
+          </tr>
+        </thead>
+        <tbody id="ledger-payments">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- MODALS -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <!-- Create Line Modal -->
+  <div class="modal" id="modal-create-line">
+    <div class="modal-handle"></div>
+    <h3>Create New Line</h3>
+    
+    <div class="input-group">
+      <label>Line ID (Uppercase, No spaces)</label>
+      <input type="text" id="line-id" placeholder="e.g. LINE01" style="text-transform: uppercase;">
+      <svg class="id-check-icon valid" id="line-id-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      <svg class="id-check-icon invalid" id="line-id-cross" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+    </div>
+    
+    <div class="input-group">
+      <label>Line Name</label>
+      <input type="text" id="line-name" placeholder="e.g. North Market Area">
+    </div>
+
+    <div class="input-group">
+      <label>Schedule Type</label>
+      <select id="line-schedule-type">
+        <option value="weekly">Weekly</option>
+        <option value="daily">Daily</option>
+      </select>
+    </div>
+
+    <div class="input-group" id="line-day-group">
+      <label>Collection Day</label>
+      <select id="line-day">
+        <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option>
+        <option value="Wednesday">Wednesday</option><option value="Thursday">Thursday</option>
+        <option value="Friday">Friday</option><option value="Saturday">Saturday</option>
+        <option value="Sunday">Sunday</option>
+      </select>
+    </div>
+
+    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px;">Card Color</label>
+    <div class="color-picker" id="line-color-picker">
+      <div class="color-option grad-1 selected" data-grad="grad-1"></div>
+      <div class="color-option grad-2" data-grad="grad-2"></div>
+      <div class="color-option grad-3" data-grad="grad-3"></div>
+      <div class="color-option grad-4" data-grad="grad-4"></div>
+      <div class="color-option grad-5" data-grad="grad-5"></div>
+      <div class="color-option grad-6" data-grad="grad-6"></div>
+    </div>
+
+    <button class="btn-full" id="btn-save-line">Create Line</button>
+  </div>
+
+  <!-- Create/Edit Customer Modal -->
+  <div class="modal" id="modal-customer">
+    <div class="modal-handle"></div>
+    <h3 id="modal-cust-title">Create Customer</h3>
+    
+    <div class="input-group">
+      <label>Customer ID (Uppercase, No spaces)</label>
+      <input type="text" id="cust-id" placeholder="e.g. CUST101" style="text-transform: uppercase;">
+      <svg class="id-check-icon valid" id="cust-id-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      <svg class="id-check-icon invalid" id="cust-id-cross" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+    </div>
+    
+    <div class="input-group"><label>Customer Name</label><input type="text" id="cust-name"></div>
+    <div class="input-group"><label>Phone Number</label><input type="tel" id="cust-phone"></div>
+    <div class="input-group">
+      <label>GPS Location</label>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="cust-loc" placeholder="Auto-fetching..." readonly>
+        <button class="icon-btn add" id="btn-fetch-gps"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
+      </div>
+    </div>
+
+    <div id="initial-product-section">
+      <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+      <h4 style="margin-bottom:15px; color:var(--primary);">Initial Product</h4>
+      <div class="input-group"><label>Product Name</label><input type="text" id="prod-name" placeholder="e.g. 32-inch LED TV"></div>
+      <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="prod-total"></div>
+      <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="prod-paid"></div>
+    </div>
+
+    <button class="btn-full" id="btn-save-cust">Save Customer</button>
+  </div>
+
+  <!-- Add Product Modal -->
+  <div class="modal" id="modal-product">
+    <div class="modal-handle"></div>
+    <h3>Add New Product</h3>
+    <div class="input-group"><label>Product Name</label><input type="text" id="add-prod-name"></div>
+    <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="add-prod-total"></div>
+    <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="add-prod-paid"></div>
+    <button class="btn-full" id="btn-save-product">Add Product</button>
+  </div>
+
+  <!-- Custom Confirm Modal -->
+  <div class="confirm-overlay" id="confirm-overlay"></div>
+  <div class="confirm-modal" id="confirm-modal">
+    <div class="confirm-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    </div>
+    <h3>Are you sure?</h3>
+    <p id="confirm-msg">This action cannot be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn-confirm-cancel" id="btn-confirm-cancel">Cancel</button>
+      <button class="btn-confirm-action" id="btn-confirm-action">Delete</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // Format Currency
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // State
+    let activeLineId = null;
+    let activeCustId = null;
+    let currentLineName = "";
+    
+    let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
+    let custLastVisible = null, custHasMore = true, custLoading = false, custSearch = "";
+    
+    // Custom Confirm Logic
+    let confirmResolve = null;
+    function customConfirm(msg) {
+      return new Promise(resolve => {
+        document.getElementById('confirm-msg').innerText = msg;
+        document.getElementById('confirm-overlay').classList.add('active');
+        document.getElementById('confirm-modal').classList.add('active');
+        window.history.pushState({ confirm: true }, '');
+        confirmResolve = resolve;
+      });
+    }
+    document.getElementById('btn-confirm-cancel').onclick = () => { window.history.back(); };
+    document.getElementById('btn-confirm-action').onclick = () => { 
+      if(confirmResolve) { confirmResolve(true); confirmResolve = null; }
+      window.history.back(); 
+    };
+
+    // History API & Panel Navigation
+    function openPanel(id, stateData) {
+      document.getElementById(id).classList.add('active');
+      window.history.pushState({ panel: id, ...stateData }, '');
+    }
+    
+    window.openModal = (id) => {
+      vibrate();
+      document.getElementById('modal-overlay').classList.add('active');
+      document.getElementById(id).classList.add('active');
+      window.history.pushState({ modal: id }, '');
+    };
+
+    function closeTopUI() {
+      // Close Modals first
+      const activeModal = document.querySelector('.modal.active, .confirm-modal.active');
+      if (activeModal) {
+        activeModal.classList.remove('active');
+        document.getElementById('modal-overlay').classList.remove('active');
+        document.getElementById('confirm-overlay').classList.remove('active');
+        if(confirmResolve) { confirmResolve(false); confirmResolve = null; } // If confirm closed
+        return;
+      }
+      // Then close Panels
+      if (document.getElementById('view-ledger').classList.contains('active')) {
+        document.getElementById('view-ledger').classList.remove('active');
+        activeCustId = null;
+      } else if (document.getElementById('view-customers').classList.contains('active')) {
+        document.getElementById('view-customers').classList.remove('active');
+        activeLineId = null;
+      }
+    }
+
+    window.addEventListener('popstate', (e) => { closeTopUI(); });
+    document.getElementById('modal-overlay').addEventListener('click', () => window.history.back());
+    document.querySelectorAll('.modal-handle').forEach(h => h.addEventListener('click', () => window.history.back()));
+
+    // --- ID Availability Check (1 Read) ---
+    async function checkIdAvailability(collectionName, idStr, tickEl, crossEl) {
+      if(!idStr) { tickEl.style.display = 'none'; crossEl.style.display = 'none'; return false; }
+      try {
+        const d = await getDoc(doc(db, collectionName, idStr));
+        if(d.exists()) { tickEl.style.display = 'none'; crossEl.style.display = 'block'; return false; }
+        else { tickEl.style.display = 'block'; crossEl.style.display = 'none'; return true; }
+      } catch(e) { return false; }
+    }
+
+    // Debounce wrapper
+    let debounceTimer;
+    function debounce(func, delay = 400) {
+      return (...args) => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => func(...args), delay); };
+    }
+
+    // Line ID Check
+    document.getElementById('line-id').addEventListener('input', debounce(async (e) => {
+      await checkIdAvailability('lines', e.target.value.toUpperCase().trim(), document.getElementById('line-id-tick'), document.getElementById('line-id-cross'));
+    }));
+    
+    // Cust ID Check
+    document.getElementById('cust-id').addEventListener('input', debounce(async (e) => {
+      // Only check if creating new
+      if(!document.getElementById('cust-id').readOnly) {
+        await checkIdAvailability('customers', e.target.value.toUpperCase().trim(), document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross'));
+      }
+    }));
+
+    // --- Geolocation ---
+    document.getElementById('btn-fetch-gps').onclick = () => {
+      vibrate();
+      const locIn = document.getElementById('cust-loc');
+      locIn.value = "Fetching...";
+      if(navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          p => locIn.value = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)}`,
+          e => locIn.value = "GPS Denied/Error"
+        );
+      } else locIn.value = "Not Supported";
+    };
+
+    // --- Skeletons ---
+    function getSkeletons(type, count=4) {
+      let h = '';
+      for(let i=0; i<count; i++){
+        if(type==='line') h+=`<div class="line-card" style="animation-delay:${i*0.1}s; background:var(--surface-card);"><div class="line-info"><div class="skeleton-box" style="width:150px;height:24px;margin-bottom:8px;"></div><div class="skeleton-box" style="width:80px;height:16px;"></div></div><div class="skeleton-box" style="width:36px;height:36px;border-radius:50%;"></div></div>`;
+        if(type==='cust') h+=`<div class="customer-card" style="animation-delay:${i*0.1}s;"><div class="cust-top"><div class="cust-info"><div class="skeleton-box" style="width:140px;height:22px;margin-bottom:8px;"></div><div class="skeleton-box" style="width:90px;height:16px;"></div></div></div><div class="skeleton-box" style="width:120px;height:28px;border-radius:8px;"></div></div>`;
+      }
+      return h;
+    }
+
+    // ==========================================
+    // LEVEL 1: LINES
+    // ==========================================
+    async function loadLines(isMore = false) {
+      if(linesLoading || (!linesHasMore && isMore)) return;
+      linesLoading = true;
+      const list = document.getElementById('list-lines');
+      
+      if(!isMore) { list.innerHTML = getSkeletons('line'); }
+
+      try {
+        let q = collection(db, "lines");
+        if(linesSearch) {
+          q = query(q, where("name", ">=", linesSearch), where("name", "<=", linesSearch + "\uf8ff"), orderBy("name"), limit(10));
+        } else {
+          q = query(q, orderBy("createdAt", "desc"), limit(10));
+        }
+        if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
+
+        const snap = await getDocs(q);
+        if(!isMore) list.innerHTML = '';
+        if(snap.empty) { linesHasMore = false; if(!isMore) list.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No lines found.</p>'; linesLoading=false; return; }
+
+        linesLastVisible = snap.docs[snap.docs.length-1];
+        linesHasMore = snap.docs.length === 10;
+        
+        let html = '';
+        snap.forEach(d => {
+          const data = d.data();
+          html += `
+            <div class="line-card ${data.color || 'grad-6'}" onclick="openCustomersView('${data.id}', '${data.name.replace(/'/g,"\\'")}')">
+              <div class="line-info"><h3>${data.name}</h3><p>${data.id} • ${data.scheduleType}</p></div>
+              <button class="icon-btn delete" onclick="event.stopPropagation(); deleteLine('${data.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </div>`;
+        });
+        list.insertAdjacentHTML('beforeend', html);
+      } catch(e) { console.error(e); }
+      linesLoading = false;
+    }
+
+    document.getElementById('search-lines').addEventListener('input', debounce(e => {
+      let val = e.target.value.trim();
+      linesSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
+      linesLastVisible = null; linesHasMore = true; loadLines();
+    }));
+
+    // Color picker
+    document.querySelectorAll('.color-option').forEach(el => {
+      el.onclick = () => { document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); };
+    });
+
+    document.getElementById('line-schedule-type').onchange = (e) => {
+      document.getElementById('line-day-group').style.display = e.target.value === 'weekly' ? 'block' : 'none';
+    };
+
+    document.getElementById('btn-save-line').onclick = async () => {
+      vibrate();
+      const id = document.getElementById('line-id').value.toUpperCase().trim();
+      const name = document.getElementById('line-name').value.trim();
+      const stype = document.getElementById('line-schedule-type').value;
+      const sday = document.getElementById('line-day').value;
+      const color = document.querySelector('.color-option.selected').dataset.grad;
+
+      if(!id || !name) return alert("Fill ID and Name");
+      const isAvail = await checkIdAvailability('lines', id, document.getElementById('line-id-tick'), document.getElementById('line-id-cross'));
+      if(!isAvail) return alert("ID is taken!");
+
+      const btn = document.getElementById('btn-save-line'); btn.disabled = true; btn.innerText = "Saving...";
+      try {
+        await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
+        window.history.back(); // close modal
+        linesLastVisible = null; loadLines(); // reload
+      } catch(e) { alert(e.message); }
+      btn.disabled = false; btn.innerText = "Create Line";
+    };
+
+    // Safe 480 Batch Delete
+    window.deleteLine = async (id) => {
+      vibrate([50,100]);
+      if(!(await customConfirm(`Delete Line ${id} and ALL its customers permanently?`))) return;
+      try {
+        const custSnap = await getDocs(query(collection(db, "customers"), where("lineId", "==", id)));
+        const docs = custSnap.docs;
+        
+        while(docs.length > 0) {
+          const chunk = docs.splice(0, 480);
+          const batch = writeBatch(db);
+          chunk.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+        await deleteDoc(doc(db, "lines", id));
+        vibrate([50,50,50]);
+        linesLastVisible = null; loadLines();
+      } catch(e) { alert("Error: " + e.message); }
+    };
+
+    // ==========================================
+    // LEVEL 2: CUSTOMERS
+    // ==========================================
+    window.openCustomersView = (lineId, lineName) => {
+      vibrate(); activeLineId = lineId; currentLineName = lineName;
+      document.getElementById('title-line-name').innerText = lineName;
+      custLastVisible = null; custHasMore = true; custSearch = ""; document.getElementById('search-customers').value = '';
+      openPanel('view-customers', { lineId });
+      loadCustomers();
+    };
+
+    async function loadCustomers(isMore = false) {
+      if(custLoading || (!custHasMore && isMore)) return;
+      custLoading = true;
+      const list = document.getElementById('list-customers');
+      if(!isMore) list.innerHTML = getSkeletons('cust');
+
+      try {
+        let q = query(collection(db, "customers"), where("lineId", "==", activeLineId));
+        if(custSearch) q = query(q, where("name", ">=", custSearch), where("name", "<=", custSearch + "\uf8ff"), orderBy("name"), limit(10));
+        else q = query(q, orderBy("createdAt", "desc"), limit(10));
+        
+        if(isMore && custLastVisible) q = query(q, startAfter(custLastVisible));
+        
+        const snap = await getDocs(q);
+        if(!isMore) list.innerHTML = '';
+        if(snap.empty) { custHasMore=false; if(!isMore) list.innerHTML='<p style="text-align:center;color:var(--text-sub);">No customers found.</p>'; custLoading=false; return; }
+
+        custLastVisible = snap.docs[snap.docs.length-1];
+        custHasMore = snap.docs.length === 10;
+
+        let html = '';
+        snap.forEach(d => {
+          const c = d.data();
+          const pCount = c.products ? c.products.length : 0;
+          html += `
+            <div class="customer-card" onclick="openLedgerView('${c.id}')">
+              <div class="cust-top">
+                <div class="cust-info"><h3>${c.name}</h3><p>${c.id} • ${c.phone || 'No Phone'}</p></div>
+                <div class="actions-wrap">
+                  <button class="icon-btn add" onclick="event.stopPropagation(); openAddProductModal('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                  <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
+              </div>
+              <div class="cust-stats">${pCount} Active Product${pCount!==1?'s':''}</div>
+            </div>`;
+        });
+        list.insertAdjacentHTML('beforeend', html);
+      } catch(e) { console.error(e); }
+      custLoading = false;
+    }
+
+    document.getElementById('search-customers').addEventListener('input', debounce(e => {
+      let val = e.target.value.trim();
+      custSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
+      custLastVisible = null; custHasMore = true; loadCustomers();
+    }));
+
+    window.openCreateCustomerModal = () => {
+      document.getElementById('modal-cust-title').innerText = "Create Customer";
+      document.getElementById('cust-id').readOnly = false; document.getElementById('cust-id').value = '';
+      document.getElementById('cust-name').value = ''; document.getElementById('cust-phone').value = ''; document.getElementById('cust-loc').value = '';
+      document.getElementById('initial-product-section').style.display = 'block';
+      document.getElementById('btn-save-cust').onclick = saveNewCustomer;
+      document.getElementById('btn-fetch-gps').click(); // Auto-fetch
+      openModal('modal-customer');
+    };
+
+    async function saveNewCustomer() {
+      vibrate();
+      const id = document.getElementById('cust-id').value.toUpperCase().trim();
+      const name = document.getElementById('cust-name').value.trim();
+      const phone = document.getElementById('cust-phone').value.trim();
+      const loc = document.getElementById('cust-loc').value.trim();
+      const pName = document.getElementById('prod-name').value.trim();
+      const pTotal = Number(document.getElementById('prod-total').value);
+      const pPaid = Number(document.getElementById('prod-paid').value);
+
+      if(!id || !name || !pName || !pTotal) return alert("Fill required fields");
+      if(!(await checkIdAvailability('customers', id, document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross')))) return alert("ID taken");
+
+      const btn = document.getElementById('btn-save-cust'); btn.disabled = true; btn.innerText = "Saving...";
+      try {
+        const initProduct = { id: 'P_'+Date.now(), name: pName, total: pTotal, paid: pPaid, pending: pTotal-pPaid, addedAt: new Date().toISOString() };
+        await setDoc(doc(db, "customers", id), { id, lineId: activeLineId, name, phone, location: loc, products: [initProduct], createdAt: serverTimestamp() });
+        
+        // Also log initial payment if paid > 0
+        if(pPaid > 0) await setDoc(doc(db, "payments", 'PAY_'+Date.now()), { custId: id, lineId: activeLineId, prodId: initProduct.id, amount: pPaid, date: new Date().toISOString(), type: 'advance' });
+
+        window.history.back(); custLastVisible = null; loadCustomers();
+      } catch(e) { alert(e.message); }
+      btn.disabled = false; btn.innerText = "Save Customer";
+    }
+
+    window.deleteCustomer = async (id) => {
+      vibrate([50,100]);
+      if(!(await customConfirm(`Delete Customer ${id}?`))) return;
+      try { await deleteDoc(doc(db, "customers", id)); vibrate([50,50]); custLastVisible = null; loadCustomers(); } 
+      catch(e) { alert(e.message); }
+    };
+
+    // ==========================================
+    // LEVEL 3: LEDGER & PRODUCTS
+    // ==========================================
+    window.openLedgerView = async (custId) => {
+      vibrate(); activeCustId = custId;
+      document.getElementById('ledger-products').innerHTML = 'Loading...';
+      document.getElementById('ledger-payments').innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
+      openPanel('view-ledger', { custId });
+      await loadLedgerData();
+    };
+
+    async function loadLedgerData() {
+      try {
+        const cSnap = await getDoc(doc(db, "customers", activeCustId));
+        if(!cSnap.exists()) return;
+        const c = cSnap.data();
+
+        document.getElementById('ledger-cust-name').innerText = c.name;
+        document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
+        document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
+
+        let totalPending = 0;
+        let pHtml = '';
+        (c.products || []).forEach(p => {
+          totalPending += p.pending;
+          pHtml += `
+            <div class="product-item">
+              <div class="product-header"><span>${p.name}</span><span>${fmt(p.total)}</span></div>
+              <div class="product-math"><span>Paid: ${fmt(p.paid)}</span><span class="val-pending">Pending: ${fmt(p.pending)}</span></div>
+            </div>`;
+        });
+        document.getElementById('ledger-products').innerHTML = pHtml || '<p style="color:var(--text-sub)">No products.</p>';
+        document.getElementById('ledger-total-pending').innerText = fmt(totalPending);
+
+        // Load Payments
+        const pSnap = await getDocs(query(collection(db, "payments"), where("custId", "==", activeCustId), orderBy("date", "desc")));
+        let payHtml = '';
+        pSnap.forEach(d => {
+          const pay = d.data();
+          const prodObj = (c.products || []).find(x => x.id === pay.prodId);
+          const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+          payHtml += `<tr><td>${dStr}</td><td>${prodObj?prodObj.name:'Unknown'}</td><td style="color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td></tr>`;
+        });
+        document.getElementById('ledger-payments').innerHTML = payHtml || '<tr><td colspan="3" style="text-align:center;">No history.</td></tr>';
+
+      } catch(e) { console.error(e); }
+    }
+
+    // Edit Customer
+    window.openEditCustomerModal = async () => {
+      const d = await getDoc(doc(db, "customers", activeCustId));
+      if(!d.exists()) return;
+      const c = d.data();
+      document.getElementById('modal-cust-title').innerText = "Edit Info";
+      document.getElementById('cust-id').value = c.id; document.getElementById('cust-id').readOnly = true;
+      document.getElementById('cust-id-tick').style.display='none'; document.getElementById('cust-id-cross').style.display='none';
+      document.getElementById('cust-name').value = c.name; document.getElementById('cust-phone').value = c.phone; document.getElementById('cust-loc').value = c.location;
+      document.getElementById('initial-product-section').style.display = 'none';
+      
+      document.getElementById('btn-save-cust').onclick = async () => {
+        vibrate();
+        const btn = document.getElementById('btn-save-cust'); btn.disabled=true;
+        try {
+          await updateDoc(doc(db,"customers",activeCustId), { name: document.getElementById('cust-name').value, phone: document.getElementById('cust-phone').value, location: document.getElementById('cust-loc').value });
+          window.history.back(); loadLedgerData(); custLastVisible=null; loadCustomers();
+        } catch(e){ alert(e.message); }
+        btn.disabled=false;
+      };
+      openModal('modal-customer');
+    };
+
+    // Add Product
+    window.openAddProductModal = (custIdOverride = null) => {
+      if(custIdOverride) activeCustId = custIdOverride; // If clicked from Level 2
+      document.getElementById('add-prod-name').value=''; document.getElementById('add-prod-total').value=''; document.getElementById('add-prod-paid').value='';
+      openModal('modal-product');
+    };
+
+    document.getElementById('btn-save-product').onclick = async () => {
+      vibrate();
+      const pName = document.getElementById('add-prod-name').value.trim();
+      const pTotal = Number(document.getElementById('add-prod-total').value);
+      const pPaid = Number(document.getElementById('add-prod-paid').value);
+      if(!pName || !pTotal) return alert("Fill name and total");
+
+      const btn = document.getElementById('btn-save-product'); btn.disabled = true; btn.innerText = "Adding...";
+      try {
+        const cSnap = await getDoc(doc(db, "customers", activeCustId));
+        const cData = cSnap.data();
+        const newP = { id: 'P_'+Date.now(), name: pName, total: pTotal, paid: pPaid, pending: pTotal-pPaid, addedAt: new Date().toISOString() };
+        const updatedProds = cData.products ? [...cData.products, newP] : [newP];
+        
+        await updateDoc(doc(db, "customers", activeCustId), { products: updatedProds });
+        if(pPaid > 0) await setDoc(doc(db, "payments", 'PAY_'+Date.now()), { custId: activeCustId, lineId: cData.lineId, prodId: newP.id, amount: pPaid, date: new Date().toISOString(), type: 'advance' });
+
+        window.history.back();
+        if(document.getElementById('view-ledger').classList.contains('active')) loadLedgerData();
+        custLastVisible = null; loadCustomers(); // refresh level 2 list
+      } catch(e) { alert(e.message); }
+      btn.disabled = false; btn.innerText = "Add Product";
+    };
+
+    // Initial Load
+    window.addEventListener('load', () => { loadLines(); });
+
+    // Infinite Scroll logic for active panel
+    document.querySelectorAll('.view-panel').forEach(panel => {
+      panel.addEventListener('scroll', () => {
+        if((panel.clientHeight + panel.scrollTop) >= panel.scrollHeight - 100) {
+          if(panel.id === 'view-lines' && linesHasMore && !linesLoading) { vibrate(10); loadLines(true); }
+          if(panel.id === 'view-customers' && custHasMore && !custLoading) { vibrate(10); loadCustomers(true); }
+        }
+      });
+    });
+
+  </script>
+</body>
+</html>
