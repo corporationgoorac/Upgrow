@@ -273,6 +273,11 @@
       .menu-btn { display: none; } /* Hide hamburger on mobile */
       .bottom-nav { display: flex; } /* Changed from block to flex to ensure proper mobile layout */
       #install-pill { bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom)); }
+      
+      /* Fix for squeezed icons and seamless full screen color matching */
+      .bottom-nav-inner { width: 100%; } 
+      header { background-color: var(--bg-color); border-bottom-color: transparent; } 
+      .bottom-nav { background-color: var(--bg-color); border-top-color: transparent; }
     }
 
     .hidden { display: none !important; }
