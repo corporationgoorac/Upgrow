@@ -217,8 +217,8 @@
       <div id="draft-list"></div>
     </div>
 
-    <!-- FAB for Approve All -->
-    <button class="fab" id="btn-fab-approve" style="display: none;">
+    <!-- FAB for Approve All (NATIVE HTML ONCLICK) -->
+    <button class="fab" id="btn-fab-approve" onclick="openApproveAllConfirm()" style="display: none;">
       Approve All
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
     </button>
@@ -246,7 +246,8 @@
       <p id="confirm-msg" style="color: var(--text-sub); font-size: 0.95rem; margin-bottom: 25px;">Action details here.</p>
       <div class="modal-actions">
         <button class="btn-outline" onclick="window.history.back()">Cancel</button>
-        <button class="btn-blue" id="btn-confirm-action">Confirm</button>
+        <!-- NATIVE HTML ONCLICK -->
+        <button class="btn-blue" id="btn-confirm-action" onclick="executeConfirmAction()">Confirm</button>
       </div>
     </div>
   </div>
@@ -291,16 +292,6 @@
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
     import { collection, query, getDocs, doc, getDoc, updateDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-    // --- FIX 1: GLOBAL DEBOUNCER FOR HISTORY.BACK (Prevents Ghost Tapping) ---
-    const originalBack = window.history.back;
-    let isBacking = false;
-    window.history.back = function() {
-        if(isBacking) return;
-        isBacking = true;
-        originalBack.apply(window.history);
-        setTimeout(() => isBacking = false, 400); // Wait 400ms before allowing another back
-    };
-
     // --- Global State ---
     let currentUser = null;
     let allLogs = []; 
@@ -344,7 +335,7 @@
                 }
                 fetchGlobalLogs(); 
             }
-        }, 500); // 500ms ensures it waits for the debounce lock to clear
+        }, 300); 
     }
 
     // --- History API Management (Back Button Safety) ---
@@ -459,7 +450,7 @@
                 : `<span class="badge badge-success">Ready to Approve</span>`;
                 
             const forceSubmitHtml = isCollecting 
-                ? `<button class="btn-act" onclick="event.stopPropagation(); openConfirm('force_submit', '${aId}')" style="background:var(--primary); color:white; border:none; margin-top:10px;">Force Submit</button>`
+                ? `<button class="btn-act" onclick="event.stopPropagation(); window.openConfirm('force_submit', '${aId}')" style="background:var(--primary); color:white; border:none; margin-top:10px;">Force Submit</button>`
                 : '';
 
             card.innerHTML = `
@@ -528,13 +519,13 @@
             const statusBadge = isSub ? `<span class="badge badge-success">Submitted</span>` : `<span class="badge badge-pending">Pending</span>`;
             
             let actionsHtml = `
-                <button class="btn-act edit" onclick="openEdit('${entry.docId}', '${entry.key}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                <button class="btn-act delete" onclick="openConfirm('delete', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                <button class="btn-act edit" onclick="window.openEdit('${entry.docId}', '${entry.key}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                <button class="btn-act delete" onclick="window.openConfirm('delete', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             `;
             if(isSub) {
                 actionsHtml = `
-                    <button class="btn-act approve" onclick="openConfirm('approve_single', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg> Approve</button>
-                    <button class="btn-act reject" onclick="openConfirm('reject', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Reject</button>
+                    <button class="btn-act approve" onclick="window.openConfirm('approve_single', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg> Approve</button>
+                    <button class="btn-act reject" onclick="window.openConfirm('reject', {docId:'${entry.docId}', key:'${entry.key}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Reject</button>
                     ${actionsHtml}
                 `;
             }
@@ -564,6 +555,10 @@
     }
 
     // --- 4. The Universal Confirm Engine ---
+    window.openApproveAllConfirm = () => {
+        window.openConfirm('approve_all', null);
+    };
+
     window.openConfirm = (type, payload) => {
       if (document.getElementById('confirm-modal').classList.contains('active')) return;
       vibrate();
@@ -603,12 +598,13 @@
           btn.innerText = "Approve All"; btn.style.background = "var(--primary)";
       }
 
-      window.history.pushState({ screen: 'detail', modal: 'confirm' }, ''); // FIX 2: Added screen:'detail' to prevent detail screen closure
+      window.history.pushState({ screen: 'detail', modal: 'confirm' }, ''); 
       modalOverlay.classList.add('active');
       confirmModal.classList.add('active');
     };
 
-    document.getElementById('btn-confirm-action').addEventListener('click', async () => {
+    // --- HTML ONCLICK TRIGGER ---
+    window.executeConfirmAction = async () => {
       vibrate();
       const type = confirmActionType;
       const pay = confirmPayload;
@@ -664,7 +660,7 @@
           alert("Action failed: " + e.message);
           window.history.back();
       }
-    });
+    };
 
     function refreshLocalDataAndUI(docId, key, action, updates = {}) {
         const ag = groupedAgents[activeAgentId];
@@ -705,7 +701,7 @@
       editCashSplit.value = entry.cash_split || ''; editOnlineSplit.value = entry.online_split || '';
       editSplitContainer.style.display = entry.method === 'split' ? 'flex' : 'none';
 
-      window.history.pushState({ screen: 'detail', modal: 'edit' }, ''); // FIX 2: Added screen:'detail'
+      window.history.pushState({ screen: 'detail', modal: 'edit' }, ''); 
       modalOverlay.classList.add('active');
       editSheet.classList.add('active');
     };
@@ -750,11 +746,7 @@
       btn.innerText = "Save Changes"; btn.disabled = false;
     });
 
-    window.openApproveAllConfirm = () => {
-        openConfirm('approve_all', null);
-    };
-
-    // --- FIX 3: SAFE BATCHING AND DEEP-CLONING ---
+    // --- THE MASTER APPROVAL BATCH ENGINE ---
     async function executeMasterApproval(itemsToApprove) {
         if(itemsToApprove.length === 0) return window.history.back();
 
@@ -764,7 +756,6 @@
             let logDeletes = {}; 
 
             for (let item of itemsToApprove) {
-                // Safely split ID even if it contains underscores
                 const lastIdx = item.key.lastIndexOf('_');
                 const custId = item.key.substring(0, lastIdx);
                 const prodIndex = parseInt(item.key.substring(lastIdx + 1));
@@ -803,7 +794,6 @@
 
             Object.keys(customerUpdates).forEach(custId => {
                 const bundle = customerUpdates[custId];
-                // Deep Clone ensures Firestore detects the array mutation to save perfectly
                 const safeProductsArray = JSON.parse(JSON.stringify(bundle.data.products));
                 batch.update(bundle.ref, { products: safeProductsArray });
                 
@@ -823,29 +813,33 @@
             document.getElementById('confirm-loader').style.display = 'none';
             document.getElementById('confirm-success').classList.add('active');
 
-            itemsToApprove.forEach(i => refreshLocalDataAndUI(i.docId, i.key, 'delete'));
+            // Update UI arrays internally
+            const ag = groupedAgents[activeAgentId];
+            itemsToApprove.forEach(i => {
+                const idx = ag.entries.findIndex(e => e.docId === i.docId && e.key === i.key);
+                if(idx !== -1) {
+                    const oldItem = ag.entries[idx];
+                    if(oldItem.status === 'pending') ag.pending--;
+                    if(oldItem.status === 'submitted') ag.submitted--;
+                    ag.totalAmt -= (parseInt(oldItem.amount) || 0);
+                    ag.entries.splice(idx, 1);
+                }
+            });
+            renderLevel2Items();
+            renderLevel1();
             
             setTimeout(() => {
                 if (document.getElementById('confirm-modal').classList.contains('active')) {
                     window.history.back(); 
                 }
                 safeCloseLevel2IfEmpty();
-            }, 1800);
+            }, 1500);
 
         } catch(e) {
             alert("Approval Failed! " + e.message);
             console.error(e);
             window.history.back();
         }
-    }
-
-    const fabApproveBtn = document.getElementById('btn-fab-approve');
-    if(fabApproveBtn) {
-        fabApproveBtn.removeAttribute('onclick'); // Stop the HTML trigger
-        fabApproveBtn.addEventListener('click', (e) => {
-            e.preventDefault(); 
-            openApproveAllConfirm();
-        });
     }
 
     modalOverlay.addEventListener('click', () => window.history.back());
