@@ -327,9 +327,11 @@
     const editCashSplit = document.getElementById('edit-cash-split');
     const editOnlineSplit = document.getElementById('edit-online-split');
 
+    // FIX 2: Check safely if agent is completely undefined
     function safeCloseLevel2IfEmpty() {
         setTimeout(() => {
-            if(groupedAgents[activeAgentId] && groupedAgents[activeAgentId].entries.length === 0) {
+            const ag = groupedAgents[activeAgentId];
+            if(!ag || ag.entries.length === 0) {
                 if (!document.getElementById('screen-detail').classList.contains('hidden-right')) {
                     window.history.back(); 
                 }
@@ -488,9 +490,14 @@
 
     function renderLevel2Items() {
         const ag = groupedAgents[activeAgentId];
+        
+        // FIX 1: Clear HTML when empty instead of just returning silently
         if(!ag || ag.entries.length === 0) {
-            window.history.back(); 
-            fetchGlobalLogs(); 
+            draftList.innerHTML = ''; 
+            document.getElementById('dash-val-total').innerText = '₹0';
+            document.getElementById('dash-val-cash').innerText = '₹0';
+            document.getElementById('dash-val-online').innerText = '₹0';
+            fabApprove.style.display = 'none';
             return;
         }
 
@@ -622,13 +629,14 @@
               window.history.back(); 
               safeCloseLevel2IfEmpty();
 
+          // FIX 4: Remove safeCloseLevel2IfEmpty() from reject to prevent double-back execution
           } else if (type === 'reject') {
               await updateDoc(doc(db, "daily_logs", pay.docId), { [`${pay.key}.status`]: 'pending' });
               refreshLocalDataAndUI(pay.docId, pay.key, 'update', {status: 'pending'});
               confirmActionType = null;
               window.history.back(); 
-              safeCloseLevel2IfEmpty();
 
+          // FIX 5: Await fetchGlobalLogs() to prevent UI race condition
           } else if (type === 'force_submit') {
               const batch = writeBatch(db);
               const ag = groupedAgents[pay];
@@ -642,9 +650,8 @@
               Object.keys(updatesByDoc).forEach(dId => batch.update(doc(db, "daily_logs", dId), updatesByDoc[dId]));
               await batch.commit();
               confirmActionType = null;
-              fetchGlobalLogs(); 
+              await fetchGlobalLogs(); 
               window.history.back(); 
-              safeCloseLevel2IfEmpty();
 
           } else if (type === 'approve_single') {
               confirmActionType = null;
@@ -825,13 +832,14 @@
                     ag.entries.splice(idx, 1);
                 }
             });
-            renderLevel2Items();
-            renderLevel1();
             
+            // FIX 3: Wait 1.5 seconds for animation BEFORE wiping cards and closing window
             setTimeout(() => {
                 if (document.getElementById('confirm-modal').classList.contains('active')) {
                     window.history.back(); 
                 }
+                renderLevel2Items();
+                renderLevel1();
                 safeCloseLevel2IfEmpty();
             }, 1500);
 
