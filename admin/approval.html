@@ -218,7 +218,7 @@
     </div>
 
     <!-- FAB for Approve All -->
-    <button class="fab" id="btn-fab-approve" onclick="openApproveAllConfirm()" style="display: none;">
+    <button class="fab" id="btn-fab-approve" style="display: none;">
       Approve All
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
     </button>
@@ -291,6 +291,16 @@
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
     import { collection, query, getDocs, doc, getDoc, updateDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
+    // --- FIX 1: GLOBAL DEBOUNCER FOR HISTORY.BACK (Prevents Ghost Tapping) ---
+    const originalBack = window.history.back;
+    let isBacking = false;
+    window.history.back = function() {
+        if(isBacking) return;
+        isBacking = true;
+        originalBack.apply(window.history);
+        setTimeout(() => isBacking = false, 400); // Wait 400ms before allowing another back
+    };
+
     // --- Global State ---
     let currentUser = null;
     let allLogs = []; 
@@ -334,7 +344,7 @@
                 }
                 fetchGlobalLogs(); 
             }
-        }, 400); 
+        }, 500); // 500ms ensures it waits for the debounce lock to clear
     }
 
     // --- History API Management (Back Button Safety) ---
@@ -593,7 +603,7 @@
           btn.innerText = "Approve All"; btn.style.background = "var(--primary)";
       }
 
-      window.history.pushState({ modal: 'confirm' }, '');
+      window.history.pushState({ screen: 'detail', modal: 'confirm' }, ''); // FIX 2: Added screen:'detail' to prevent detail screen closure
       modalOverlay.classList.add('active');
       confirmModal.classList.add('active');
     };
@@ -695,7 +705,7 @@
       editCashSplit.value = entry.cash_split || ''; editOnlineSplit.value = entry.online_split || '';
       editSplitContainer.style.display = entry.method === 'split' ? 'flex' : 'none';
 
-      window.history.pushState({ modal: 'edit' }, '');
+      window.history.pushState({ screen: 'detail', modal: 'edit' }, ''); // FIX 2: Added screen:'detail'
       modalOverlay.classList.add('active');
       editSheet.classList.add('active');
     };
@@ -744,6 +754,7 @@
         openConfirm('approve_all', null);
     };
 
+    // --- FIX 3: SAFE BATCHING AND DEEP-CLONING ---
     async function executeMasterApproval(itemsToApprove) {
         if(itemsToApprove.length === 0) return window.history.back();
 
@@ -753,8 +764,10 @@
             let logDeletes = {}; 
 
             for (let item of itemsToApprove) {
-                const custId = item.key.split('_')[0];
-                const prodIndex = parseInt(item.key.split('_')[1]);
+                // Safely split ID even if it contains underscores
+                const lastIdx = item.key.lastIndexOf('_');
+                const custId = item.key.substring(0, lastIdx);
+                const prodIndex = parseInt(item.key.substring(lastIdx + 1));
                 
                 if(!customerUpdates[custId]) {
                     const cSnap = await getDoc(doc(db, "customers", custId));
@@ -764,9 +777,12 @@
                 
                 const cData = customerUpdates[custId].data;
                 const prod = cData.products[prodIndex];
-                const amt = parseInt(item.amount);
+                
+                if(!prod) throw new Error(`Product missing for Customer ${custId}`);
+                
+                const amt = parseInt(item.amount) || 0;
 
-                prod.pending = Math.max(0, parseInt(prod.pending) - amt);
+                prod.pending = Math.max(0, (parseInt(prod.pending) || 0) - amt);
                 prod.paid = (parseInt(prod.paid) || 0) + amt;
                 if(!prod.payments) prod.payments = [];
                 
@@ -775,9 +791,11 @@
                     amount: amt,
                     date: new Date().toISOString(),
                     type: 'collection',
-                    method: item.method,
-                    agent_uid: item.agentId,
-                    pendingAfter: prod.pending
+                    method: item.method || 'cash',
+                    agent_uid: item.agentId || 'system',
+                    pendingAfter: prod.pending,
+                    cash_split: parseInt(item.cash_split) || 0,
+                    online_split: parseInt(item.online_split) || 0
                 });
 
                 customerUpdates[custId].logsToDelete.push(item);
@@ -785,7 +803,9 @@
 
             Object.keys(customerUpdates).forEach(custId => {
                 const bundle = customerUpdates[custId];
-                batch.update(bundle.ref, { products: bundle.data.products });
+                // Deep Clone ensures Firestore detects the array mutation to save perfectly
+                const safeProductsArray = JSON.parse(JSON.stringify(bundle.data.products));
+                batch.update(bundle.ref, { products: safeProductsArray });
                 
                 bundle.logsToDelete.forEach(log => {
                     if(!logDeletes[log.docId]) logDeletes[log.docId] = {};
@@ -821,6 +841,7 @@
 
     const fabApproveBtn = document.getElementById('btn-fab-approve');
     if(fabApproveBtn) {
+        fabApproveBtn.removeAttribute('onclick'); // Stop the HTML trigger
         fabApproveBtn.addEventListener('click', (e) => {
             e.preventDefault(); 
             openApproveAllConfirm();
