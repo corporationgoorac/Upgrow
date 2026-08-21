@@ -322,6 +322,13 @@
     const confirmModal = document.getElementById('confirm-modal');
     const editSheet = document.getElementById('edit-sheet');
 
+    // --- MISSING VARIABLES INJECTED HERE TO FIX CRASH ---
+    const editTotal = document.getElementById('edit-total');
+    const editMethod = document.getElementById('edit-method');
+    const editSplitContainer = document.getElementById('edit-split-container');
+    const editCashSplit = document.getElementById('edit-cash-split');
+    const editOnlineSplit = document.getElementById('edit-online-split');
+
     // --- History API Management (Back Button Safety) ---
     window.addEventListener('popstate', (e) => {
       const state = e.state;
