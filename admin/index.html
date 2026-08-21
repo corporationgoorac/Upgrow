@@ -2,742 +2,509 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Native mobile viewport constraints -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Reports & Ledger - Up Field</title>
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <link rel="manifest" href="manifest.json">
+  <title>Up Grow - Dashboard</title>
   
   <style>
-    /* Shared Theme Variables */
+    /* System Default Theming (Matches Login Page) */
     :root {
       --bg-color: #f4f7f6;
       --surface-color: #ffffff;
-      --surface-card: #ffffff;
       --text-main: #111827;
       --text-sub: #6b7280;
       --border: #e5e7eb;
       --primary: #10B981;
       --primary-hover: #059669;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       --skeleton-base: #e5e7eb;
       --skeleton-highlight: #f3f4f6;
+      --nav-height: 65px;
+      --header-height: 60px;
+      --sidebar-width: 260px;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
         --bg-color: #121212;
-        --surface-color: #121212;
-        --surface-card: #1e1e1e;
+        --surface-color: #1e1e1e;
         --text-main: #f9fafb;
         --text-sub: #9ca3af;
         --border: #2d3748;
-        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
       }
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
-    ::-webkit-scrollbar { display: none !important; }
-    body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-    /* --- Screen Management --- */
-    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; }
-    .screen.hidden-right { transform: translateX(100%); }
-    .screen-content { flex: 1; overflow-y: auto; padding: 0 20px 120px 20px; }
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
 
-    /* --- Top Header & Search --- */
-    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: none; }
-    .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-    .icon-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; }
+    body, html {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      height: 100vh;
+      height: 100dvh; /* Fixes mobile browser chrome pushing layout off screen */
+      width: 100vw;
+      overflow: hidden; /* App shell itself doesn't scroll, only the content area */
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+
+    /* --- Shell Layout --- */
+    #app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh; /* Fixes mobile browser chrome pushing layout off screen */
+      width: 100%;
+    }
+
+    /* --- Header --- */
+    header {
+      height: var(--header-height);
+      background-color: var(--surface-color);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .menu-btn:active { background: var(--border); }
+
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .app-title span { color: var(--primary); }
+
+    /* --- Profile DP Skeleton --- */
+    .profile-wrapper {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid var(--primary);
+      cursor: pointer;
+    }
+
+    .profile-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .skeleton {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
+      background-size: 200% 100%;
+      animation: skeletonLoading 1.5s infinite;
+    }
+
+    @keyframes skeletonLoading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* --- Main Body Area --- */
+    .body-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* --- Desktop Sidebar --- */
+    aside {
+      width: var(--sidebar-width);
+      background-color: var(--surface-color);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 40;
+    }
+
+    aside.collapsed {
+      transform: translateX(-100%);
+      margin-right: calc(var(--sidebar-width) * -1);
+    }
+
+    .nav-list {
+      list-style: none;
+      padding: 15px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 15px;
+      border-radius: 12px;
+      color: var(--text-sub);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover { background-color: var(--bg-color); color: var(--text-main); }
+    .nav-item.active { background-color: rgba(16, 185, 129, 0.1); color: var(--primary); }
+    .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
+
+    /* --- Main Content Area (Iframe for 0ms navigation feel) --- */
+    main {
+      flex: 1;
+      background-color: var(--bg-color);
+      overflow-y: auto;
+      position: relative;
+    }
+
+    #content-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: transparent;
+    }
+
+    /* --- Mobile Bottom Nav --- */
+    .bottom-nav {
+      display: none;
+      height: var(--nav-height);
+      min-height: calc(var(--nav-height) + env(safe-area-inset-bottom)); /* Prevents padding from crushing nav */
+      flex-shrink: 0; /* Ensures navbar isn't crushed by flex container */
+      background-color: var(--surface-color);
+      border-top: 1px solid var(--border);
+      z-index: 50;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav-inner {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 100%;
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: var(--text-sub);
+      text-decoration: none;
+      flex: 1;
+      height: 100%;
+    }
+
+    .bottom-nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: transform 0.2s; }
+    .bottom-nav-item span { font-size: 0.7rem; font-weight: 600; }
     
-    .search-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--surface-color); display: flex; align-items: center; padding: 0 15px; transform: translateY(-100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 11; }
-    .search-bar-container.active { transform: translateY(0); }
-    .search-input { flex: 1; border: none; background: var(--bg-color); padding: 12px 15px; border-radius: 12px; font-size: 1rem; color: var(--text-main); outline: none; font-weight: 600; margin: 0 10px; }
-    
-    /* --- Customer Cards --- */
-    .card { background-color: var(--surface-card); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; margin-top: 15px; box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; gap: 8px; }
-    .card:active { transform: scale(0.97); }
-    .card-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
-    .card-top > div:first-child { flex: 1; min-width: 0; overflow: hidden; }
-    .card-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-    .card-sub { font-size: 0.85rem; color: var(--text-sub); font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-    .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .bottom-nav-item.active { color: var(--primary); }
+    .bottom-nav-item.active svg { transform: scale(1.1); }
 
-    /* --- Ledger Map Header (Ported from line.html) --- */
-    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 15px; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
-    .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-    .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
-    .detail-row svg { width: 18px; height: 18px; stroke: currentColor; }
+    /* --- PWA Install Pill --- */
+    #install-pill {
+      position: fixed;
+      bottom: 85px; /* Above mobile nav */
+      left: 50%;
+      transform: translateX(-50%) translateY(150px);
+      background-color: var(--primary);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: 700;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      z-index: 100;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
 
-    /* --- Product & Ledger UI (Level 2) --- */
-    .product-item { background: var(--surface-card); padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: var(--shadow); }
-    .product-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main); }
-    .product-math { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-sub); font-weight: 700; }
-    .val-pending { color: var(--danger); font-weight: 800; }
+    #install-pill.show { transform: translateX(-50%) translateY(0); }
+    #install-pill:active { transform: translateX(-50%) translateY(2px) scale(0.95); }
 
-    .btn-circle { width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: white; transition: transform 0.2s; }
-    .btn-circle:active { transform: scale(0.9); }
-    .btn-csv { background: #8b5cf6; }
-    .btn-add { background: var(--primary); }
-    .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
+    /* --- Responsive Breakpoints --- */
+    @media (max-width: 768px) {
+      aside { display: none; } /* Hide sidebar completely on mobile */
+      .menu-btn { display: none; } /* Hide hamburger on mobile */
+      .bottom-nav { display: flex; } /* Changed from block to flex to ensure proper mobile layout */
+      #install-pill { bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom)); }
+      
+      /* Fix for squeezed icons and seamless full screen color matching */
+      .bottom-nav-inner { width: 100%; } 
+      header { background-color: var(--bg-color); border-bottom-color: transparent; } 
+      .bottom-nav { background-color: var(--bg-color); border-top-color: transparent; }
+    }
 
-    /* --- Modals & Overlays --- */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
-    .modal-overlay.active { opacity: 1; pointer-events: auto; }
-    
-    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
-    .bottom-sheet.active { transform: translateY(0); }
-    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 0 auto 25px auto; }
-
-    .input-group { margin-bottom: 20px; }
-    .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
-    .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
-    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
-    .btn-full:active { transform: scale(0.97); }
-
-    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .dash-card { background: var(--bg-color); padding: 12px; border-radius: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
-    .dash-title { font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; }
-    .dash-value { font-size: 1.2rem; font-weight: 800; }
-    .dash-value.pending { color: var(--danger); }
-    .dash-value.paid { color: var(--primary); }
-
-    /* Loading & Pagination */
-    .loader-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 16px; height: 90px; margin-bottom: 15px; }
-    @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); display: none; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-  <!-- ================= LEVEL 1: MASTER LIST ================= -->
-  <div id="screen-main" class="screen">
-    <div class="header">
-      <h2>Ledger Reports</h2>
-      <button class="icon-btn" onclick="openSearch()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      </button>
-      
-      <!-- Hidden Search Bar -->
-      <div class="search-bar-container" id="search-bar">
-        <button class="icon-btn" onclick="closeSearch()">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+  <div id="app-shell">
+    
+    <!-- Top Header -->
+    <header>
+      <div class="header-left">
+        <button class="menu-btn" id="sidebar-toggle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
         </button>
-        <input type="text" class="search-input" id="search-input" placeholder="Search Name or ID...">
+        <div class="app-title">Up <span>Grow</span></div>
       </div>
+
+      <div class="profile-wrapper" id="profile-btn">
+        <div class="skeleton" id="dp-skeleton"></div>
+        <img id="user-dp" class="profile-img" alt="Profile">
+      </div>
+    </header>
+
+    <div class="body-wrapper">
+      <!-- Desktop Sidebar -->
+      <aside id="sidebar">
+        <nav class="nav-list">
+          <!-- 0ms Inline SVGs for Navigation -->
+          <a href="home.html" class="nav-item active" target="content-frame" onclick="setActiveNav(this, 0)">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            Dashboard
+          </a>
+          <a href="lines.html" class="nav-item" target="content-frame" onclick="setActiveNav(this, 1)">
+            <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            Master Lines
+          </a>
+          <a href="assignLines.html" class="nav-item" target="content-frame" onclick="setActiveNav(this, 2)">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            Assign Staff
+          </a>
+          <a href="approval.html" class="nav-item" target="content-frame" onclick="setActiveNav(this, 3)">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            Approvals
+          </a>
+          <a href="reports.html" class="nav-item" target="content-frame" onclick="setActiveNav(this, 4)">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            Ledger
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main>
+        <!-- Iframe acts as the shell window, keeping the native navbar constantly loaded -->
+        <!-- Starts on home.html by default -->
+        <iframe src="home.html" id="content-frame" name="content-frame" title="Main Content"></iframe>
+      </main>
     </div>
-    
-    <div class="screen-content" id="main-scroll-area">
-      <div id="customer-list">
-        <!-- High-Quality Skeletons -->
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:70%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:40%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:60%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:50%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:80%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:30%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <a href="home.html" class="bottom-nav-item active" target="content-frame" onclick="setActiveNav(this, 0)">
+          <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="lines.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 1)">
+          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+          <span>Lines</span>
+        </a>
+        <a href="assignLines.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 2)">
+          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          <span>Staff</span>
+        </a>
+        <a href="approval.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 3)">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <span>Verify</span>
+        </a>
+        <a href="reports.html" class="bottom-nav-item" target="content-frame" onclick="setActiveNav(this, 4)">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <span>Ledger</span>
+        </a>
       </div>
-      <div id="load-more-trigger" style="height: 20px; width: 100%;"></div>
-      <div class="loader-spinner" id="pagination-loader" style="display: none;"></div>
-      
-      <div class="empty-state" id="empty-state">
-        <h3 style="color:var(--text-main); margin-bottom:5px;">No Results Found</h3>
-        <p>Try searching a different name or ID.</p>
-      </div>
-    </div>
+    </nav>
+
   </div>
 
-  <!-- ================= LEVEL 2: CUSTOMER DETAIL ================= -->
-  <div id="screen-detail" class="screen hidden-right">
-    <div class="header" style="border-bottom: 1px solid var(--border);">
-      <button class="back-btn" onclick="window.history.back()">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-      </button>
-      <h2 style="font-size: 1.15rem; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="detail-cust-name">Customer</h2>
-    </div>
-    
-    <div class="screen-content">
-        
-        <!-- UPGRADED: Map Header from line.html -->
-        <div class="ledger-summary" id="ledger-header">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: invert(100%) hue-rotate(180deg) brightness(85%); opacity: 0.85; pointer-events: none;">
-                <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
-            </div>
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(18,18,18,0.95) 10%, rgba(18,18,18,0.65) 100%); z-index: -1;"></div>
-
-            <h3 id="ledger-cust-name-inner">Customer Name</h3>
-            <div class="detail-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                <span id="ledger-cust-phone">Loading...</span>
-            </div>
-            <div class="detail-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                <span id="ledger-cust-loc">Loading...</span>
-            </div>
-            <div class="detail-row" style="margin-top: 15px;">
-                <span style="font-weight: 700; color: #f9fafb; font-size: 1.1rem;">Total Pending: <span id="ledger-total-pending" style="color: #f87171;">₹0</span></span>
-            </div>
-        </div>
-
-        <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; margin-bottom: 10px;">Active Products</div>
-        <div id="product-list"></div>
-    </div>
-  </div>
-
-  <!-- ================= MODALS & OVERLAYS ================= -->
-  <div class="modal-overlay" id="modal-overlay"></div>
-
-  <!-- Payment Modal (Add & Edit) -->
-  <div class="bottom-sheet" id="payment-sheet">
-    <div class="sheet-handle"></div>
-    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-title">Record Payment</h3>
-    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700;" id="sheet-sub">Product Name</p>
-    
-    <div class="dashboard">
-        <div class="dash-card">
-            <div class="dash-title">Total Pending</div>
-            <div class="dash-value pending" id="sheet-pending">₹0</div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-title">Total Paid</div>
-            <div class="dash-value paid" id="sheet-paid">₹0</div>
-        </div>
-    </div>
-
-    <div class="input-group">
-      <label>Amount Collected (₹)</label>
-      <input type="number" id="pay-amount" inputmode="numeric" placeholder="Enter amount">
-    </div>
-
-    <div class="input-group">
-      <label>Date</label>
-      <input type="date" id="pay-date">
-    </div>
-
-    <div class="input-group">
-      <label>Payment Method</label>
-      <select id="pay-method">
-        <option value="cash">Cash</option>
-        <option value="online">Online / UPI</option>
-      </select>
-    </div>
-
-    <!-- NATIVE HTML ONCLICK -->
-    <button class="btn-full" id="btn-save-payment" onclick="savePayment()">Save Payment</button>
+  <!-- Install App Pill -->
+  <div id="install-pill">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+    Install App
   </div>
 
   <script type="module">
-    import { auth, db } from './config.js';
+    import { auth } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-    // --- Global State ---
-    let currentUser = null;
-    let localSearchCache = []; 
-    let activeCustomer = null;
-    let activeProductIndex = null;
-    let activePaymentIndex = null; 
-    let isSearchMode = false;
-    let searchTimeout = null;
+    // 1. Service Worker Registration for PWA Offline & Installability
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('SW Registered!', reg);
+        }).catch(err => console.log('SW Registration Failed', err));
+      });
+    }
 
-    // Pagination State
-    let lastVisibleDoc = null;
-    let isFetching = false;
-    let hasMoreDocs = true;
-    const ITEMS_PER_PAGE = 10;
+    // 2. Auth Protection & 0ms LocalStorage Profile Picture Loading
+    const dpImg = document.getElementById('user-dp');
+    const dpSkeleton = document.getElementById('dp-skeleton');
 
-    const richSkeletonHTML = `
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:70%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:40%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:60%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:50%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:80%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:30%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
-    `;
+    // Instantly load DP from local storage if available (0ms load)
+    const localDpUrl = localStorage.getItem('upgrow_dp');
+    if (localDpUrl) {
+      dpImg.src = localDpUrl;
+      dpImg.style.opacity = '1';
+      dpSkeleton.classList.add('hidden');
+    }
 
-    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
-    const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // Not logged in, block access and redirect
+        window.location.replace("login.html");
+      } else {
+        // User logged in. Update DP if it's new or wasn't in local storage
+        if (user.photoURL && user.photoURL !== localDpUrl) {
+          const tempImg = new Image();
+          tempImg.onload = () => {
+            dpImg.src = tempImg.src;
+            dpImg.style.opacity = '1';
+            dpSkeleton.classList.add('hidden');
+            localStorage.setItem('upgrow_dp', tempImg.src); // Save for next 0ms load
+          };
+          tempImg.src = user.photoURL;
+        } else if (!user.photoURL && !localDpUrl) {
+           dpSkeleton.classList.add('hidden'); // Hide skeleton if no photo available
+        }
+      }
+    });
 
-    // --- DOM Elements ---
-    const customerListEl = document.getElementById('customer-list');
-    const loadMoreTrigger = document.getElementById('load-more-trigger');
-    const paginationLoader = document.getElementById('pagination-loader');
-    const searchBar = document.getElementById('search-bar');
-    const searchInput = document.getElementById('search-input');
-    const emptyState = document.getElementById('empty-state');
+    // 3. UI Interactions (Sidebar & Haptics)
+    function triggerVibration() {
+      if (navigator.vibrate) navigator.vibrate(40);
+    }
+
+    // Desktop Sidebar Toggle
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
     
-    const screenDetail = document.getElementById('screen-detail');
-    const productListEl = document.getElementById('product-list');
-    const paymentSheet = document.getElementById('payment-sheet');
-    const modalOverlay = document.getElementById('modal-overlay');
+    sidebarToggle.addEventListener('click', () => {
+      triggerVibration();
+      sidebar.classList.toggle('collapsed');
+    });
 
-    const payAmount = document.getElementById('pay-amount');
-    const payDate = document.getElementById('pay-date');
-    const payMethod = document.getElementById('pay-method');
-    const btnSavePayment = document.getElementById('btn-save-payment');
-
-    // --- History API Safe Router ---
-    const originalBack = window.history.back;
-    let isBacking = false;
-    window.history.back = function() {
-        if(isBacking) return;
-        isBacking = true;
-        originalBack.apply(window.history);
-        setTimeout(() => isBacking = false, 400); 
-    };
-
-    window.addEventListener('popstate', (e) => {
-      const state = e.state;
-      modalOverlay.classList.remove('active');
-      paymentSheet.classList.remove('active');
+    // Navigation Sync Logic (Syncs active states between PC Sidebar and Mobile Bottom Nav)
+    window.setActiveNav = function(clickedElement, index) {
+      triggerVibration();
       
-      if (!state || state.screen !== 'detail') {
-        screenDetail.classList.add('hidden-right');
-        activeCustomer = null;
-      }
-      if (!state || state.search !== 'active') {
-          closeSearch(true);
-      }
-    });
-
-    // --- Initialize ---
-    onAuthStateChanged(auth, (user) => { 
-      if (user) {
-        currentUser = user; 
-        fetchInitialCustomers();
-        buildSearchDictionaryBackground();
-      }
-    });
-
-    async function buildSearchDictionaryBackground() {
-        try {
-            const snap = await getDocs(collection(db, "customers"));
-            snap.forEach(d => {
-                const data = d.data();
-                localSearchCache.push({
-                    id: d.id.toLowerCase(),
-                    name: (data.name || '').toLowerCase(),
-                    rawName: data.name || 'Unknown',
-                    rawId: d.id,
-                    phone: data.phone || ''
-                });
-            });
-        } catch(e) { console.error("Cache build failed", e); }
-    }
-
-    // --- 2. Pagination Engine ---
-    async function fetchInitialCustomers() {
-        if(isFetching) return;
-        isFetching = true;
-        customerListEl.innerHTML = richSkeletonHTML; 
-        
-        try {
-            const q = query(collection(db, "customers"), limit(ITEMS_PER_PAGE));
-            const snap = await getDocs(q);
-            
-            customerListEl.innerHTML = ''; 
-
-            if(snap.empty) {
-                emptyState.style.display = 'block';
-            } else {
-                lastVisibleDoc = snap.docs[snap.docs.length - 1];
-                renderCustomerBatch(snap.docs);
-                setupIntersectionObserver();
-            }
-        } catch (e) {
-            customerListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Failed to load.</p>';
-        }
-        isFetching = false;
-    }
-
-    async function fetchNextCustomers() {
-        if(isFetching || !hasMoreDocs || isSearchMode) return;
-        isFetching = true;
-        paginationLoader.style.display = 'block';
-
-        try {
-            const q = query(collection(db, "customers"), startAfter(lastVisibleDoc), limit(ITEMS_PER_PAGE));
-            const snap = await getDocs(q);
-            
-            if(snap.empty) {
-                hasMoreDocs = false;
-            } else {
-                lastVisibleDoc = snap.docs[snap.docs.length - 1];
-                renderCustomerBatch(snap.docs);
-            }
-        } catch(e) { console.error("Pagination error", e); }
-        
-        paginationLoader.style.display = 'none';
-        isFetching = false;
-    }
-
-    function renderCustomerBatch(docs) {
-        docs.forEach(d => {
-            const data = d.data();
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <div class="card-top">
-                    <div>
-                        <div class="card-title">${data.name || 'Unknown'}</div>
-                        <div class="card-sub">ID: ${d.id} | 📞 ${data.phone || 'N/A'}</div>
-                    </div>
-                    <span class="badge">${data.products ? data.products.length : 0} Products</span>
-                </div>
-            `;
-            card.onclick = () => loadCustomerDetail(d.id);
-            customerListEl.appendChild(card);
-        });
-    }
-
-    function setupIntersectionObserver() {
-        const observer = new IntersectionObserver((entries) => {
-            if(entries[0].isIntersecting) fetchNextCustomers();
-        }, { rootMargin: '100px' });
-        observer.observe(loadMoreTrigger);
-    }
-
-    // --- 3. Instant Search Engine ---
-    window.openSearch = () => {
-        vibrate();
-        window.history.pushState({ search: 'active' }, '');
-        searchBar.classList.add('active');
-        searchInput.focus();
-        isSearchMode = true;
+      // Clear active states on sidebar
+      const sidebarItems = document.querySelectorAll('.nav-list .nav-item');
+      sidebarItems.forEach(item => item.classList.remove('active'));
+      
+      // Clear active states on bottom nav
+      const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+      bottomNavItems.forEach(item => item.classList.remove('active'));
+      
+      // Apply to both (so if you resize the window, they match)
+      if (sidebarItems[index]) sidebarItems[index].classList.add('active');
+      if (bottomNavItems[index]) bottomNavItems[index].classList.add('active');
     };
 
-    window.closeSearch = (fromHistory = false) => {
-        searchBar.classList.remove('active');
-        searchInput.value = '';
-        isSearchMode = false;
-        emptyState.style.display = 'none';
-        customerListEl.innerHTML = '';
-        lastVisibleDoc = null;
-        hasMoreDocs = true;
-        fetchInitialCustomers(); 
-        if(!fromHistory) window.history.back();
-    };
+    // 4. PWA Install Pill Logic
+    let deferredPrompt;
+    const installPill = document.getElementById('install-pill');
 
-    searchInput.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        const term = e.target.value.toLowerCase().trim();
-        
-        if(term.length === 0) {
-            customerListEl.innerHTML = richSkeletonHTML;
-            fetchInitialCustomers();
-            emptyState.style.display = 'none';
-            return;
-        }
-
-        searchTimeout = setTimeout(() => {
-            customerListEl.innerHTML = '';
-            let matchedNames = [];
-            let matchedIDs = [];
-
-            for(let c of localSearchCache) {
-                if(matchedNames.length < 5 && c.name.includes(term)) matchedNames.push(c);
-                else if(matchedIDs.length < 5 && c.id.includes(term)) matchedIDs.push(c);
-                if(matchedNames.length === 5 && matchedIDs.length === 5) break;
-            }
-
-            const combined = [...matchedNames, ...matchedIDs];
-            
-            if(combined.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-                combined.forEach(c => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <div class="card-top">
-                            <div>
-                                <div class="card-title">${c.rawName}</div>
-                                <div class="card-sub">ID: ${c.rawId} | 📞 ${c.phone}</div>
-                            </div>
-                        </div>
-                    `;
-                    card.onclick = () => loadCustomerDetail(c.rawId);
-                    customerListEl.appendChild(card);
-                });
-            }
-        }, 400); 
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      deferredPrompt = e;
+      // Show the customized install pill
+      setTimeout(() => {
+        installPill.classList.add('show');
+      }, 2000); // Slight delay for UX
     });
 
-    // --- 4. Level 2: Customer Ledger & Products ---
-    async function loadCustomerDetail(custId) {
-        vibrate();
-        document.getElementById('detail-cust-name').innerText = "Loading...";
-        productListEl.innerHTML = '<div class="loader-spinner"></div>';
-        
-        window.history.pushState({ screen: 'detail' }, '');
-        screenDetail.classList.remove('hidden-right');
-
-        try {
-            const docSnap = await getDoc(doc(db, "customers", custId));
-            if(!docSnap.exists()) throw new Error("Not found");
-            
-            activeCustomer = { id: custId, ref: doc(db, "customers", custId), data: docSnap.data() };
-            const c = activeCustomer.data;
-            
-            document.getElementById('detail-cust-name').innerText = c.name;
-            document.getElementById('ledger-cust-name-inner').innerText = c.name;
-            document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
-            document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
-
-            // Dark Mode GPS Setup
-            if (c.location && c.location.includes(',')) {
-                const parts = c.location.split(',');
-                const lat = parseFloat(parts[0].trim());
-                const lon = parseFloat(parts[1].trim());
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
-                    document.getElementById('ledger-map-frame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
-                }
-            } else {
-                document.getElementById('ledger-map-frame').src = "";
-            }
-            
-            renderProducts();
-        } catch(e) {
-            productListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Error loading details.</p>';
-        }
-    }
-
-    // Dropdown UI Toggle
-    window.toggleLedger = (index) => {
-        vibrate(15);
-        const collapse = document.getElementById(`ledger-collapse-${index}`);
-        const chevron = document.getElementById(`chevron-${index}`);
-        if(collapse.style.display === 'none') {
-            collapse.style.display = 'block';
-            chevron.style.transform = 'rotate(180deg)';
+    installPill.addEventListener('click', async () => {
+      triggerVibration();
+      if (deferredPrompt) {
+        // Show the native install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
         } else {
-            collapse.style.display = 'none';
-            chevron.style.transform = 'rotate(0deg)';
+          console.log('User dismissed the install prompt');
         }
-    };
+        deferredPrompt = null;
+        installPill.classList.remove('show');
+      }
+    });
 
-    function renderProducts() {
-        productListEl.innerHTML = '';
-        const prods = activeCustomer.data.products || [];
-        let grandTotalPending = 0;
-        
-        if(prods.length === 0) {
-            productListEl.innerHTML = '<p style="text-align:center; color:var(--text-sub); margin-top:20px;">No products found.</p>';
-            document.getElementById('ledger-total-pending').innerText = "₹0";
-            return;
-        }
+    // Hide pill if installed successfully
+    window.addEventListener('appinstalled', () => {
+      installPill.classList.remove('show');
+      deferredPrompt = null;
+    });
 
-        prods.forEach((p, pIndex) => {
-            // FIX: Ensure math hooks into p.total, NOT p.amount
-            const total = parseInt(p.total) || 0; 
-            const paid = parseInt(p.paid) || 0;
-            const pending = parseInt(p.pending) || 0;
-            grandTotalPending += pending;
-            
-            let payHtml = '';
-            if(p.payments && p.payments.length > 0) {
-                const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
-                                      .sort((a,b) => new Date(b.date) - new Date(a.date));
-                                      
-                sortedPayments.forEach(pay => {
-                    const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
-                    payHtml += `
-                    <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 12px 10px;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
-                        <td style="padding: 12px 10px; color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
-                        <td style="padding: 12px 10px; color:var(--danger); font-weight:700;">${fmt(pay.pendingAfter)}</td>
-                        <td style="padding: 12px 10px; text-align:center;">
-                            <button class="icon-btn edit" style="background:transparent; padding:4px; box-shadow:none; display:inline-block;" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            </button>
-                        </td>
-                    </tr>`;
-                });
-            } else {
-                payHtml = `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-sub);">No payments recorded yet.</td></tr>`;
-            }
+    // 5. Profile Picture Click Navigation
+    document.getElementById('profile-btn').addEventListener('click', () => {
+      triggerVibration();
+      // Load manage.html inside the main content iframe
+      document.getElementById('content-frame').src = 'manage.html';
+      
+      // Deselect all nav icons since user is on a settings page
+      const sidebarItems = document.querySelectorAll('.nav-list .nav-item');
+      sidebarItems.forEach(item => item.classList.remove('active'));
+      
+      const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+      bottomNavItems.forEach(item => item.classList.remove('active'));
+    });
 
-            const card = document.createElement('div');
-            card.className = 'product-item';
-            card.innerHTML = `
-                <div class="product-header">
-                    <span>${p.name || 'Product'}</span>
-                    <div class="prod-actions" style="display:flex; gap:10px;">
-                        <button class="btn-circle btn-csv" onclick="window.downloadCSV(${pIndex})">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        </button>
-                        <button class="btn-circle btn-add" onclick="window.openAddPayment(${pIndex})">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="product-math" style="margin-bottom: 15px; font-weight:800;">
-                    <span>Total: ${fmt(total)}</span> | 
-                    <span style="color:var(--primary);">Paid: ${fmt(paid)}</span> | 
-                    <span class="val-pending">Pending: ${fmt(pending)}</span>
-                </div>
-                
-                <div class="ledger-toggle" onclick="window.toggleLedger(${pIndex})" style="padding: 10px; text-align: center; color: var(--primary); font-weight: 800; font-size: 0.8rem; cursor: pointer; background: var(--bg-color); border-radius:8px; display: flex; justify-content: center; align-items: center; gap: 6px; text-transform: uppercase;">
-                    Payment History <svg id="chevron-${pIndex}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition: transform 0.3s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                
-                <div id="ledger-collapse-${pIndex}" style="display: none; margin-top: 10px;">
-                    <div class="product-table-wrapper" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border);">
-                      <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.85rem;">
-                        <thead style="background: rgba(107, 114, 128, 0.1);">
-                          <tr>
-                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Date</th>
-                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Paid</th>
-                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Remaining</th>
-                            <th style="padding: 10px; text-align: center; border-bottom:1px solid var(--border);">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${payHtml}
-                        </tbody>
-                      </table>
-                    </div>
-                </div>
-            `;
-            productListEl.appendChild(card);
-        });
-
-        document.getElementById('ledger-total-pending').innerText = fmt(grandTotalPending);
-    }
-
-    // --- 5. Ledger Editing & Math Recalculation Engine ---
-    window.openAddPayment = (pIndex) => {
-        if (document.getElementById('payment-sheet').classList.contains('active')) return;
-        vibrate();
-        activeProductIndex = pIndex;
-        activePaymentIndex = null; 
-        const prod = activeCustomer.data.products[pIndex];
-        
-        document.getElementById('sheet-title').innerText = "Record Payment";
-        document.getElementById('sheet-sub').innerText = prod.name;
-        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
-        
-        payAmount.value = '';
-        payDate.value = new Date().toISOString().split('T')[0]; 
-        payMethod.value = 'cash';
-
-        window.history.pushState({ screen: 'detail', modal: 'add' }, ''); 
-        modalOverlay.classList.add('active');
-        paymentSheet.classList.add('active');
-    };
-
-    window.openEditPayment = (pIndex, payIndex) => {
-        if (document.getElementById('payment-sheet').classList.contains('active')) return;
-        vibrate();
-        activeProductIndex = pIndex;
-        activePaymentIndex = payIndex; 
-        const prod = activeCustomer.data.products[pIndex];
-        const pay = prod.payments[payIndex];
-        
-        document.getElementById('sheet-title').innerText = "Edit Payment";
-        document.getElementById('sheet-sub').innerText = prod.name;
-        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
-        
-        payAmount.value = pay.amount;
-        payDate.value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
-        payMethod.value = pay.method || 'cash';
-
-        window.history.pushState({ screen: 'detail', modal: 'edit' }, '');
-        modalOverlay.classList.add('active');
-        paymentSheet.classList.add('active');
-    };
-
-    // Native HTML Onclick for Saving
-    window.savePayment = async () => {
-        vibrate();
-        const amt = parseInt(payAmount.value);
-        if (isNaN(amt) || amt < 0) return alert("Enter a valid amount.");
-
-        btnSavePayment.innerText = "Saving...";
-        btnSavePayment.disabled = true;
-
-        try {
-            // Deep Clone
-            let safeProducts = JSON.parse(JSON.stringify(activeCustomer.data.products));
-            let targetProd = safeProducts[activeProductIndex];
-            if(!targetProd.payments) targetProd.payments = [];
-
-            if (activePaymentIndex === null) {
-                targetProd.payments.push({
-                    id: 'MANUAL_' + Date.now(),
-                    amount: amt,
-                    date: new Date(payDate.value).toISOString(),
-                    type: 'collection',
-                    method: payMethod.value,
-                    agent_uid: currentUser.uid,
-                    pendingAfter: 0 
-                });
-            } else {
-                targetProd.payments[activePaymentIndex].amount = amt;
-                targetProd.payments[activePaymentIndex].date = new Date(payDate.value).toISOString();
-                targetProd.payments[activePaymentIndex].method = payMethod.value;
-            }
-
-            // --- MASTER RECALCULATION ENGINE (FIXED TO targetProd.total) ---
-            let totalPaidCalculated = 0;
-            targetProd.payments.forEach(p => {
-                totalPaidCalculated += (parseInt(p.amount) || 0);
-            });
-
-            targetProd.paid = totalPaidCalculated;
-            // FIXED BUG: Using targetProd.total instead of amount
-            targetProd.pending = Math.max(0, (parseInt(targetProd.total) || 0) - totalPaidCalculated);
-
-            let runningPending = parseInt(targetProd.total) || 0;
-            targetProd.payments.forEach(p => {
-                runningPending -= (parseInt(p.amount) || 0);
-                p.pendingAfter = Math.max(0, runningPending);
-            });
-
-            await updateDoc(activeCustomer.ref, { products: safeProducts });
-            
-            // Sync Local Data
-            activeCustomer.data.products = safeProducts;
-            
-            vibrate([30, 50]);
-            renderProducts(); 
-            window.history.back(); 
-
-        } catch (e) {
-            alert("Failed to save: " + e.message);
-        }
-        btnSavePayment.innerText = "Save Payment";
-        btnSavePayment.disabled = false;
-    };
-
-    // --- 6. Native CSV Exporter ---
-    window.downloadCSV = (pIndex) => {
-        vibrate();
-        const prod = activeCustomer.data.products[pIndex];
-        if(!prod.payments || prod.payments.length === 0) return alert("No payments to export.");
-
-        let csvContent = "Date,Receipt ID,Method,Amount,Remaining Balance After\n";
-        
-        const sorted = [...prod.payments].sort((a,b) => new Date(a.date) - new Date(b.date));
-        
-        sorted.forEach(p => {
-            const d = new Date(p.date).toLocaleDateString('en-IN');
-            csvContent += `"${d}","${p.id}","${p.method}","${p.amount}","${p.pendingAfter}"\n`;
-        });
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `${activeCustomer.data.name.replace(/\s+/g, '_')}_${prod.name.replace(/\s+/g, '')}_Ledger.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    modalOverlay.addEventListener('click', () => window.history.back());
   </script>
 </body>
 </html>
