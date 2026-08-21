@@ -100,12 +100,14 @@
     .btn-act.approve { background: var(--primary); color: white; border: none; }
     .btn-act.reject { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: none; }
     .btn-act.delete { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: none; }
-    .btn-act svg { width: 14px; height: 14px; stroke-width: 2.5; }
+    /* FIXED: Prevent SVG from stealing the click */
+    .btn-act svg { width: 14px; height: 14px; stroke-width: 2.5; pointer-events: none; }
 
     /* --- Floating Action Button (FAB) --- */
     .fab { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 90px); right: 20px; background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 30px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 90; transition: transform 0.2s; }
     .fab:active { transform: scale(0.95); }
-    .fab svg { width: 22px; height: 22px; stroke-width: 2.5; fill: none; stroke: currentColor; }
+    /* FIXED: Prevent SVG from stealing the click */
+    .fab svg { width: 22px; height: 22px; stroke-width: 2.5; fill: none; stroke: currentColor; pointer-events: none; }
 
     /* --- Modals & Overlays --- */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
@@ -838,6 +840,15 @@
             console.error(e);
             window.history.back();
         }
+    }
+
+    // --- ADDED: Explicit FAB binding to prevent mobile tap failures ---
+    const fabApproveBtn = document.getElementById('btn-fab-approve');
+    if(fabApproveBtn) {
+        fabApproveBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Stop double firing
+            openApproveAllConfirm();
+        });
     }
 
     // Close Modals on Overlay Click
