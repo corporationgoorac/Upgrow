@@ -153,8 +153,9 @@
 
   <!-- ================= LEVEL 2: CUSTOMER DETAIL ================= -->
   <div id="screen-detail" class="screen hidden-right">
-    <div class="header" style="border-bottom: 1px solid var(--border);">
-      <button class="back-btn" onclick="window.history.back()">
+    <!-- UPGRADED: Removed bottom border and added icon-btn class to seamlessly remove ghost margins -->
+    <div class="header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 10px;">
+      <button class="back-btn icon-btn" onclick="window.history.back()" style="padding-left: 0;">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
       </button>
       <h2 style="font-size: 1.15rem; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="detail-cust-name">Customer</h2>
@@ -244,7 +245,7 @@
     let activePaymentIndex = null; 
     let isSearchMode = false;
     let searchTimeout = null;
-    let isOpeningCustomer = false; // Fixed: UI Safety Lock for Ghost Double-Taps
+    let isOpeningCustomer = false; 
 
     // Pagination State
     let lastVisibleDoc = null;
@@ -279,36 +280,47 @@
     const payMethod = document.getElementById('pay-method');
     const btnSavePayment = document.getElementById('btn-save-payment');
 
-    // --- History API Safe Router ---
-    const originalBack = window.history.back;
-    let isBacking = false;
-    window.history.back = function() {
-        if(isBacking) return;
-        isBacking = true;
-        originalBack.apply(window.history);
-        setTimeout(() => isBacking = false, 400); 
-    };
+    // ============================================================================
+    // UPGRADED: "lines.html" Style Top-Down UI Closing Engine (No Ghost History)
+    // ============================================================================
+    function closeTopUI() {
+        // 1. Modals (Highest Layer)
+        if (paymentSheet && paymentSheet.classList.contains('active')) {
+            paymentSheet.classList.remove('active');
+            modalOverlay.classList.remove('active');
+            return;
+        }
 
-    window.addEventListener('popstate', (e) => {
-      const state = e.state;
-      
-      // UPGRADED: Explicitly handle modal closes first based on line.html logic
-      if (modalOverlay.classList.contains('active')) {
-          modalOverlay.classList.remove('active');
-          paymentSheet.classList.remove('active');
-          return;
-      }
-      
-      if (!state || state.screen !== 'detail') {
-        if (!screenDetail.classList.contains('hidden-right')) {
+        // 2. Slide Panels (Middle Layer covering Main Screen)
+        if (screenDetail && !screenDetail.classList.contains('hidden-right')) {
             screenDetail.classList.add('hidden-right');
             activeCustomer = null;
+            return;
         }
-      }
-      if (!state || state.search !== 'active') {
-          closeSearch(true);
-      }
+
+        // 3. Search Bar (Base Layer Overlay)
+        if (searchBar && searchBar.classList.contains('active')) {
+            searchBar.classList.remove('active');
+            searchInput.value = '';
+            isSearchMode = false;
+            emptyState.style.display = 'none';
+            
+            // Re-render master list upon search close
+            customerListEl.innerHTML = '';
+            lastVisibleDoc = null;
+            hasMoreDocs = true;
+            fetchInitialCustomers(); 
+            return;
+        }
+    }
+
+    // A single flawless event listener catches BOTH physical back buttons AND UI back arrows.
+    window.addEventListener('popstate', (e) => {
+        closeTopUI();
     });
+    
+    // Close overlay triggers native back, exactly like lines.html
+    modalOverlay.addEventListener('click', () => window.history.back());
 
     // --- Initialize ---
     onAuthStateChanged(auth, (user) => { 
@@ -320,20 +332,11 @@
     });
 
     async function buildSearchDictionaryBackground() {
-        // UPGRADED: CACHE SYSTEM DISABLED TO REDUCE HEAVY FIREBASE READS.
-        // The array remains empty, keeping the function definition purely to honor the strict code structure rule.
-        /* 
-        try {
-            const snap = await getDocs(collection(db, "customers"));
-            const newCache = []; 
-            snap.forEach(d => { ... });
-            localSearchCache = newCache;
-        } catch(e) { console.error("Cache build failed", e); }
-        */
+        // UPGRADED: Caching disabled entirely to kill read waste as requested.
         localSearchCache = []; 
     }
 
-    // --- 2. Pagination Engine ---
+    // --- Pagination Engine ---
     async function fetchInitialCustomers() {
         if(isFetching) return;
         isFetching = true;
@@ -408,27 +411,15 @@
     // --- 3. Instant Search Engine (UPGRADED TO DIRECT QUERY) ---
     window.openSearch = () => {
         vibrate();
-        window.history.pushState({ search: 'active' }, '');
+        window.history.pushState({ panel: 'search' }, ''); // Clean single push
         searchBar.classList.add('active');
         searchInput.focus();
         isSearchMode = true;
     };
 
-    window.closeSearch = (fromHistory = false) => {
-        // UPGRADED: Safety lock prevents UI thrashing if search wasn't even open
-        if (!isSearchMode) return;
-        
-        searchBar.classList.remove('active');
-        searchInput.value = '';
-        isSearchMode = false;
-        emptyState.style.display = 'none';
-        
-        customerListEl.innerHTML = '';
-        lastVisibleDoc = null;
-        hasMoreDocs = true;
-        fetchInitialCustomers(); 
-        
-        if(!fromHistory) window.history.back();
+    window.closeSearch = () => {
+        // Native back triggers popstate which hits closeTopUI() safely
+        window.history.back();
     };
 
     searchInput.addEventListener('input', (e) => {
@@ -442,7 +433,7 @@
             return;
         }
 
-        // UPGRADED: Wait for 3 characters to execute query, vastly reducing Firebase reads.
+        // Execute targeted Firebase query after 3 characters
         if (term.length < 3) return;
 
         searchTimeout = setTimeout(async () => {
@@ -450,7 +441,6 @@
             emptyState.style.display = 'none';
 
             try {
-                // UPGRADED: Execute targeted Firebase queries natively instead of filtering a massive cache
                 const capTerm = term.charAt(0).toUpperCase() + term.slice(1);
                 const upperTerm = term.toUpperCase();
 
@@ -497,9 +487,9 @@
 
         vibrate();
         
-        // UPGRADED: Critical conditional stops multiple back button pushes!
+        // Push state strictly only if panel is hidden to completely stop ghost double-states
         if (screenDetail.classList.contains('hidden-right')) {
-            window.history.pushState({ screen: 'detail' }, '');
+            window.history.pushState({ panel: 'detail' }, '');
             screenDetail.classList.remove('hidden-right');
         }
 
@@ -518,7 +508,6 @@
             document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
             document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
 
-            // Dark Mode GPS Setup
             if (c.location && c.location.includes(',')) {
                 const parts = c.location.split(',');
                 const lat = parseFloat(parts[0].trim());
@@ -535,7 +524,7 @@
         } catch(e) {
             productListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Error loading details.</p>';
         } finally {
-            isOpeningCustomer = false; // UPGRADED: Lock fully releases ONLY after execution finishes
+            isOpeningCustomer = false; 
         }
     }
 
@@ -576,7 +565,7 @@
             
             let payHtml = '';
             if(p.payments && p.payments.length > 0) {
-                // UPGRADED: Sort ascending chronologically to perform flawless dynamic math
+                // UPGRADED: Dynamic Live Math ignores the buggy database value and recalculates flawlessly
                 const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
                                       .sort((a,b) => new Date(a.date) - new Date(b.date));
                 
@@ -584,10 +573,9 @@
                 sortedPayments.forEach(pay => {
                     let amt = parseInt(pay.amount) || 0;
                     dynamicPending = Math.max(0, dynamicPending - amt);
-                    pay.displayPending = dynamicPending; // Lock in the dynamic calculation
+                    pay.displayPending = dynamicPending; 
                 });
 
-                // UPGRADED: Reverse array backward for rendering visually (newest first)
                 sortedPayments.reverse().forEach(pay => {
                     const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
                     payHtml += `
@@ -656,7 +644,7 @@
 
     // --- 5. Ledger Editing & Math Recalculation Engine ---
     window.openAddPayment = (pIndex) => {
-        if (document.getElementById('payment-sheet').classList.contains('active')) return;
+        if (paymentSheet.classList.contains('active')) return;
         vibrate();
         activeProductIndex = pIndex;
         activePaymentIndex = null; 
@@ -671,13 +659,13 @@
         payDate.value = new Date().toISOString().split('T')[0]; 
         payMethod.value = 'cash';
 
-        window.history.pushState({ screen: 'detail', modal: 'add' }, ''); 
+        window.history.pushState({ modal: 'payment' }, ''); 
         modalOverlay.classList.add('active');
         paymentSheet.classList.add('active');
     };
 
     window.openEditPayment = (pIndex, payIndex) => {
-        if (document.getElementById('payment-sheet').classList.contains('active')) return;
+        if (paymentSheet.classList.contains('active')) return;
         vibrate();
         activeProductIndex = pIndex;
         activePaymentIndex = payIndex; 
@@ -693,12 +681,11 @@
         payDate.value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
         payMethod.value = pay.method || 'cash';
 
-        window.history.pushState({ screen: 'detail', modal: 'edit' }, '');
+        window.history.pushState({ modal: 'payment' }, '');
         modalOverlay.classList.add('active');
         paymentSheet.classList.add('active');
     };
 
-    // Native HTML Onclick for Saving
     window.savePayment = async () => {
         vibrate();
         const amt = parseInt(payAmount.value);
@@ -751,7 +738,6 @@
             
             vibrate([30, 50]);
             renderProducts(); 
-            buildSearchDictionaryBackground();
             window.history.back(); 
 
         } catch (e) {
@@ -786,7 +772,6 @@
         document.body.removeChild(link);
     };
 
-    modalOverlay.addEventListener('click', () => window.history.back());
   </script>
 </body>
 </html>
