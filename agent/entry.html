@@ -227,7 +227,22 @@
     window.addEventListener('online', () => document.getElementById('sync-status').classList.remove('offline'));
 
     // Auth
-    onAuthStateChanged(auth, (user) => { if (user) currentUser = user; });
+    onAuthStateChanged(auth, (user) => { 
+      if (user) {
+        currentUser = user; 
+        
+        // --- NEW: UBER-STYLE ROUTING URL BRIDGE ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const custId = urlParams.get('custId');
+        if (custId) {
+            getDoc(doc(db, "customers", custId)).then(docSnap => {
+                if (docSnap.exists()) {
+                    openCustomerDetail(docSnap.data());
+                }
+            }).catch(console.error);
+        }
+      } 
+    });
 
     // Haptics
     function vibrate(p = 30) { if(navigator.vibrate) navigator.vibrate(p); }
@@ -377,7 +392,7 @@
         products.forEach((prod, index) => {
           // LIVE MATH ENGINE
           const masterPending = parseInt(prod.pending) || 0;
-          const masterTotal = parseInt(prod.total) || 0;
+          const masterTotal = parseInt(prod.total) || parseInt(prod.amount) || 0;
           const masterPaid = parseInt(prod.paid) || 0;
           
           // Deduct any global pending payments that haven't been approved by admin yet
