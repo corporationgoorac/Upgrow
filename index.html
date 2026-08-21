@@ -49,7 +49,7 @@
     .login-sub { font-size: 1rem; color: var(--text-sub); margin-bottom: 40px; font-weight: 500; }
     
     .input-group { width: 100%; max-width: 350px; position: relative; margin-bottom: 20px; }
-    .input-field { width: 100%; padding: 18px 20px; font-size: 1.1rem; border-radius: 16px; border: 2px solid var(--border); background: var(--surface-card); color: var(--text-main); outline: none; transition: border-color 0.2s; font-weight: 600; text-align: center; letter-spacing: 1px; }
+    .input-field { width: 100%; padding: 18px 20px; font-size: 1.1rem; border-radius: 16px; border: 2px solid var(--border); background: var(--surface-card); color: var(--text-main); outline: none; transition: border-color 0.2s; font-weight: 600; text-align: center; letter-spacing: 1px; text-transform: uppercase; }
     .input-field:focus { border-color: var(--primary); }
     
     .btn-submit { width: 100%; max-width: 350px; padding: 18px; border-radius: 16px; border: none; background: var(--primary); color: white; font-size: 1.2rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3); transition: transform 0.1s; display: flex; justify-content: center; align-items: center; gap: 10px; }
@@ -235,6 +235,11 @@
         // Allow Enter key in input
         document.getElementById('cust-id-input').addEventListener("keypress", (e) => {
             if (e.key === "Enter") handleLogin();
+        });
+
+        // Auto format input: Uppercase and remove gaps dynamically
+        document.getElementById('cust-id-input').addEventListener("input", function(e) {
+            this.value = this.value.toUpperCase().replace(/\s/g, '');
         });
     });
 
