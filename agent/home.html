@@ -1,1 +1,629 @@
-hd
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Agent Route - Up Field</title>
+  
+  <!-- Leaflet CSS for Live Uber-Style Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    /* Shared Theme Variables */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.15);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 30px -5px rgba(0, 0, 0, 0.6);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none !important; }
+    body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; }
+
+    /* --- Screen Management --- */
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; background: var(--bg-color); }
+    .screen.hidden { opacity: 0; pointer-events: none; z-index: -1; }
+    
+    /* --- Header --- */
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 20; position: relative; border-bottom: 1px solid var(--border); }
+    .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .agent-dp { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
+
+    /* --- Route Gradients --- */
+    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; }
+    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; }
+    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; }
+    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; }
+    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; }
+    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; }
+
+    /* --- Start Screen --- */
+    .start-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+    .btn-start-route { width: 100%; max-width: 320px; padding: 25px; border-radius: 24px; border: none; font-size: 1.4rem; font-weight: 800; cursor: pointer; box-shadow: var(--shadow); transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .btn-start-route:active { transform: scale(0.95); }
+    .btn-start-route span { font-size: 0.9rem; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* --- Live Map Screen --- */
+    #map-container { width: 100%; height: 60vh; position: absolute; top: 0; left: 0; z-index: 1; filter: var(--map-filter, none); }
+    @media (prefers-color-scheme: dark) { :root { --map-filter: invert(100%) hue-rotate(180deg) brightness(85%); } }
+
+    /* Floating "Recenter" Button */
+    .btn-recenter { position: absolute; top: 80px; right: 15px; z-index: 10; background: var(--surface-card); border: 2px solid var(--border); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); cursor: pointer; color: var(--text-main); }
+    .btn-recenter:active { transform: scale(0.9); }
+
+    /* --- Bottom Sheet Routing Engine --- */
+    .route-panel { position: absolute; bottom: 0; left: 0; width: 100%; height: 45vh; background: var(--surface-card); z-index: 10; border-top-left-radius: 30px; border-top-right-radius: 30px; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transition: height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); display: flex; flex-direction: column; }
+    .route-panel.expanded { height: 85vh; }
+    
+    .panel-handle-area { padding: 15px 0; display: flex; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .panel-handle { width: 50px; height: 6px; background: var(--border); border-radius: 10px; }
+
+    .panel-content { padding: 0 20px 30px 20px; overflow-y: auto; flex: 1; }
+
+    /* Next Stop Card (Large) */
+    .next-stop-header { font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .next-stop-header .pulse-dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; animation: pulseLoc 1.5s infinite; }
+    @keyframes pulseLoc { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+    .cust-main-name { font-size: 1.6rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 5px; }
+    .cust-dist-amt { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 15px; }
+    .amt-pill { background: rgba(245, 158, 11, 0.15); color: var(--warning); padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 1.1rem; }
+    .dist-text { color: var(--text-sub); font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 4px; }
+
+    /* 4-Action Grid */
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+    .btn-action { background: var(--bg-color); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-main); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: transform 0.1s; text-decoration: none; }
+    .btn-action:active { transform: scale(0.95); background: var(--border); }
+    .btn-action svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; }
+    .btn-action.skip { color: var(--text-sub); }
+
+    .btn-collect { width: 100%; background: var(--primary); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 1.2rem; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); cursor: pointer; transition: transform 0.1s; }
+    .btn-collect:active { transform: scale(0.96); }
+
+    /* Mini Cards for Expanded List */
+    .section-title { font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; margin: 25px 0 15px 0; }
+    .mini-card { background: var(--bg-color); border: 1px solid var(--border); padding: 15px; border-radius: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .mini-info h4 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+    .mini-info p { font-size: 0.85rem; font-weight: 700; color: var(--warning); }
+    
+    .mini-actions { display: flex; gap: 8px; align-items: center; }
+    .icon-circle { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-card); border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; color: var(--text-main); text-decoration: none; cursor: pointer; }
+    .icon-circle:active { transform: scale(0.9); }
+    .icon-circle svg { width: 16px; height: 16px; stroke-width: 2.5; }
+    
+    .btn-visit-again { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
+
+    /* Loaders */
+    .loader-circle { width: 50px; height: 50px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+  </style>
+</head>
+<body>
+
+  <!-- ================= SCREEN 1: "GOOD MORNING" START ================= -->
+  <div id="screen-start" class="screen">
+    <div class="header" style="justify-content: center; padding: 25px 20px;">
+      <h2 style="font-size: 1.5rem;">Up Field</h2>
+    </div>
+    
+    <div class="start-content">
+      <div id="start-loader" class="loader-circle" style="display: block;"></div>
+      
+      <div id="start-ui" style="display: none; width: 100%; align-items: center; flex-direction: column;">
+          <h3 id="greeting-text" style="font-size: 1.8rem; font-weight: 800; margin-bottom: 5px;">Good Morning</h3>
+          <p id="date-text" style="color: var(--text-sub); font-weight: 700; margin-bottom: 40px; font-size: 1.1rem;"></p>
+          
+          <div id="no-route-msg" style="display: none; color: var(--danger); font-weight: 800; background: rgba(239,68,68,0.1); padding: 15px 25px; border-radius: 16px;">
+              You have no route assigned for today.
+          </div>
+
+          <button id="btn-start" class="btn-start-route grad-6" style="display: none;" onclick="initializeRouteCache()">
+              <span>Start Route</span>
+              <div id="start-line-name">Loading...</div>
+          </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCREEN 2: LIVE UBER MAP & ROUTING ================= -->
+  <div id="screen-route" class="screen hidden">
+    <div class="header">
+      <h2 style="font-size: 1.1rem;" id="active-line-header">Route</h2>
+      <img id="agent-dp" class="agent-dp" src="" onerror="this.style.display='none'">
+    </div>
+
+    <!-- Leaflet Map Container -->
+    <div id="map-container"></div>
+    <button class="btn-recenter" onclick="centerMapOnAgent()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+    </button>
+
+    <!-- Expandable Bottom Sheet -->
+    <div class="route-panel" id="route-panel">
+        <div class="panel-handle-area" onclick="toggleRoutePanel()">
+            <div class="panel-handle"></div>
+        </div>
+
+        <div class="panel-content" id="panel-content">
+            <!-- 1. The Nearest "Next Stop" Section -->
+            <div id="next-stop-section">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- 2. The Expanded List Section (Hidden until pulled up) -->
+            <div id="expanded-list-section" style="display: none;">
+                <div class="section-title">Up Next</div>
+                <div id="up-next-list"></div>
+
+                <div class="section-title" id="skipped-title" style="display: none;">Skipped Today</div>
+                <div id="skipped-list"></div>
+            </div>
+            
+            <div id="all-done-msg" style="display:none; text-align:center; padding: 40px 20px;">
+                <div style="font-size:4rem; margin-bottom:15px;">🎉</div>
+                <h3 style="font-size:1.5rem; font-weight:800; color:var(--primary); margin-bottom:10px;">Route Complete!</h3>
+                <p style="color:var(--text-sub); font-weight:600;">You have collected or skipped all stops for today.</p>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS for Map -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // --- Global State ---
+    let currentUser = null;
+    let todayLineId = null;
+    let todayLineData = null;
+    let localRouteData = [];
+    let agentLocation = { lat: 8.7642, lon: 78.1348 }; // Default: Thoothukudi
+    
+    // Map State
+    let map = null;
+    let agentMarker = null;
+    let customerMarkers = {};
+
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const todayStr = daysOfWeek[new Date().getDay()];
+    const todayDate = new Date().toISOString().split('T')[0];
+    const cacheKey = `route_data_${todayDate}`;
+
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // --- 1. Initialization & Auth ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('agent-dp').src = user.photoURL || '';
+            document.getElementById('greeting-text').innerText = getGreeting();
+            document.getElementById('date-text').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' });
+            
+            cleanOldCaches();
+            await checkAgentSchedule();
+        }
+    });
+
+    function getGreeting() {
+        const hour = new Date().getHours();
+        if(hour < 12) return "Good Morning";
+        if(hour < 17) return "Good Afternoon";
+        return "Good Evening";
+    }
+
+    function cleanOldCaches() {
+        Object.keys(localStorage).forEach(key => {
+            if(key.startsWith('route_data_') && key !== cacheKey) {
+                localStorage.removeItem(key);
+            }
+        });
+    }
+
+    async function checkAgentSchedule() {
+        try {
+            // Check if we ALREADY built the cache today. If so, skip Firebase entirely!
+            const existingCache = localStorage.getItem(cacheKey);
+            if(existingCache) {
+                localRouteData = JSON.parse(existingCache);
+                document.getElementById('screen-start').classList.add('hidden');
+                document.getElementById('screen-route').classList.remove('hidden');
+                startUberEngine();
+                return;
+            }
+
+            // Otherwise, 1 Read to get today's Line
+            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            if(!userDoc.exists()) throw new Error("Agent profile not found.");
+            
+            const schedule = userDoc.data().schedule || {};
+            todayLineId = schedule[todayStr];
+
+            document.getElementById('start-loader').style.display = 'none';
+            document.getElementById('start-ui').style.display = 'flex';
+
+            if(!todayLineId) {
+                document.getElementById('no-route-msg').style.display = 'block';
+            } else {
+                // Get Line Styling
+                const lineDoc = await getDoc(doc(db, "lines", todayLineId));
+                if(lineDoc.exists()) todayLineData = lineDoc.data();
+                
+                const btn = document.getElementById('btn-start');
+                btn.style.display = 'flex';
+                btn.className = `btn-start-route ${todayLineData ? (todayLineData.color || 'grad-6') : 'grad-6'}`;
+                document.getElementById('start-line-name').innerText = todayLineData ? todayLineData.name : todayLineId;
+                document.getElementById('active-line-header').innerText = todayLineData ? todayLineData.name : 'Route';
+            }
+
+        } catch (error) {
+            console.error("Schedule Check Failed:", error);
+            alert("Network error. Please reload.");
+        }
+    }
+
+    // --- 2. The Batch Fetch (Only runs once per day) ---
+    window.initializeRouteCache = async () => {
+        vibrate();
+        document.getElementById('start-ui').style.display = 'none';
+        document.getElementById('start-loader').style.display = 'block';
+
+        try {
+            const q = query(collection(db, "customers"), where("lineId", "==", todayLineId));
+            const snap = await getDocs(q);
+            
+            localRouteData = [];
+
+            snap.forEach(d => {
+                const c = d.data();
+                
+                // Calculate Live Pending (Backwards Compatible)
+                let totalPending = 0;
+                if(c.products) {
+                    c.products.forEach(p => {
+                        const pTotal = parseInt(p.total) || parseInt(p.amount) || 0;
+                        let pPaid = 0;
+                        if(p.payments) p.payments.forEach(pay => pPaid += (parseInt(pay.amount) || 0));
+                        totalPending += Math.max(0, pTotal - pPaid);
+                    });
+                }
+
+                // Only add if they owe money
+                if(totalPending > 0) {
+                    let lat = 0, lon = 0;
+                    if(c.location && c.location.includes(',')) {
+                        const pts = c.location.split(',');
+                        lat = parseFloat(pts[0].trim());
+                        lon = parseFloat(pts[1].trim());
+                    }
+
+                    localRouteData.push({
+                        id: c.id,
+                        name: c.name,
+                        phone: c.phone || '',
+                        lat: lat,
+                        lon: lon,
+                        pendingAmount: totalPending,
+                        status: 'pending', // 'pending' or 'skipped'
+                        active: true       // Set to false by entry.html when paid
+                    });
+                }
+            });
+
+            // Save to offline storage
+            localStorage.setItem(cacheKey, JSON.stringify(localRouteData));
+            
+            // Transition UI
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-route').classList.remove('hidden');
+            
+            startUberEngine();
+
+        } catch(e) {
+            console.error("Cache build failed", e);
+            alert("Failed to download route.");
+            document.getElementById('start-ui').style.display = 'flex';
+            document.getElementById('start-loader').style.display = 'none';
+        }
+    };
+
+    // --- 3. The Uber GPS & Math Engine ---
+    function startUberEngine() {
+        initLeafletMap();
+        
+        // Start watching GPS live
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                (pos) => {
+                    agentLocation.lat = pos.coords.latitude;
+                    agentLocation.lon = pos.coords.longitude;
+                    updateAgentMarker();
+                    recalculateAndRender(); // Re-sort list based on new GPS
+                },
+                (err) => {
+                    console.warn("GPS Denied or weak. Using default sorting.", err);
+                    recalculateAndRender();
+                },
+                { enableHighAccuracy: true, maximumAge: 10000 }
+            );
+        } else {
+            recalculateAndRender();
+        }
+    }
+
+    // Haversine Distance Formula (Returns Kilometers)
+    function getDistance(lat1, lon1, lat2, lon2) {
+        if(!lat1 || !lon1 || !lat2 || !lon2) return 9999; // Push bad GPS to bottom
+        const R = 6371; 
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function recalculateAndRender() {
+        // Recalculate distance for every customer
+        localRouteData.forEach(c => {
+            c.distance = getDistance(agentLocation.lat, agentLocation.lon, c.lat, c.lon);
+        });
+
+        // Split into Active and Skipped
+        const activeList = localRouteData.filter(c => c.active === true && c.status === 'pending');
+        const skippedList = localRouteData.filter(c => c.active === true && c.status === 'skipped');
+
+        // Sort by closest distance
+        activeList.sort((a, b) => a.distance - b.distance);
+        skippedList.sort((a, b) => a.distance - b.distance);
+
+        renderUI(activeList, skippedList);
+        updateMapPins(activeList);
+    }
+
+    // --- 4. UI Rendering ---
+    function renderUI(activeList, skippedList) {
+        const nextStopSection = document.getElementById('next-stop-section');
+        const upNextList = document.getElementById('up-next-list');
+        const skippedContainer = document.getElementById('skipped-list');
+        const skippedTitle = document.getElementById('skipped-title');
+        const allDoneMsg = document.getElementById('all-done-msg');
+
+        if(activeList.length === 0 && skippedList.length === 0) {
+            nextStopSection.innerHTML = '';
+            upNextList.innerHTML = '';
+            skippedContainer.innerHTML = '';
+            skippedTitle.style.display = 'none';
+            allDoneMsg.style.display = 'block';
+            document.getElementById('route-panel').classList.remove('expanded');
+            return;
+        }
+        
+        allDoneMsg.style.display = 'none';
+
+        // Render Nearest Customer (The Top Card)
+        if(activeList.length > 0) {
+            const nearest = activeList[0];
+            const distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km away` : "GPS Unknown";
+            const mapLink = `https://maps.google.com/?daddr=${nearest.lat},${nearest.lon}`;
+            
+            nextStopSection.innerHTML = `
+                <div class="next-stop-header"><div class="pulse-dot"></div> NEXT STOP</div>
+                <div class="cust-main-name">${nearest.name}</div>
+                <div class="cust-dist-amt">
+                    <span class="dist-text"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${distStr}</span>
+                    <span class="amt-pill">${fmt(nearest.pendingAmount)}</span>
+                </div>
+                
+                <div class="action-grid">
+                    <a href="${mapLink}" target="_blank" class="btn-action">
+                        <svg viewBox="0 0 24 24" fill="none"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg> Navigate
+                    </a>
+                    <a href="tel:${nearest.phone}" class="btn-action">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg> Call
+                    </a>
+                    <button class="btn-action skip" onclick="window.actionSkip('${nearest.id}')">
+                        <svg viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Skip
+                    </button>
+                </div>
+                
+                <button class="btn-collect" onclick="window.actionCollect('${nearest.id}')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg>
+                    Collect Payment
+                </button>
+            `;
+        } else {
+            nextStopSection.innerHTML = `<div class="next-stop-header" style="color:var(--text-sub);">No active stops remaining. Swipe up to see skipped.</div>`;
+        }
+
+        // Render Expanded Up Next List (Skipping the nearest which is already shown)
+        let upNextHtml = '';
+        for(let i = 1; i < activeList.length; i++) {
+            const c = activeList[i];
+            const distStr = c.distance < 9999 ? `${c.distance.toFixed(1)} km` : "N/A";
+            upNextHtml += `
+                <div class="mini-card">
+                    <div class="mini-info">
+                        <h4>${c.name}</h4>
+                        <p>${fmt(c.pendingAmount)} • ${distStr}</p>
+                    </div>
+                    <div class="mini-actions">
+                        <a href="tel:${c.phone}" class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></a>
+                        <a href="https://maps.google.com/?daddr=${c.lat},${c.lon}" target="_blank" class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg></a>
+                        <button class="icon-circle" style="background:var(--primary); color:white; border:none;" onclick="window.actionCollect('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg></button>
+                    </div>
+                </div>
+            `;
+        }
+        upNextList.innerHTML = upNextHtml || '<p style="color:var(--text-sub); font-size:0.85rem;">No other pending stops.</p>';
+
+        // Render Skipped List
+        if(skippedList.length > 0) {
+            skippedTitle.style.display = 'block';
+            let skipHtml = '';
+            skippedList.forEach(c => {
+                skipHtml += `
+                    <div class="mini-card" style="opacity:0.75;">
+                        <div class="mini-info">
+                            <h4 style="text-decoration: line-through;">${c.name}</h4>
+                            <p style="color:var(--text-sub);">${fmt(c.pendingAmount)}</p>
+                        </div>
+                        <button class="btn-visit-again" onclick="window.actionUnskip('${c.id}')">Visit Again</button>
+                    </div>
+                `;
+            });
+            skippedContainer.innerHTML = skipHtml;
+        } else {
+            skippedTitle.style.display = 'none';
+            skippedContainer.innerHTML = '';
+        }
+    }
+
+    // --- 5. Actions ---
+    window.toggleRoutePanel = () => {
+        vibrate(15);
+        const panel = document.getElementById('route-panel');
+        panel.classList.toggle('expanded');
+        document.getElementById('expanded-list-section').style.display = panel.classList.contains('expanded') ? 'block' : 'none';
+    };
+
+    window.actionSkip = (id) => {
+        vibrate();
+        const idx = localRouteData.findIndex(c => c.id === id);
+        if(idx !== -1) {
+            localRouteData[idx].status = 'skipped';
+            localStorage.setItem(cacheKey, JSON.stringify(localRouteData));
+            recalculateAndRender();
+        }
+    };
+
+    window.actionUnskip = (id) => {
+        vibrate();
+        const idx = localRouteData.findIndex(c => c.id === id);
+        if(idx !== -1) {
+            localRouteData[idx].status = 'pending';
+            localStorage.setItem(cacheKey, JSON.stringify(localRouteData));
+            recalculateAndRender();
+        }
+    };
+
+    window.actionCollect = (id) => {
+        vibrate();
+        // The URL Bridge: Open entry.html and skip search
+        window.location.href = `entry.html?custId=${id}`;
+    };
+
+    // --- 6. The Perfect Visibility Loop ---
+    // When the agent hits "Back" from entry.html, this fires.
+    // It re-reads the cache. If entry.html set active:false, they vanish instantly!
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && map) {
+            const freshCache = localStorage.getItem(cacheKey);
+            if(freshCache) {
+                localRouteData = JSON.parse(freshCache);
+                recalculateAndRender();
+            }
+        }
+    });
+
+    // --- 7. Leaflet Map Engine ---
+    function initLeafletMap() {
+        if(map) return; // Only init once
+        
+        map = L.map('map-container', { zoomControl: false }).setView([agentLocation.lat, agentLocation.lon], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        // Fix map rendering when display unhides
+        setTimeout(() => map.invalidateSize(), 500);
+    }
+
+    function updateAgentMarker() {
+        if(!map) return;
+        const agentIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="background:#3b82f6; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(59,130,246,0.8); animation: pulseLoc 2s infinite;"></div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+
+        if(agentMarker) {
+            agentMarker.setLatLng([agentLocation.lat, agentLocation.lon]);
+        } else {
+            agentMarker = L.marker([agentLocation.lat, agentLocation.lon], {icon: agentIcon}).addTo(map);
+        }
+    }
+
+    function updateMapPins(activeList) {
+        if(!map) return;
+
+        // Clear old customer markers
+        Object.values(customerMarkers).forEach(m => map.removeLayer(m));
+        customerMarkers = {};
+
+        // Build bounds to auto-zoom map
+        const bounds = L.latLngBounds([agentLocation.lat, agentLocation.lon]);
+
+        activeList.forEach((c, index) => {
+            if(c.lat && c.lon) {
+                // The absolute closest customer gets a special Green marker
+                const isNearest = index === 0;
+                const color = isNearest ? '#10B981' : '#6b7280';
+                const zIndex = isNearest ? 1000 : 100;
+                
+                const icon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background:${color}; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:bold;">${isNearest ? '1' : ''}</div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+
+                const marker = L.marker([c.lat, c.lon], {icon: icon, zIndexOffset: zIndex}).addTo(map);
+                marker.bindPopup(`<b>${c.name}</b><br>Pending: ${fmt(c.pendingAmount)}`);
+                customerMarkers[c.id] = marker;
+                bounds.extend([c.lat, c.lon]);
+            }
+        });
+
+        if(activeList.length > 0) {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+        }
+    }
+
+    window.centerMapOnAgent = () => {
+        vibrate(15);
+        if(map) map.setView([agentLocation.lat, agentLocation.lon], 15);
+    };
+
+  </script>
+</body>
+</html>
