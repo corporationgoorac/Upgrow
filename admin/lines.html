@@ -962,7 +962,7 @@
           let payHtml = '';
           if (p.payments && p.payments.length > 0) {
               p.payments.forEach((pay, idx) => {
-                  const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+                  const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
                   payHtml += `<tr>
                     <td>${idx + 1}</td>
                     <td>${dStr}</td>
