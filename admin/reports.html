@@ -47,7 +47,6 @@
     .screen-content { flex: 1; overflow-y: auto; padding: 0 20px 120px 20px; }
 
     /* --- Top Header & Search --- */
-    /* UPGRADED: Removed header bottom margin as requested */
     .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: none; margin-bottom: 0 !important; }
     .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     .icon-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; }
@@ -65,8 +64,7 @@
     .card-sub { font-size: 0.85rem; color: var(--text-sub); font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
     .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 
-    /* --- Ledger Map Header (Ported from line.html) --- */
-    /* UPGRADED: Removed margin-top to sit flush below the header */
+    /* --- Ledger Map Header --- */
     .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 0px !important; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
     .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
@@ -88,7 +86,6 @@
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     
-    /* UPGRADED: Removed top margin via padding adjustment for flush fit */
     .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 10px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
     .bottom-sheet.active { transform: translateY(0); }
     .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; }
@@ -153,7 +150,6 @@
 
   <!-- ================= LEVEL 2: CUSTOMER DETAIL ================= -->
   <div id="screen-detail" class="screen hidden-right">
-    <!-- UPGRADED: Removed bottom border and added icon-btn class to seamlessly remove ghost margins -->
     <div class="header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 10px;">
       <button class="back-btn icon-btn" onclick="window.history.back()" style="padding-left: 0;">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -161,10 +157,7 @@
       <h2 style="font-size: 1.15rem; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="detail-cust-name">Customer</h2>
     </div>
     
-    <!-- UPGRADED: Padding top 0 ensures the marginless header directly touches the top nav -->
     <div class="screen-content" style="padding-top: 0 !important;">
-        
-        <!-- UPGRADED: Removed borders and radiuses at the top to sit totally flush -->
         <div class="ledger-summary" id="ledger-header" style="border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: invert(100%) hue-rotate(180deg) brightness(85%); opacity: 0.85; pointer-events: none;">
                 <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
@@ -239,7 +232,6 @@
 
     // --- Global State ---
     let currentUser = null;
-    let localSearchCache = []; 
     let activeCustomer = null;
     let activeProductIndex = null;
     let activePaymentIndex = null; 
@@ -281,7 +273,7 @@
     const btnSavePayment = document.getElementById('btn-save-payment');
 
     // ============================================================================
-    // UPGRADED: "lines.html" Style Top-Down UI Closing Engine (No Ghost History)
+    // CLEANED UP: Top-Down UI Closing Engine (No Ghost History)
     // ============================================================================
     function closeTopUI() {
         // 1. Modals (Highest Layer)
@@ -314,12 +306,12 @@
         }
     }
 
-    // A single flawless event listener catches BOTH physical back buttons AND UI back arrows.
+    // Single flawless event listener catches BOTH physical back buttons AND UI back arrows natively.
     window.addEventListener('popstate', (e) => {
         closeTopUI();
     });
     
-    // Close overlay triggers native back, exactly like lines.html
+    // Close overlay triggers native back
     modalOverlay.addEventListener('click', () => window.history.back());
 
     // --- Initialize ---
@@ -327,14 +319,8 @@
       if (user) {
         currentUser = user; 
         fetchInitialCustomers();
-        buildSearchDictionaryBackground();
       }
     });
-
-    async function buildSearchDictionaryBackground() {
-        // UPGRADED: Caching disabled entirely to kill read waste as requested.
-        localSearchCache = []; 
-    }
 
     // --- Pagination Engine ---
     async function fetchInitialCustomers() {
@@ -408,7 +394,7 @@
         observer.observe(loadMoreTrigger);
     }
 
-    // --- 3. Instant Search Engine (UPGRADED TO DIRECT QUERY) ---
+    // --- 3. Instant Live Search Engine ---
     window.openSearch = () => {
         vibrate();
         window.history.pushState({ panel: 'search' }, ''); // Clean single push
@@ -565,7 +551,7 @@
             
             let payHtml = '';
             if(p.payments && p.payments.length > 0) {
-                // UPGRADED: Dynamic Live Math ignores the buggy database value and recalculates flawlessly
+                // Live Dynamic Math
                 const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
                                       .sort((a,b) => new Date(a.date) - new Date(b.date));
                 
@@ -642,7 +628,7 @@
         document.getElementById('ledger-total-pending').innerText = fmt(grandTotalPending);
     }
 
-    // --- 5. Ledger Editing & Math Recalculation Engine ---
+    // --- 5. Ledger Editing ---
     window.openAddPayment = (pIndex) => {
         if (paymentSheet.classList.contains('active')) return;
         vibrate();
