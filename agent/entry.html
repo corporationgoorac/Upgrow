@@ -192,7 +192,8 @@
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, where, getDocs, doc, getDoc, runTransaction, updateDoc, limit } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    // ADDED arrayUnion to imports here without removing anything
+    import { collection, query, where, getDocs, doc, getDoc, runTransaction, updateDoc, limit, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // Global State & Utilities
     let currentUser = null;
@@ -367,7 +368,10 @@
         const masterData = custDoc.data();
         
         // 2. Fetch ALL Agents' Daily Draft Logs to prevent Race Conditions (Global Check)
-        const logsSnap = await getDocs(collection(db, "daily_logs"));
+        // const logsSnap = await getDocs(collection(db, "daily_logs")); // <--- OLD LINE COMMENTED OUT
+        const logsQuery = query(collection(db, "daily_logs"), where("activeCustomers", "array-contains", customer.id)); // <--- NEW OPTIMIZED QUERY
+        const logsSnap = await getDocs(logsQuery); // <--- NEW OPTIMIZED FETCH
+
         let allPendingData = {};
         
         logsSnap.forEach(d => {
@@ -509,10 +513,22 @@
         // FIREBASE TRANSACTION: Guarantee atomicity for the outbox
         await runTransaction(db, async (transaction) => {
           const logDoc = await transaction.get(logRef);
+          // if (!logDoc.exists()) {                                  // <--- OLD LINE COMMENTED OUT
+          //   transaction.set(logRef, { [entryKey]: paymentPayload }); // <--- OLD LINE COMMENTED OUT
+          // } else {                                                   // <--- OLD LINE COMMENTED OUT
+          //   transaction.update(logRef, { [entryKey]: paymentPayload }); // <--- OLD LINE COMMENTED OUT
+          // }                                                          // <--- OLD LINE COMMENTED OUT
+          
           if (!logDoc.exists()) {
-            transaction.set(logRef, { [entryKey]: paymentPayload });
+            transaction.set(logRef, { 
+                [entryKey]: paymentPayload,
+                activeCustomers: [selectedCustomer.id] // <--- NEW OPTIMIZED PAYLOAD
+            });
           } else {
-            transaction.update(logRef, { [entryKey]: paymentPayload });
+            transaction.update(logRef, { 
+                [entryKey]: paymentPayload,
+                activeCustomers: arrayUnion(selectedCustomer.id) // <--- NEW OPTIMIZED PAYLOAD
+            });
           }
         });
 
