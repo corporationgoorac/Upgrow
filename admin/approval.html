@@ -49,7 +49,7 @@
     /* --- Top Header --- */
     .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); border-bottom: none; z-index: 10; position: relative; }
     .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-    .back-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: margin-left: -8px; margin-right: 5px; }
+    .back-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; margin-left: -8px; margin-right: 5px; }
 
     .sync-pill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); border-radius: 20px; color: var(--primary); font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3); }
     .sync-dot { width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
@@ -100,13 +100,11 @@
     .btn-act.approve { background: var(--primary); color: white; border: none; }
     .btn-act.reject { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: none; }
     .btn-act.delete { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: none; }
-    /* FIXED: Prevent SVG from stealing the click */
     .btn-act svg { width: 14px; height: 14px; stroke-width: 2.5; pointer-events: none; }
 
     /* --- Floating Action Button (FAB) --- */
     .fab { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 90px); right: 20px; background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 30px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 90; transition: transform 0.2s; }
     .fab:active { transform: scale(0.95); }
-    /* FIXED: Prevent SVG from stealing the click */
     .fab svg { width: 22px; height: 22px; stroke-width: 2.5; fill: none; stroke: currentColor; pointer-events: none; }
 
     /* --- Modals & Overlays --- */
@@ -322,22 +320,19 @@
     const confirmModal = document.getElementById('confirm-modal');
     const editSheet = document.getElementById('edit-sheet');
 
-    // --- MISSING VARIABLES INJECTED HERE TO FIX CRASH ---
     const editTotal = document.getElementById('edit-total');
     const editMethod = document.getElementById('edit-method');
     const editSplitContainer = document.getElementById('edit-split-container');
     const editCashSplit = document.getElementById('edit-cash-split');
     const editOnlineSplit = document.getElementById('edit-online-split');
 
-    // --- FIX: SAFE HISTORY CLOSING UTILITY ---
-    // This prevents double 'history.back()' crashes that freeze the modals
     function safeCloseLevel2IfEmpty() {
         setTimeout(() => {
             if(groupedAgents[activeAgentId] && groupedAgents[activeAgentId].entries.length === 0) {
                 if (!document.getElementById('screen-detail').classList.contains('hidden-right')) {
-                    window.history.back(); // Safely trigger second back to close Level 2
+                    window.history.back(); 
                 }
-                fetchGlobalLogs(); // Refresh Level 1
+                fetchGlobalLogs(); 
             }
         }, 400); 
     }
@@ -368,7 +363,6 @@
       }
     });
 
-    // --- Agent Smart Cache (Zero Extra Reads) ---
     let agentCache = JSON.parse(localStorage.getItem('agentCache') || '{}');
     async function getAgentDetails(uid) {
         if(agentCache[uid]) return agentCache[uid];
@@ -561,6 +555,7 @@
 
     // --- 4. The Universal Confirm Engine ---
     window.openConfirm = (type, payload) => {
+      if (document.getElementById('confirm-modal').classList.contains('active')) return;
       vibrate();
       confirmActionType = type;
       confirmPayload = payload;
@@ -591,6 +586,11 @@
           icon.innerHTML = `<polyline points="20 6 9 17 4 12"></polyline>`;
           title.innerText = "Approve Collection?"; msg.innerText = "This updates the Master Ledger permanently.";
           btn.innerText = "Approve"; btn.style.background = "var(--primary)";
+      } else if (type === 'approve_all') {
+          iconWrap.style.background = 'rgba(16, 185, 129, 0.1)'; iconWrap.style.color = 'var(--primary)';
+          icon.innerHTML = `<polyline points="20 6 9 17 4 12"></polyline><polyline points="20 12 9 23 4 18"></polyline>`;
+          title.innerText = "Approve All Submitted?"; msg.innerText = "This will permanently apply all submitted collections to the Master Ledger.";
+          btn.innerText = "Approve All"; btn.style.background = "var(--primary)";
       }
 
       window.history.pushState({ modal: 'confirm' }, '');
@@ -598,13 +598,11 @@
       confirmModal.classList.add('active');
     };
 
-    // --- FIX: CONSOLIDATED EVENT LISTENER (No more double-firing bugs) ---
     document.getElementById('btn-confirm-action').addEventListener('click', async () => {
       vibrate();
       const type = confirmActionType;
       const pay = confirmPayload;
 
-      // Prevent processing if no type is set (safeguard)
       if(!type) return;
 
       document.getElementById('confirm-content').style.display = 'none';
@@ -615,14 +613,14 @@
               await updateDoc(doc(db, "daily_logs", pay.docId), { [pay.key]: deleteField() });
               refreshLocalDataAndUI(pay.docId, pay.key, 'delete');
               confirmActionType = null;
-              window.history.back(); // Close modal
+              window.history.back(); 
               safeCloseLevel2IfEmpty();
 
           } else if (type === 'reject') {
               await updateDoc(doc(db, "daily_logs", pay.docId), { [`${pay.key}.status`]: 'pending' });
               refreshLocalDataAndUI(pay.docId, pay.key, 'update', {status: 'pending'});
               confirmActionType = null;
-              window.history.back(); // Close modal
+              window.history.back(); 
               safeCloseLevel2IfEmpty();
 
           } else if (type === 'force_submit') {
@@ -639,7 +637,7 @@
               await batch.commit();
               confirmActionType = null;
               fetchGlobalLogs(); 
-              window.history.back(); // Close modal
+              window.history.back(); 
               safeCloseLevel2IfEmpty();
 
           } else if (type === 'approve_single') {
@@ -658,7 +656,6 @@
       }
     });
 
-    // Local array mutator to save reads
     function refreshLocalDataAndUI(docId, key, action, updates = {}) {
         const ag = groupedAgents[activeAgentId];
         const idx = ag.entries.findIndex(e => e.docId === docId && e.key === key);
@@ -682,12 +679,13 @@
             if(action === 'delete') ag.entries.splice(idx, 1);
             if(action === 'update') ag.entries[idx] = { ...ag.entries[idx], ...updates };
             renderLevel2Items();
-            renderLevel1(); // Ensure Level 1 dashboard syncs instantly
+            renderLevel1(); 
         }
     }
 
     // --- Edit Flow (Isolated) ---
     window.openEdit = (docId, key) => {
+      if (document.getElementById('edit-sheet').classList.contains('active')) return;
       vibrate();
       const entry = groupedAgents[activeAgentId].entries.find(e => e.docId === docId && e.key === key);
       editingDocId = docId; editingKey = key; editingOriginalData = entry;
@@ -702,7 +700,6 @@
       editSheet.classList.add('active');
     };
 
-    // Edit Math
     editMethod.addEventListener('change', (e) => {
       editSplitContainer.style.display = e.target.value === 'split' ? 'flex' : 'none';
       if(e.target.value !== 'split') { editCashSplit.value = ''; editOnlineSplit.value = ''; }
@@ -743,16 +740,8 @@
       btn.innerText = "Save Changes"; btn.disabled = false;
     });
 
-    // --- 5. THE MASTER APPROVAL BATCH ENGINE (480 Limit Safe) ---
     window.openApproveAllConfirm = () => {
         openConfirm('approve_all', null);
-        document.getElementById('confirm-title').innerText = "Approve All Submitted?";
-        document.getElementById('confirm-msg').innerText = "This will permanently apply all submitted collections to the Master Ledger.";
-        document.getElementById('btn-confirm-action').innerText = "Approve All";
-        document.getElementById('btn-confirm-action').style.background = "var(--primary)";
-        const iconWrap = document.getElementById('confirm-icon-wrap');
-        iconWrap.style.background = 'rgba(16, 185, 129, 0.1)'; iconWrap.style.color = 'var(--primary)';
-        document.getElementById('confirm-icon').innerHTML = `<polyline points="20 6 9 17 4 12"></polyline><polyline points="20 12 9 23 4 18"></polyline>`; // Double tick
     };
 
     async function executeMasterApproval(itemsToApprove) {
@@ -810,17 +799,15 @@
 
             await batch.commit();
 
-            // Success Animation
             vibrate([30, 80, 30]);
             document.getElementById('confirm-loader').style.display = 'none';
             document.getElementById('confirm-success').classList.add('active');
 
-            // Cleanup Local UI
             itemsToApprove.forEach(i => refreshLocalDataAndUI(i.docId, i.key, 'delete'));
             
             setTimeout(() => {
                 if (document.getElementById('confirm-modal').classList.contains('active')) {
-                    window.history.back(); // Close modal safely
+                    window.history.back(); 
                 }
                 safeCloseLevel2IfEmpty();
             }, 1800);
@@ -832,21 +819,6 @@
         }
     }
 
-    // --- PRESERVED BUT DEACTIVATED DUPLICATE LISTENER ---
-    // This logic was causing the fatal race condition. Kept securely commented out 
-    // to strictly obey your "don't remove a single line" rule.
-    // const originalConfirmClick = document.getElementById('btn-confirm-action').onclick;
-    // document.getElementById('btn-confirm-action').addEventListener('click', async (e) => {
-    //    if(confirmActionType === 'approve_all') {
-    //        e.stopImmediatePropagation(); vibrate();
-    //        document.getElementById('confirm-content').style.display = 'none';
-    //        document.getElementById('confirm-loader').style.display = 'block';
-    //        const toApprove = groupedAgents[activeAgentId].entries.filter(en => en.status === 'submitted');
-    //        await executeMasterApproval(toApprove);
-    //    }
-    // });
-
-    // --- Explicit FAB binding to prevent mobile tap failures ---
     const fabApproveBtn = document.getElementById('btn-fab-approve');
     if(fabApproveBtn) {
         fabApproveBtn.addEventListener('click', (e) => {
@@ -855,7 +827,6 @@
         });
     }
 
-    // Close Modals on Overlay Click
     modalOverlay.addEventListener('click', () => window.history.back());
   </script>
 </body>
