@@ -143,6 +143,15 @@
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); display: none; }
     .empty-state svg { width: 64px; height: 64px; stroke: var(--border); margin-bottom: 15px; }
     .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; height: 20px; margin-bottom: 8px; }
+
+    /* --- Mobile UI Responsiveness Fixes --- */
+    .card-top { flex-wrap: nowrap; gap: 8px; align-items: flex-start; }
+    .card-top > div:first-child { flex: 1; min-width: 0; overflow: hidden; }
+    .card-title, .card-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%; }
+    .badge { flex-shrink: 0; white-space: nowrap; text-align: center; }
+    .card-amount { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .split-item { min-width: 0; }
+    .split-val { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   </style>
 </head>
 <body>
