@@ -9,7 +9,7 @@ const ASSETS_TO_CACHE = [
   '/lines.html',
   './assignLines.html',
   './approval.html',
-  './review.html',
+  './reports.html',
   './manage.html',
   './config.js',
   './manifest.json',
