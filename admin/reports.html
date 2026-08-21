@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Reports & Ledger - Up Field</title>
+  
+  <style>
+    /* Shared Theme Variables */
+    :root {
+      --bg-color: #f4f7f6;
+      --surface-color: #ffffff;
+      --surface-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      --skeleton-base: #e5e7eb;
+      --skeleton-highlight: #f3f4f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --surface-color: #121212;
+        --surface-card: #1e1e1e;
+        --text-main: #f9fafb;
+        --text-sub: #9ca3af;
+        --border: #2d3748;
+        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --skeleton-base: #2d3748;
+        --skeleton-highlight: #3f4a5e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none !important; }
+    body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; }
+
+    /* --- Screen Management --- */
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; }
+    .screen.hidden-right { transform: translateX(100%); }
+    .screen-content { flex: 1; overflow-y: auto; padding: 0 20px 120px 20px; }
+
+    /* --- Top Header & Search --- */
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: 1px solid var(--border); }
+    .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .icon-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; }
+    
+    .search-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--surface-color); display: flex; align-items: center; padding: 0 15px; transform: translateY(-100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 11; }
+    .search-bar-container.active { transform: translateY(0); }
+    .search-input { flex: 1; border: none; background: var(--bg-color); padding: 12px 15px; border-radius: 12px; font-size: 1rem; color: var(--text-main); outline: none; font-weight: 600; margin: 0 10px; }
+    
+    /* --- Customer Cards --- */
+    .card { background-color: var(--surface-card); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; margin-top: 15px; box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; gap: 8px; }
+    .card:active { transform: scale(0.97); }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
+    .card-top > div:first-child { flex: 1; min-width: 0; overflow: hidden; }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .card-sub { font-size: 0.85rem; color: var(--text-sub); font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+
+    /* --- Product & Ledger UI (Level 2) --- */
+    .product-card { background: var(--surface-card); border: 2px solid var(--border); border-radius: 18px; margin-top: 20px; overflow: hidden; box-shadow: var(--shadow); }
+    .prod-header { padding: 15px 18px; background: var(--bg-color); display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); }
+    .prod-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
+    .prod-actions { display: flex; gap: 10px; }
+    .btn-circle { width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: white; transition: transform 0.2s; }
+    .btn-circle:active { transform: scale(0.9); }
+    .btn-csv { background: #8b5cf6; }
+    .btn-add { background: var(--primary); }
+    .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
+
+    .prod-stats { display: flex; padding: 15px; gap: 10px; border-bottom: 1px solid var(--border); }
+    .stat-box { flex: 1; text-align: center; background: var(--bg-color); padding: 10px; border-radius: 12px; }
+    .stat-lbl { font-size: 0.7rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
+    .stat-val { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
+    .stat-val.pending { color: var(--danger); }
+    .stat-val.paid { color: var(--primary); }
+
+    .ledger-list { padding: 0; margin: 0; list-style: none; }
+    .ledger-item { padding: 15px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+    .ledger-item:active { background: var(--bg-color); }
+    .ledger-item:last-child { border-bottom: none; }
+    .lg-date { font-size: 0.85rem; font-weight: 700; color: var(--text-sub); }
+    .lg-method { font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-top: 4px; }
+    .lg-amt { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
+
+    /* --- Modals & Overlays --- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    
+    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
+    .bottom-sheet.active { transform: translateY(0); }
+    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 0 auto 25px auto; }
+
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
+    .btn-full:active { transform: scale(0.97); }
+
+    /* Loading & Pagination */
+    .loader-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 16px; height: 90px; margin-bottom: 15px; }
+    @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- ================= LEVEL 1: MASTER LIST ================= -->
+  <div id="screen-main" class="screen">
+    <div class="header">
+      <h2>Ledger Reports</h2>
+      <button class="icon-btn" onclick="openSearch()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </button>
+      
+      <!-- Hidden Search Bar -->
+      <div class="search-bar-container" id="search-bar">
+        <button class="icon-btn" onclick="closeSearch()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <input type="text" class="search-input" id="search-input" placeholder="Search Name or ID...">
+      </div>
+    </div>
+    
+    <div class="screen-content" id="main-scroll-area">
+      <div id="customer-list">
+        <!-- Initial Skeleton Loaders -->
+        <div class="skeleton-box"></div><div class="skeleton-box"></div><div class="skeleton-box"></div>
+      </div>
+      <div id="load-more-trigger" style="height: 20px; width: 100%;"></div>
+      <div class="loader-spinner" id="pagination-loader" style="display: none;"></div>
+      
+      <div class="empty-state" id="empty-state">
+        <h3 style="color:var(--text-main); margin-bottom:5px;">No Results Found</h3>
+        <p>Try searching a different name or ID.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LEVEL 2: CUSTOMER DETAIL ================= -->
+  <div id="screen-detail" class="screen hidden-right">
+    <div class="header">
+      <button class="back-btn" onclick="window.history.back()">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <h2 style="font-size: 1.15rem; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="detail-cust-name">Customer</h2>
+    </div>
+    
+    <div class="screen-content">
+        <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; margin-bottom: 10px; margin-top: 15px;">Active Products</div>
+        <div id="product-list"></div>
+    </div>
+  </div>
+
+  <!-- ================= MODALS & OVERLAYS ================= -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <!-- Payment Modal (Add & Edit) -->
+  <div class="bottom-sheet" id="payment-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-title">Record Payment</h3>
+    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700;" id="sheet-sub">Product Name</p>
+    
+    <div class="dashboard" style="margin-top: 0; margin-bottom: 20px;">
+        <div class="dash-card" style="padding: 12px;">
+            <div class="dash-title">Total Pending</div>
+            <div class="dash-value pending" id="sheet-pending">₹0</div>
+        </div>
+        <div class="dash-card" style="padding: 12px;">
+            <div class="dash-title">Total Paid</div>
+            <div class="dash-value paid" id="sheet-paid">₹0</div>
+        </div>
+    </div>
+
+    <div class="input-group">
+      <label>Amount Collected (₹)</label>
+      <input type="number" id="pay-amount" inputmode="numeric" placeholder="Enter amount">
+    </div>
+
+    <div class="input-group">
+      <label>Date</label>
+      <input type="date" id="pay-date">
+    </div>
+
+    <div class="input-group">
+      <label>Payment Method</label>
+      <select id="pay-method">
+        <option value="cash">Cash</option>
+        <option value="online">Online / UPI</option>
+      </select>
+    </div>
+
+    <button class="btn-full" id="btn-save-payment" onclick="savePayment()">Save Payment</button>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter, orderBy } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // --- Global State ---
+    let currentUser = null;
+    let localSearchCache = []; // Offline dictionary for instant search
+    let activeCustomer = null;
+    let activeProductIndex = null;
+    let activePaymentIndex = null; // null = Add, number = Edit
+    let isSearchMode = false;
+    let searchTimeout = null;
+
+    // Pagination State
+    let lastVisibleDoc = null;
+    let isFetching = false;
+    let hasMoreDocs = true;
+    const ITEMS_PER_PAGE = 10;
+
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // --- DOM Elements ---
+    const customerListEl = document.getElementById('customer-list');
+    const loadMoreTrigger = document.getElementById('load-more-trigger');
+    const paginationLoader = document.getElementById('pagination-loader');
+    const searchBar = document.getElementById('search-bar');
+    const searchInput = document.getElementById('search-input');
+    const emptyState = document.getElementById('empty-state');
+    
+    const screenDetail = document.getElementById('screen-detail');
+    const productListEl = document.getElementById('product-list');
+    const paymentSheet = document.getElementById('payment-sheet');
+    const modalOverlay = document.getElementById('modal-overlay');
+
+    // Modal Inputs
+    const payAmount = document.getElementById('pay-amount');
+    const payDate = document.getElementById('pay-date');
+    const payMethod = document.getElementById('pay-method');
+    const btnSavePayment = document.getElementById('btn-save-payment');
+
+    // --- History API Safe Router ---
+    const originalBack = window.history.back;
+    let isBacking = false;
+    window.history.back = function() {
+        if(isBacking) return;
+        isBacking = true;
+        originalBack.apply(window.history);
+        setTimeout(() => isBacking = false, 400); 
+    };
+
+    window.addEventListener('popstate', (e) => {
+      const state = e.state;
+      modalOverlay.classList.remove('active');
+      paymentSheet.classList.remove('active');
+      
+      if (!state || state.screen !== 'detail') {
+        screenDetail.classList.add('hidden-right');
+        activeCustomer = null;
+      }
+      if (!state || state.search !== 'active') {
+          closeSearch(true); // true = prevent triggering history back again
+      }
+    });
+
+    // --- Initialize ---
+    onAuthStateChanged(auth, (user) => { 
+      if (user) {
+        currentUser = user; 
+        fetchInitialCustomers();
+        buildSearchDictionaryBackground();
+      }
+    });
+
+    // --- 1. Background Search Dictionary Fetcher ---
+    async function buildSearchDictionaryBackground() {
+        try {
+            // Fetch lightweight basic info for search without dragging full ledger arrays
+            const snap = await getDocs(collection(db, "customers"));
+            snap.forEach(d => {
+                const data = d.data();
+                localSearchCache.push({
+                    id: d.id.toLowerCase(),
+                    name: (data.name || '').toLowerCase(),
+                    rawName: data.name || 'Unknown',
+                    rawId: d.id,
+                    phone: data.phone || ''
+                });
+            });
+        } catch(e) { console.error("Cache build failed", e); }
+    }
+
+    // --- 2. Pagination Engine ---
+    async function fetchInitialCustomers() {
+        if(isFetching) return;
+        isFetching = true;
+        customerListEl.innerHTML = ''; 
+        
+        try {
+            const q = query(collection(db, "customers"), limit(ITEMS_PER_PAGE));
+            const snap = await getDocs(q);
+            
+            if(snap.empty) {
+                emptyState.style.display = 'block';
+            } else {
+                lastVisibleDoc = snap.docs[snap.docs.length - 1];
+                renderCustomerBatch(snap.docs);
+                setupIntersectionObserver();
+            }
+        } catch (e) {
+            customerListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Failed to load ledger.</p>';
+        }
+        isFetching = false;
+    }
+
+    async function fetchNextCustomers() {
+        if(isFetching || !hasMoreDocs || isSearchMode) return;
+        isFetching = true;
+        paginationLoader.style.display = 'block';
+
+        try {
+            const q = query(collection(db, "customers"), startAfter(lastVisibleDoc), limit(ITEMS_PER_PAGE));
+            const snap = await getDocs(q);
+            
+            if(snap.empty) {
+                hasMoreDocs = false;
+            } else {
+                lastVisibleDoc = snap.docs[snap.docs.length - 1];
+                renderCustomerBatch(snap.docs);
+            }
+        } catch(e) { console.error("Pagination error", e); }
+        
+        paginationLoader.style.display = 'none';
+        isFetching = false;
+    }
+
+    function renderCustomerBatch(docs) {
+        docs.forEach(d => {
+            const data = d.data();
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-top">
+                    <div>
+                        <div class="card-title">${data.name || 'Unknown'}</div>
+                        <div class="card-sub">ID: ${d.id} | 📞 ${data.phone || 'N/A'}</div>
+                    </div>
+                    <span class="badge">${data.products ? data.products.length : 0} Products</span>
+                </div>
+            `;
+            card.onclick = () => loadCustomerDetail(d.id);
+            customerListEl.appendChild(card);
+        });
+    }
+
+    function setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting) fetchNextCustomers();
+        }, { rootMargin: '100px' });
+        observer.observe(loadMoreTrigger);
+    }
+
+    // --- 3. Instant Search Engine ---
+    window.openSearch = () => {
+        vibrate();
+        window.history.pushState({ search: 'active' }, '');
+        searchBar.classList.add('active');
+        searchInput.focus();
+        isSearchMode = true;
+    };
+
+    window.closeSearch = (fromHistory = false) => {
+        searchBar.classList.remove('active');
+        searchInput.value = '';
+        isSearchMode = false;
+        emptyState.style.display = 'none';
+        customerListEl.innerHTML = '';
+        lastVisibleDoc = null;
+        hasMoreDocs = true;
+        fetchInitialCustomers(); // Reset list
+        if(!fromHistory) window.history.back();
+    };
+
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const term = e.target.value.toLowerCase().trim();
+        
+        if(term.length === 0) {
+            customerListEl.innerHTML = '';
+            fetchInitialCustomers();
+            emptyState.style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            customerListEl.innerHTML = '';
+            let matchedNames = [];
+            let matchedIDs = [];
+
+            // Find 5 Names and 5 IDs
+            for(let c of localSearchCache) {
+                if(matchedNames.length < 5 && c.name.includes(term)) matchedNames.push(c);
+                else if(matchedIDs.length < 5 && c.id.includes(term)) matchedIDs.push(c);
+                if(matchedNames.length === 5 && matchedIDs.length === 5) break;
+            }
+
+            const combined = [...matchedNames, ...matchedIDs];
+            
+            if(combined.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                combined.forEach(c => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="card-top">
+                            <div>
+                                <div class="card-title">${c.rawName}</div>
+                                <div class="card-sub">ID: ${c.rawId} | 📞 ${c.phone}</div>
+                            </div>
+                        </div>
+                    `;
+                    card.onclick = () => loadCustomerDetail(c.rawId);
+                    customerListEl.appendChild(card);
+                });
+            }
+        }, 400); // 400ms Debounce
+    });
+
+    // --- 4. Level 2: Customer Ledger & Products ---
+    async function loadCustomerDetail(custId) {
+        vibrate();
+        document.getElementById('detail-cust-name').innerText = "Loading...";
+        productListEl.innerHTML = '<div class="loader-spinner"></div>';
+        
+        window.history.pushState({ screen: 'detail' }, '');
+        screenDetail.classList.remove('hidden-right');
+
+        try {
+            const docSnap = await getDoc(doc(db, "customers", custId));
+            if(!docSnap.exists()) throw new Error("Not found");
+            
+            activeCustomer = { id: custId, ref: doc(db, "customers", custId), data: docSnap.data() };
+            document.getElementById('detail-cust-name').innerText = activeCustomer.data.name;
+            
+            renderProducts();
+        } catch(e) {
+            productListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Error loading details.</p>';
+        }
+    }
+
+    function renderProducts() {
+        productListEl.innerHTML = '';
+        const prods = activeCustomer.data.products || [];
+        
+        if(prods.length === 0) {
+            productListEl.innerHTML = '<p style="text-align:center; color:var(--text-sub); margin-top:20px;">No products found.</p>';
+            return;
+        }
+
+        prods.forEach((p, pIndex) => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            
+            const total = parseInt(p.amount) || 0;
+            const paid = parseInt(p.paid) || 0;
+            const pending = parseInt(p.pending) || 0;
+            
+            // Build Ledger HTML
+            let ledgerHtml = '';
+            if(p.payments && p.payments.length > 0) {
+                // Sort payments newest first visually
+                const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
+                                      .sort((a,b) => new Date(b.date) - new Date(a.date));
+                                      
+                sortedPayments.forEach(pay => {
+                    const dateStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+                    ledgerHtml += `
+                        <li class="ledger-item" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
+                            <div>
+                                <div class="lg-date">${dateStr}</div>
+                                <div class="lg-method">${pay.method || 'CASH'}</div>
+                            </div>
+                            <div class="lg-amt">${fmt(pay.amount)}</div>
+                        </li>
+                    `;
+                });
+            } else {
+                ledgerHtml = '<li class="ledger-item"><div class="lg-date" style="text-align:center; width:100%;">No payments recorded yet.</div></li>';
+            }
+
+            card.innerHTML = `
+                <div class="prod-header">
+                    <h3>${p.name || 'Product'}</h3>
+                    <div class="prod-actions">
+                        <button class="btn-circle btn-csv" onclick="window.downloadCSV(${pIndex})">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        </button>
+                        <button class="btn-circle btn-add" onclick="window.openAddPayment(${pIndex})">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="prod-stats">
+                    <div class="stat-box"><div class="stat-lbl">Total</div><div class="stat-val">${fmt(total)}</div></div>
+                    <div class="stat-box"><div class="stat-lbl">Paid</div><div class="stat-val paid">${fmt(paid)}</div></div>
+                    <div class="stat-box"><div class="stat-lbl">Pending</div><div class="stat-val pending">${fmt(pending)}</div></div>
+                </div>
+                <ul class="ledger-list">${ledgerHtml}</ul>
+            `;
+            productListEl.appendChild(card);
+        });
+    }
+
+    // --- 5. Ledger Editing & Math Recalculation Engine ---
+    window.openAddPayment = (pIndex) => {
+        vibrate();
+        activeProductIndex = pIndex;
+        activePaymentIndex = null; // null triggers 'Add' logic
+        const prod = activeCustomer.data.products[pIndex];
+        
+        document.getElementById('sheet-title').innerText = "Record Payment";
+        document.getElementById('sheet-sub').innerText = prod.name;
+        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
+        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
+        
+        payAmount.value = '';
+        payDate.value = new Date().toISOString().split('T')[0]; // Today
+        payMethod.value = 'cash';
+
+        window.history.pushState({ screen: 'detail', modal: 'add' }, '');
+        modalOverlay.classList.add('active');
+        paymentSheet.classList.add('active');
+    };
+
+    window.openEditPayment = (pIndex, payIndex) => {
+        vibrate();
+        activeProductIndex = pIndex;
+        activePaymentIndex = payIndex; // number triggers 'Edit' logic
+        const prod = activeCustomer.data.products[pIndex];
+        const pay = prod.payments[payIndex];
+        
+        document.getElementById('sheet-title').innerText = "Edit Payment";
+        document.getElementById('sheet-sub').innerText = prod.name;
+        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
+        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
+        
+        payAmount.value = pay.amount;
+        payDate.value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
+        payMethod.value = pay.method || 'cash';
+
+        window.history.pushState({ screen: 'detail', modal: 'edit' }, '');
+        modalOverlay.classList.add('active');
+        paymentSheet.classList.add('active');
+    };
+
+    // Native HTML Onclick for Saving
+    window.savePayment = async () => {
+        vibrate();
+        const amt = parseInt(payAmount.value);
+        if (!amt || amt < 0) return alert("Enter a valid amount.");
+
+        btnSavePayment.innerText = "Saving...";
+        btnSavePayment.disabled = true;
+
+        try {
+            // Deep Clone to ensure Reactivity/Save
+            let safeProducts = JSON.parse(JSON.stringify(activeCustomer.data.products));
+            let targetProd = safeProducts[activeProductIndex];
+            if(!targetProd.payments) targetProd.payments = [];
+
+            if (activePaymentIndex === null) {
+                // ADD LOGIC
+                targetProd.payments.push({
+                    id: 'MANUAL_' + Date.now(),
+                    amount: amt,
+                    date: new Date(payDate.value).toISOString(),
+                    type: 'collection',
+                    method: payMethod.value,
+                    agent_uid: currentUser.uid,
+                    pendingAfter: 0 // Will recalculate below
+                });
+            } else {
+                // EDIT LOGIC
+                targetProd.payments[activePaymentIndex].amount = amt;
+                targetProd.payments[activePaymentIndex].date = new Date(payDate.value).toISOString();
+                targetProd.payments[activePaymentIndex].method = payMethod.value;
+            }
+
+            // --- THE MASTER RECALCULATION ENGINE ---
+            let totalPaidCalculated = 0;
+            targetProd.payments.forEach(p => {
+                totalPaidCalculated += (parseInt(p.amount) || 0);
+            });
+
+            targetProd.paid = totalPaidCalculated;
+            targetProd.pending = Math.max(0, (parseInt(targetProd.amount) || 0) - totalPaidCalculated);
+
+            // Re-map pendingAfter for clean history visuals (optional but good practice)
+            let runningPending = parseInt(targetProd.amount) || 0;
+            targetProd.payments.forEach(p => {
+                runningPending -= (parseInt(p.amount) || 0);
+                p.pendingAfter = Math.max(0, runningPending);
+            });
+            // ----------------------------------------
+
+            await updateDoc(activeCustomer.ref, { products: safeProducts });
+            
+            // Sync Local Data
+            activeCustomer.data.products = safeProducts;
+            
+            vibrate([30, 50]);
+            renderProducts(); // Refresh UI instantly
+            window.history.back(); // Close Sheet
+
+        } catch (e) {
+            alert("Failed to save: " + e.message);
+        }
+        btnSavePayment.innerText = "Save Payment";
+        btnSavePayment.disabled = false;
+    };
+
+    // --- 6. Native CSV Exporter ---
+    window.downloadCSV = (pIndex) => {
+        vibrate();
+        const prod = activeCustomer.data.products[pIndex];
+        if(!prod.payments || prod.payments.length === 0) return alert("No payments to export.");
+
+        let csvContent = "Date,Receipt ID,Method,Amount,Remaining Balance After\n";
+        
+        // Sort chronologically for CSV
+        const sorted = [...prod.payments].sort((a,b) => new Date(a.date) - new Date(b.date));
+        
+        sorted.forEach(p => {
+            const d = new Date(p.date).toLocaleDateString('en-IN');
+            csvContent += `"${d}","${p.id}","${p.method}","${p.amount}","${p.pendingAfter}"\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${activeCustomer.data.name.replace(/\s+/g, '_')}_${prod.name.replace(/\s+/g, '')}_Ledger.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Close Modals on Overlay Click
+    modalOverlay.addEventListener('click', () => window.history.back());
+  </script>
+</body>
+</html>
