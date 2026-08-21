@@ -120,6 +120,25 @@
     
     .mini-actions { display: flex; gap: 8px; align-items: center; }
     .btn-visit-again { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
+    
+    /* --- NEW: Advanced Enterprise CSS for Delete Button & Animated Shimmer Button --- */
+    .btn-delete-skip { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .btn-delete-skip svg { width: 16px; height: 16px; stroke-width: 2.5; }
+    
+    .btn-check-route-animated { position: relative; overflow: hidden; width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 1.15rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); transition: transform 0.1s; animation: gentleHeartbeat 3s infinite; margin-top: 15px; }
+    .btn-check-route-animated:active { transform: scale(0.96); animation: none; }
+    .shimmer-sweep { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent); transform: skewX(-20deg); animation: shimmerSweep 3s infinite; pointer-events: none; }
+    @keyframes shimmerSweep { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+    @keyframes gentleHeartbeat { 0% { transform: scale(1); } 5% { transform: scale(1.03); } 10% { transform: scale(1); } 15% { transform: scale(1.03); } 20% { transform: scale(1); } 100% { transform: scale(1); } }
+
+    /* Custom Mobile-Safe Confirmation Modal */
+    .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .alert-modal.active { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+    .alert-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; }
+    .alert-actions { display: flex; gap: 10px; margin-top: 25px; }
+    .btn-alert { flex: 1; padding: 14px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; font-size: 1rem; }
+    .btn-cancel { background: var(--bg-color); color: var(--text-main); border: 2px solid var(--border); }
+    .btn-danger { background: var(--danger); color: #fff; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
 
     /* Jump to Top Button */
     .btn-jump-top { position: fixed; bottom: 25px; right: 20px; width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); cursor: pointer; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; transform: translateY(20px); }
@@ -134,6 +153,11 @@
   </style>
 </head>
 <body>
+
+  <!-- ================= NEW: GPS PERMISSION WARNING BANNER ================= -->
+  <div id="gps-warning" style="display:none; position:absolute; top:calc(env(safe-area-inset-top) + 10px); left:10px; right:10px; background:rgba(239, 68, 68, 0.95); color:white; padding:12px; border-radius:12px; z-index:9999; text-align:center; font-weight:800; backdrop-filter:blur(5px); box-shadow:var(--shadow); border:1px solid rgba(255,255,255,0.2);">
+      ⚠️ GPS Permission Denied. Live Map Disabled.
+  </div>
 
   <!-- ================= SCREEN 1: "GOOD MORNING" START ================= -->
   <div id="screen-start" class="screen">
@@ -212,7 +236,13 @@
             <div id="all-done-msg" style="display:none; text-align:center; padding: 40px 20px;">
                 <div style="font-size:4rem; margin-bottom:15px;">🎉</div>
                 <h3 style="font-size:1.5rem; font-weight:800; color:var(--primary); margin-bottom:10px;">Route Complete!</h3>
-                <p style="color:var(--text-sub); font-weight:600;">You have collected or skipped all stops for today.</p>
+                <p style="color:var(--text-sub); font-weight:600; margin-bottom:25px;">You have collected or skipped all stops for today.</p>
+                
+                <!-- NEW: Premium Animated Check Route Button -->
+                <button class="btn-check-route-animated" onclick="window.checkForNewRoute()">
+                    Check for New Route
+                    <div class="shimmer-sweep"></div>
+                </button>
             </div>
         </div>
 
@@ -221,6 +251,20 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
         </button>
 
+    </div>
+  </div>
+
+  <!-- ================= NEW: SAFE DELETE SKIPPED MODAL ================= -->
+  <div class="modal-overlay" id="delete-modal-overlay" style="z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; background: rgba(0,0,0,0.6); position: fixed; inset: 0; backdrop-filter: blur(2px);"></div>
+  <div class="alert-modal" id="delete-confirm-modal">
+    <div class="alert-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger);">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+    </div>
+    <h3 style="margin-bottom:10px; font-weight:800;">Remove Customer?</h3>
+    <p style="margin-bottom: 25px; color: var(--text-sub); font-size: 0.95rem;">This will permanently delete this skipped customer from today's route memory.</p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-cancel" onclick="window.history.back()">Cancel</button>
+      <button class="btn-alert btn-danger" onclick="window.executeDeleteSkip()">Remove</button>
     </div>
   </div>
 
@@ -234,10 +278,14 @@
 
     // --- Global State ---
     let currentUser = null;
-    let todayLineId = null;
+    
+    // let todayLineId = null; // <--- OLD LINE COMMENTED OUT
+    let todayLineArray = []; // <--- NEW: Multiple Routes Support Array
+    
     let todayLineData = null;
     let localRouteData = [];
     let agentLocation = { lat: 8.7642, lon: 78.1348 }; // Default: Thoothukudi
+    let lastCenteredLocation = { lat: 0, lon: 0 }; // <--- NEW: Jitter Prevention Tracking
     
     // Map State
     let map = null;
@@ -245,6 +293,8 @@
     let customerMarkers = {};
     let isMapLocked = true; // Controls Auto-Snapping vs Free Roam
     window.isGpsSearching = false; // Controls Loading State Fallback
+    
+    let pendingDeleteId = null; // <--- NEW: State for safe deletion
 
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const todayStr = daysOfWeek[new Date().getDay()];
@@ -253,6 +303,15 @@
 
     // Haptic Feedback Engine
     const vibrate = (ms = 30) => { if(navigator.vibrate) navigator.vibrate(ms); };
+
+    // --- NEW: Smart Distance Formatter ---
+    function formatDistance(distKm) {
+        if (!distKm || distKm >= 9999) return "Unknown";
+        if (distKm < 1) {
+            return Math.round(distKm * 1000) + " m"; // Shows as 350 m
+        }
+        return distKm.toFixed(1) + " km"; // Shows as 2.4 km
+    }
 
     // --- 1. Initialization & Auth ---
     onAuthStateChanged(auth, async (user) => {
@@ -299,21 +358,36 @@
             if(!userDoc.exists()) throw new Error("Agent profile not found.");
             
             const schedule = userDoc.data().schedule || {};
-            todayLineId = schedule[todayStr];
+            
+            // --- INJECTED ARRAY SUPPORT LOGIC ---
+            // todayLineId = schedule[todayStr]; // <--- OLD LINE COMMENTED OUT
+            const rawSchedule = schedule[todayStr];
+            todayLineArray = Array.isArray(rawSchedule) ? rawSchedule : (rawSchedule ? [rawSchedule] : []);
+            // ------------------------------------
 
             document.getElementById('start-loader').style.display = 'none';
             document.getElementById('start-ui').style.display = 'flex';
 
-            if(!todayLineId) {
+            // if(!todayLineId) { // <--- OLD LINE COMMENTED OUT
+            if(todayLineArray.length === 0) { // <--- NEW ARRAY CHECK
                 document.getElementById('no-route-msg').style.display = 'block';
+                document.getElementById('btn-start').style.display = 'none'; // Ensure hidden if no route
             } else {
-                const lineDoc = await getDoc(doc(db, "lines", todayLineId));
+                document.getElementById('no-route-msg').style.display = 'none'; // Hide error msg
+                
+                // Fetch the FIRST line data to color the start button (Graceful fallback)
+                const firstLineId = todayLineArray[0];
+                const lineDoc = await getDoc(doc(db, "lines", firstLineId));
                 if(lineDoc.exists()) todayLineData = lineDoc.data();
                 
                 const btn = document.getElementById('btn-start');
                 btn.style.display = 'flex';
                 btn.className = `btn-start-route ${todayLineData ? (todayLineData.color || 'grad-6') : 'grad-6'}`;
-                document.getElementById('start-line-name').innerText = todayLineData ? todayLineData.name : todayLineId;
+                
+                // Show how many routes if > 1
+                let nameStr = todayLineData ? todayLineData.name : firstLineId;
+                if(todayLineArray.length > 1) nameStr += ` (+${todayLineArray.length - 1} more)`;
+                document.getElementById('start-line-name').innerText = nameStr;
             }
 
         } catch (error) {
@@ -322,14 +396,40 @@
         }
     }
 
-    // --- 2. The Batch Fetch (No Financial Cache Saved) ---
+    // --- NEW FEATURE: The Workflow Reset Button ---
+    window.checkForNewRoute = () => {
+        vibrate([30, 50]);
+        // Wipe local memory to force fresh DB fetch
+        localStorage.removeItem(cacheKey);
+        localRouteData = [];
+        
+        // Reset UI to start screen smoothly
+        document.getElementById('route-panel').classList.remove('expanded');
+        document.getElementById('route-panel').style.height = ''; 
+        document.getElementById('screen-route').classList.add('hidden');
+        document.getElementById('screen-start').classList.remove('hidden');
+        
+        document.getElementById('start-ui').style.display = 'none';
+        document.getElementById('start-loader').style.display = 'block';
+        
+        // Re-run the schedule check
+        checkAgentSchedule(); 
+    };
+
+    // --- 2. The Batch Fetch (Array Supported) ---
     window.initializeRouteCache = async () => {
         vibrate();
         document.getElementById('start-ui').style.display = 'none';
         document.getElementById('start-loader').style.display = 'block';
 
         try {
-            const q = query(collection(db, "customers"), where("lineId", "==", todayLineId));
+            // const q = query(collection(db, "customers"), where("lineId", "==", todayLineId)); // <--- OLD LINE COMMENTED OUT
+            
+            // --- NEW: Firestore 'in' Query supports up to 10 array items ---
+            if(todayLineArray.length === 0) throw new Error("No array found");
+            const q = query(collection(db, "customers"), where("lineId", "in", todayLineArray));
+            // ---------------------------------------------------------------
+            
             const snap = await getDocs(q);
             
             localRouteData = [];
@@ -380,21 +480,29 @@
         }
     };
 
-    // --- 3. ENTERPRISE PRE-FLIGHT HOLD (Eliminates Map Jumping) ---
+    // --- 3. ENTERPRISE PRE-FLIGHT HOLD (With Anti-Jitter & Accuracy Filters) ---
     async function executePreFlightHold() {
         let gpsLocked = false;
+        document.getElementById('gps-warning').style.display = 'none'; // Reset warning
         
         // Promise 1: Wait for actual GPS hardware
         const gpsPromise = new Promise((resolve) => {
             if(!navigator.geolocation) return resolve(false);
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
+                    // --- NEW: Accuracy Filter ---
+                    if(pos.coords.accuracy > 100) return resolve(false); 
+                    
                     agentLocation.lat = pos.coords.latitude;
                     agentLocation.lon = pos.coords.longitude;
+                    lastCenteredLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                     gpsLocked = true;
                     resolve(true);
                 },
-                (err) => resolve(false),
+                (err) => {
+                    if(err.code === 1) document.getElementById('gps-warning').style.display = 'block'; // Permission Denied Warning
+                    resolve(false);
+                },
                 { enableHighAccuracy: true, timeout: 5000 }
             );
         });
@@ -427,10 +535,14 @@
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(
                 (pos) => {
-                    window.isGpsSearching = false; // Clear finding flag
-                    updateLocationData(pos.coords.latitude, pos.coords.longitude);
+                    document.getElementById('gps-warning').style.display = 'none';
+                    window.isGpsSearching = false; 
+                    updateLocationData(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); // Added Accuracy
                 },
-                (err) => console.warn("Watch GPS Denied.", err),
+                (err) => {
+                    console.warn("Watch GPS Denied/Error.", err);
+                    if(err.code === 1) document.getElementById('gps-warning').style.display = 'block';
+                },
                 { enableHighAccuracy: true, maximumAge: 10000 }
             );
             setInterval(pingGPS, 10000);
@@ -442,7 +554,7 @@
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     window.isGpsSearching = false;
-                    updateLocationData(pos.coords.latitude, pos.coords.longitude);
+                    updateLocationData(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); // Added Accuracy
                 },
                 (err) => console.warn("Ping GPS Denied.", err),
                 { enableHighAccuracy: true, timeout: 5000 }
@@ -450,10 +562,24 @@
         }
     }
 
-    function updateLocationData(lat, lon) {
+    // --- NEW: Upgraded Location Function with Anti-Jitter ---
+    function updateLocationData(lat, lon, accuracy) {
+        if(accuracy && accuracy > 100) return; // Strict Accuracy Filter
+        
         agentLocation.lat = lat;
         agentLocation.lon = lon;
         updateAgentMarker();
+        
+        // Calculate how far they moved since the last map center
+        const distMoved = getDistance(lastCenteredLocation.lat, lastCenteredLocation.lon, lat, lon) * 1000; // in meters
+        
+        // Movement Threshold (Anti-Jitter)
+        if(distMoved > 10) {
+            lastCenteredLocation.lat = lat;
+            lastCenteredLocation.lon = lon;
+            if(isMapLocked) centerMapOnAgent();
+        }
+        
         recalculateAndRender();
     }
 
@@ -503,8 +629,11 @@
             skippedContainer.innerHTML = '';
             skippedTitle.style.display = 'none';
             allDoneMsg.style.display = 'block';
+            
+            // Clean UI transition fix for the very last card
             document.getElementById('route-panel').classList.remove('expanded');
             document.getElementById('route-panel').style.height = ''; 
+            document.getElementById('expanded-list-section').style.display = 'none';
             return;
         }
         
@@ -516,12 +645,12 @@
         if(activeList.length > 0) {
             const nearest = activeList[0];
             
-            // Handle "Locating GPS..." Fallback State securely
             let distStr = "";
             if (window.isGpsSearching) {
                 distStr = `<span style="opacity: 0.7;">Locating GPS...</span>`;
             } else {
-                distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km` : "Unknown";
+                // distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km` : "Unknown"; // <--- OLD LINE COMMENTED OUT
+                distStr = formatDistance(nearest.distance); // <--- NEW SMART FORMATTER
             }
             
             const mapLink = `https://maps.google.com/?daddr=${nearest.lat},${nearest.lon}`;
@@ -565,7 +694,8 @@
             if (window.isGpsSearching) {
                 distStr = "Locating GPS...";
             } else {
-                distStr = c.distance < 9999 ? `${c.distance.toFixed(1)} km` : "N/A";
+                // distStr = c.distance < 9999 ? `${c.distance.toFixed(1)} km` : "N/A"; // <--- OLD LINE COMMENTED OUT
+                distStr = formatDistance(c.distance); // <--- NEW SMART FORMATTER
             }
             
             const stopNum = i + 1; // Dynamic Queue Math
@@ -585,18 +715,24 @@
         }
         upNextList.innerHTML = upNextHtml;
 
-        // Render Skipped List
+        // Render Skipped List (INJECTED NEW DELETE BUTTON)
         if(skippedList.length > 0) {
             skippedTitle.style.display = 'block';
             let skipHtml = '';
             skippedList.forEach(c => {
                 skipHtml += `
-                    <div class="mini-card skipped-card-item" data-name="${c.name.toLowerCase()}" style="opacity:0.75;">
+                    <div class="mini-card skipped-card-item" data-name="${c.name.toLowerCase()}" style="opacity:0.85;">
                         <div class="mini-info">
                             <h4 style="text-decoration: line-through;">${c.name}</h4>
                             <p style="color:var(--text-sub);">Skipped</p>
                         </div>
-                        <button class="btn-visit-again" onclick="window.actionUnskip('${c.id}')">Visit Again</button>
+                        <!-- NEW SAFE DELETE BUTTON ADDED NEXT TO REVISIT -->
+                        <div style="display:flex; gap: 8px;">
+                            <button class="btn-delete-skip" onclick="window.confirmDeleteSkip('${c.id}')" title="Delete Forever">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                            <button class="btn-visit-again" onclick="window.actionUnskip('${c.id}')">Visit Again</button>
+                        </div>
                     </div>
                 `;
             });
@@ -609,6 +745,39 @@
         // Re-apply current filter if any
         runLiveFilter();
     }
+
+    // --- NEW: Safe Delete Skipped Feature (Mobile Back Button Support) ---
+    window.confirmDeleteSkip = (id) => {
+        vibrate([50, 50]);
+        pendingDeleteId = id;
+        document.getElementById('delete-modal-overlay').classList.add('active');
+        document.getElementById('delete-confirm-modal').classList.add('active');
+        window.history.pushState({ modal: 'deleteConfirm' }, '');
+    };
+
+    window.executeDeleteSkip = () => {
+        vibrate([30, 50]);
+        // Remove from local memory completely
+        const idx = localRouteData.findIndex(c => c.id === pendingDeleteId);
+        if(idx !== -1) {
+            localRouteData.splice(idx, 1);
+            localStorage.setItem(cacheKey, JSON.stringify(localRouteData));
+        }
+        window.history.back(); // Closes modal and triggers re-render via popstate or directly below
+        recalculateAndRender();
+    };
+
+    // Integrate with History API
+    window.addEventListener('popstate', (e) => {
+        const deleteModal = document.getElementById('delete-confirm-modal');
+        if(deleteModal.classList.contains('active')) {
+            deleteModal.classList.remove('active');
+            document.getElementById('delete-modal-overlay').classList.remove('active');
+            pendingDeleteId = null;
+        }
+    });
+    // ----------------------------------------------------------------------
+
 
     // --- 5. Advanced Interactive Features & Haptics ---
     
