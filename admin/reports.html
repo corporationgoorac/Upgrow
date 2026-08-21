@@ -47,7 +47,8 @@
     .screen-content { flex: 1; overflow-y: auto; padding: 0 20px 120px 20px; }
 
     /* --- Top Header & Search --- */
-    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: none; }
+    /* UPGRADED: Removed header bottom margin as requested */
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: none; margin-bottom: 0 !important; }
     .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     .icon-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; }
     
@@ -65,7 +66,8 @@
     .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 
     /* --- Ledger Map Header (Ported from line.html) --- */
-    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 15px; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
+    /* UPGRADED: Removed margin-top to sit flush below the header */
+    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 0px; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
     .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
     .detail-row svg { width: 18px; height: 18px; stroke: currentColor; }
@@ -86,9 +88,10 @@
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     
-    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
+    /* UPGRADED: Removed top margin via padding adjustment for flush fit */
+    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 10px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
     .bottom-sheet.active { transform: translateY(0); }
-    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 0 auto 25px auto; }
+    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; }
 
     .input-group { margin-bottom: 20px; }
     .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -287,12 +290,19 @@
 
     window.addEventListener('popstate', (e) => {
       const state = e.state;
-      modalOverlay.classList.remove('active');
-      paymentSheet.classList.remove('active');
+      
+      // UPGRADED: Explicitly handle modal closes first based on line.html logic
+      if (modalOverlay.classList.contains('active')) {
+          modalOverlay.classList.remove('active');
+          paymentSheet.classList.remove('active');
+          return;
+      }
       
       if (!state || state.screen !== 'detail') {
-        screenDetail.classList.add('hidden-right');
-        activeCustomer = null;
+        if (!screenDetail.classList.contains('hidden-right')) {
+            screenDetail.classList.add('hidden-right');
+            activeCustomer = null;
+        }
       }
       if (!state || state.search !== 'active') {
           closeSearch(true);
@@ -311,9 +321,10 @@
     async function buildSearchDictionaryBackground() {
         try {
             const snap = await getDocs(collection(db, "customers"));
+            const newCache = []; // FIX: Prevent array duplication staleness
             snap.forEach(d => {
                 const data = d.data();
-                localSearchCache.push({
+                newCache.push({
                     id: d.id.toLowerCase(),
                     name: (data.name || '').toLowerCase(),
                     rawName: data.name || 'Unknown',
@@ -321,6 +332,7 @@
                     phone: data.phone || ''
                 });
             });
+            localSearchCache = newCache;
         } catch(e) { console.error("Cache build failed", e); }
     }
 
@@ -406,14 +418,19 @@
     };
 
     window.closeSearch = (fromHistory = false) => {
+        // UPGRADED: Safety lock prevents UI thrashing if search wasn't open
+        if (!isSearchMode) return;
+        
         searchBar.classList.remove('active');
         searchInput.value = '';
         isSearchMode = false;
         emptyState.style.display = 'none';
+        
         customerListEl.innerHTML = '';
         lastVisibleDoc = null;
         hasMoreDocs = true;
         fetchInitialCustomers(); 
+        
         if(!fromHistory) window.history.back();
     };
 
@@ -467,7 +484,6 @@
     async function loadCustomerDetail(custId) {
         if (isOpeningCustomer) return; // FIXED: Prevent Ghost Double-Taps
         isOpeningCustomer = true;
-        setTimeout(() => isOpeningCustomer = false, 500); // 500ms safety lock
 
         vibrate();
         document.getElementById('detail-cust-name').innerText = "Loading...";
@@ -504,6 +520,8 @@
             renderProducts();
         } catch(e) {
             productListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Error loading details.</p>';
+        } finally {
+            isOpeningCustomer = false; // UPGRADED: Release lock only when execution completely finishes
         }
     }
 
@@ -690,8 +708,12 @@
                 targetProd.payments[activePaymentIndex].method = payMethod.value;
             }
 
-            // --- MASTER RECALCULATION ENGINE (FIXED TO targetProd.total) ---
+            // --- MASTER RECALCULATION ENGINE (FIXED) ---
             let totalPaidCalculated = 0;
+            
+            // UPGRADED: Force a chronological sort BEFORE math sequence execution
+            targetProd.payments.sort((a,b) => new Date(a.date) - new Date(b.date));
+
             targetProd.payments.forEach(p => {
                 totalPaidCalculated += (parseInt(p.amount) || 0);
             });
@@ -714,6 +736,7 @@
             
             vibrate([30, 50]);
             renderProducts(); 
+            buildSearchDictionaryBackground(); // UPGRADED: Keeps cache fresh silently
             window.history.back(); 
 
         } catch (e) {
