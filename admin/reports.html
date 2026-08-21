@@ -240,6 +240,7 @@
     let activePaymentIndex = null; 
     let isSearchMode = false;
     let searchTimeout = null;
+    let isOpeningCustomer = false; // Fixed: UI Safety Lock for Ghost Double-Taps
 
     // Pagination State
     let lastVisibleDoc = null;
@@ -464,6 +465,10 @@
 
     // --- 4. Level 2: Customer Ledger & Products ---
     async function loadCustomerDetail(custId) {
+        if (isOpeningCustomer) return; // FIXED: Prevent Ghost Double-Taps
+        isOpeningCustomer = true;
+        setTimeout(() => isOpeningCustomer = false, 500); // 500ms safety lock
+
         vibrate();
         document.getElementById('detail-cust-name').innerText = "Loading...";
         productListEl.innerHTML = '<div class="loader-spinner"></div>';
@@ -528,10 +533,15 @@
         }
 
         prods.forEach((p, pIndex) => {
-            // FIX: Ensure math hooks into p.total, NOT p.amount
-            const total = parseInt(p.total) || 0; 
-            const paid = parseInt(p.paid) || 0;
-            const pending = parseInt(p.pending) || 0;
+            // FIX: Ensure math hooks into p.total, NOT p.amount, with fallback for old data
+            const total = parseInt(p.total) || parseInt(p.amount) || 0; 
+            
+            // DYNAMIC MATH OVERRIDE: Calculate exact paid from array to fix old bugs
+            let calcPaid = 0;
+            if (p.payments) p.payments.forEach(pay => calcPaid += (parseInt(pay.amount) || 0));
+            const paid = calcPaid > 0 ? calcPaid : (parseInt(p.paid) || 0);
+            const pending = Math.max(0, total - paid);
+            
             grandTotalPending += pending;
             
             let payHtml = '';
@@ -687,10 +697,11 @@
             });
 
             targetProd.paid = totalPaidCalculated;
-            // FIXED BUG: Using targetProd.total instead of amount
-            targetProd.pending = Math.max(0, (parseInt(targetProd.total) || 0) - totalPaidCalculated);
+            // FIXED BUG: Using targetProd.total instead of amount (with fallback)
+            const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
+            targetProd.pending = Math.max(0, safeTotal - totalPaidCalculated);
 
-            let runningPending = parseInt(targetProd.total) || 0;
+            let runningPending = safeTotal;
             targetProd.payments.forEach(p => {
                 runningPending -= (parseInt(p.amount) || 0);
                 p.pendingAfter = Math.max(0, runningPending);
