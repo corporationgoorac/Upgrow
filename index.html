@@ -473,7 +473,22 @@
                 let statusClass = "success";
                 let statusText = "Paid";
                 
-                if(rawStatus.includes("process") || rawStatus.includes("pend")) {
+                // if(rawStatus.includes("process") || rawStatus.includes("pend")) { // <--- OLD LINE COMMENTED OUT
+                //     statusClass = "processing"; // <--- OLD LINE COMMENTED OUT
+                //     statusText = "Processing"; // <--- OLD LINE COMMENTED OUT
+                // } else if(rawStatus.includes("fail") || rawStatus.includes("reject")) { // <--- OLD LINE COMMENTED OUT
+                //     statusClass = "failed"; // <--- OLD LINE COMMENTED OUT
+                //     statusText = "Failed"; // <--- OLD LINE COMMENTED OUT
+                // } else if(rawStatus === "success" || rawStatus === "paid" || rawStatus === "completed") { // <--- OLD LINE COMMENTED OUT
+                //     statusClass = "success"; // <--- OLD LINE COMMENTED OUT
+                //     statusText = "Successful"; // <--- OLD LINE COMMENTED OUT
+                // } // <--- OLD LINE COMMENTED OUT
+
+                // --- NEW STATUS CHECK BLOCK (Adds check for "submitted") ---
+                if(rawStatus === "submitted") {
+                    statusClass = "processing";
+                    statusText = "Submitted";
+                } else if(rawStatus.includes("process") || rawStatus.includes("pend")) {
                     statusClass = "processing";
                     statusText = "Processing";
                 } else if(rawStatus.includes("fail") || rawStatus.includes("reject")) {
@@ -483,6 +498,7 @@
                     statusClass = "success";
                     statusText = "Successful";
                 }
+                // -----------------------------------------------------------
 
                 // Interpret Type (Cash vs Online)
                 const rawType = (pay.type || pay.method || "cash").toLowerCase();
