@@ -75,7 +75,7 @@
     .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; }
     .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; }
 
-    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
+    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
     .line-card:active { transform: scale(0.98); }
     .line-info h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 5px; }
     .line-info p { font-size: 0.95rem; opacity: 0.95; font-weight: 600; font-family: monospace; }
@@ -496,9 +496,12 @@
     function customConfirm(msg) {
       return new Promise(resolve => {
         document.getElementById('confirm-msg').innerText = msg;
-        document.getElementById('confirm-overlay').classList.add('active');
-        document.getElementById('confirm-modal').classList.add('active');
-        window.history.pushState({ confirm: true }, '');
+        // UPGRADED: Safety check prevents history duplicates on double-tap
+        if (!document.getElementById('confirm-overlay').classList.contains('active')) {
+          document.getElementById('confirm-overlay').classList.add('active');
+          document.getElementById('confirm-modal').classList.add('active');
+          window.history.pushState({ confirm: true }, '');
+        }
         confirmResolve = resolve;
       });
     }
@@ -515,9 +518,12 @@
         vibrate(50);
         document.getElementById('alert-title').innerText = title;
         document.getElementById('alert-msg').innerText = msg;
-        document.getElementById('alert-overlay').classList.add('active');
-        document.getElementById('alert-modal').classList.add('active');
-        window.history.pushState({ alertOpen: true }, '');
+        // UPGRADED: Safety check prevents history duplicates on double-tap
+        if (!document.getElementById('alert-overlay').classList.contains('active')) {
+          document.getElementById('alert-overlay').classList.add('active');
+          document.getElementById('alert-modal').classList.add('active');
+          window.history.pushState({ alertOpen: true }, '');
+        }
         alertResolve = resolve;
       });
     }
@@ -525,15 +531,21 @@
 
     // History API & Panel Navigation
     function openPanel(id, stateData) {
-      document.getElementById(id).classList.add('active');
-      window.history.pushState({ panel: id, ...stateData }, '');
+      // UPGRADED: Safety check prevents history duplicates on double-tap
+      if (!document.getElementById(id).classList.contains('active')) {
+        document.getElementById(id).classList.add('active');
+        window.history.pushState({ panel: id, ...stateData }, '');
+      }
     }
     
     window.openModal = (id) => {
       vibrate();
-      document.getElementById('modal-overlay').classList.add('active');
-      document.getElementById(id).classList.add('active');
-      window.history.pushState({ modal: id }, '');
+      // UPGRADED: Safety check prevents history duplicates on double-tap
+      if (!document.getElementById(id).classList.contains('active')) {
+        document.getElementById('modal-overlay').classList.add('active');
+        document.getElementById(id).classList.add('active');
+        window.history.pushState({ modal: id }, '');
+      }
     };
 
     function closeTopUI() {
@@ -939,17 +951,18 @@
         document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
         document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
 
-        // Dark Mode Map Parse Logic
+        // UPGRADED: Destroy and rebuild iframe to completely bypass the browser history trap
+        const mapParent = document.getElementById('ledger-map-frame').parentNode;
         if (c.location && c.location.includes(',')) {
             const parts = c.location.split(',');
             const lat = parseFloat(parts[0].trim());
             const lon = parseFloat(parts[1].trim());
             if (!isNaN(lat) && !isNaN(lon)) {
                 const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
-                document.getElementById('ledger-map-frame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+                mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"></iframe>`;
             }
         } else {
-            document.getElementById('ledger-map-frame').src = "";
+            mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
         }
 
         let totalPending = 0;
@@ -962,7 +975,7 @@
           let payHtml = '';
           if (p.payments && p.payments.length > 0) {
               p.payments.forEach((pay, idx) => {
-                  const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+                  const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
                   payHtml += `<tr>
                     <td>${idx + 1}</td>
                     <td>${dStr}</td>
