@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Prevents any kind of zooming, scaling, or panning on mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>404 - Page Not Found</title>
+    
+    <style>
+        /* Shared Theme Variables */
+        :root {
+            --bg-color: #0f172a; /* Deep professional slate/black */
+            --text-main: #f9fafb;
+            --text-sub: #9ca3af;
+            --primary: #10B981; /* Neon Emerald Green */
+            --glow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            /* Completely disables pull-to-refresh and pinch-to-zoom natively */
+            touch-action: none; 
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Enforce absolute no-scrolling */
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; 
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Animated Background Gradient */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+            animation: pulseBg 8s ease-in-out infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes pulseBg {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* 404 Text Container */
+        .error-container {
+            text-align: center;
+            padding: 20px;
+            animation: fadeInDown 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            z-index: 10;
+            max-width: 600px;
+        }
+
+        .error-code {
+            font-size: 5rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--primary);
+            text-shadow: var(--glow);
+            margin-bottom: 5px;
+            line-height: 1;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            color: var(--text-main);
+        }
+
+        .error-desc {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-bottom: 30px;
+        }
+
+        /* Game Container */
+        .game-wrapper {
+            width: 90vw;
+            max-width: 600px;
+            aspect-ratio: 3 / 2;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+            position: relative;
+            animation: fadeInUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s forwards;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            0% { opacity: 0; transform: translateY(-30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="error-container">
+        <div class="error-code">404</div>
+        <div class="error-title">Signal Lost</div>
+        <p class="error-desc">
+            The destination you are attempting to reach is currently unavailable, has been relocated, or never existed in our systems. While our servers attempt to realign the routing protocols, please feel free to engage the training simulation below.
+        </p>
+    </div>
+
+    <div class="game-wrapper">
+        <canvas id="pongCanvas"></canvas>
+    </div>
+
+    <script>
+        // --- Ping Pong Game Logic ---
+        const canvas = document.getElementById("pongCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Dynamic Canvas Sizing for sharp rendering on all screens
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game Objects
+        const paddleWidth = 10;
+        const paddleHeight = 80;
+        const netWidth = 2;
+        const colorPrimary = "#10B981"; // Match the CSS neon green
+        const colorText = "#9ca3af";
+
+        const user = {
+            x: 10,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: colorPrimary,
+            score: 0
+        };
+
+        const com = {
+            x: canvas.width - paddleWidth - 10,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: colorText,
+            score: 0
+        };
+
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 8,
+            speed: 5,
+            velocityX: 5,
+            velocityY: 5,
+            color: colorPrimary
+        };
+
+        // Draw Rectangles (Paddles)
+        function drawRect(x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w, h);
+            
+            // Add a subtle glow to the primary color
+            if (color === colorPrimary) {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = colorPrimary;
+                ctx.fillRect(x, y, w, h);
+                ctx.shadowBlur = 0; // reset
+            }
+        }
+
+        // Draw Circle (Ball)
+        function drawArc(x, y, r, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2, false);
+            ctx.closePath();
+            ctx.fill();
+
+            // Glow for the ball
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = colorPrimary;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // Draw Text (Scores)
+        function drawText(text, x, y, color) {
+            ctx.fillStyle = color;
+            ctx.font = "bold 35px system-ui";
+            ctx.fillText(text, x, y);
+        }
+
+        // Draw Net
+        function drawNet() {
+            for (let i = 0; i <= canvas.height; i += 15) {
+                drawRect(canvas.width / 2 - netWidth / 2, i, netWidth, 10, "rgba(255,255,255,0.1)");
+            }
+        }
+
+        // Collision Detection
+        function collision(b, p) {
+            b.top = b.y - b.radius;
+            b.bottom = b.y + b.radius;
+            b.left = b.x - b.radius;
+            b.right = b.x + b.radius;
+
+            p.top = p.y;
+            p.bottom = p.y + p.height;
+            p.left = p.x;
+            p.right = p.x + p.width;
+
+            return b.right > p.left && b.bottom > p.top && b.left < p.right && b.top < p.bottom;
+        }
+
+        // Reset Ball
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speed = 5;
+            ball.velocityX = -ball.velocityX; // Send it to the other player
+        }
+
+        // Update Everything
+        function update() {
+            // Keep paddles aligned to edges during resize
+            com.x = canvas.width - paddleWidth - 10;
+            
+            // Move the ball
+            ball.x += ball.velocityX;
+            ball.y += ball.velocityY;
+
+            // Simple AI for Computer Paddle
+            let computerLevel = 0.08;
+            com.y += (ball.y - (com.y + com.height / 2)) * computerLevel;
+
+            // Prevent AI from going out of bounds
+            if (com.y < 0) com.y = 0;
+            if (com.y + com.height > canvas.height) com.y = canvas.height - com.height;
+
+            // Prevent User from going out of bounds
+            if (user.y < 0) user.y = 0;
+            if (user.y + user.height > canvas.height) user.y = canvas.height - user.height;
+
+            // Ball collision with top & bottom walls
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.velocityY = -ball.velocityY;
+            }
+
+            // Determine which paddle is being hit
+            let player = (ball.x < canvas.width / 2) ? user : com;
+
+            if (collision(ball, player)) {
+                // Where the ball hit the paddle
+                let collidePoint = ball.y - (player.y + player.height / 2);
+                
+                // Normalize the value
+                collidePoint = collidePoint / (player.height / 2);
+                
+                // Calculate angle in Radian (max 45 degrees)
+                let angleRad = collidePoint * (Math.PI / 4);
+
+                // Determine direction
+                let direction = (ball.x < canvas.width / 2) ? 1 : -1;
+
+                // Change velocity X and Y
+                ball.velocityX = direction * ball.speed * Math.cos(angleRad);
+                ball.velocityY = ball.speed * Math.sin(angleRad);
+
+                // Speed up the ball gently after every hit
+                ball.speed += 0.2;
+            }
+
+            // Update Score
+            if (ball.x - ball.radius < 0) {
+                com.score++;
+                resetBall();
+            } else if (ball.x + ball.radius > canvas.width) {
+                user.score++;
+                resetBall();
+            }
+        }
+
+        // Render Game
+        function render() {
+            // Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawNet();
+            drawText(user.score, canvas.width / 4, canvas.height / 5, "rgba(255,255,255,0.2)");
+            drawText(com.score, 3 * canvas.width / 4, canvas.height / 5, "rgba(255,255,255,0.2)");
+            
+            drawRect(user.x, user.y, user.width, user.height, user.color);
+            drawRect(com.x, com.y, com.width, com.height, com.color);
+            drawArc(ball.x, ball.y, ball.radius, ball.color);
+        }
+
+        // Game Loop
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Control the user paddle with Mouse
+        canvas.addEventListener("mousemove", (evt) => {
+            let rect = canvas.getBoundingClientRect();
+            user.y = evt.clientY - rect.top - user.height / 2;
+        });
+
+        // Control the user paddle with Touch (Mobile)
+        canvas.addEventListener("touchmove", (evt) => {
+            let rect = canvas.getBoundingClientRect();
+            user.y = evt.touches[0].clientY - rect.top - user.height / 2;
+        }, { passive: false });
+
+        // Start the game
+        gameLoop();
+
+    </script>
+</body>
+</html>
