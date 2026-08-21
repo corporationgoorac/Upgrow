@@ -83,11 +83,11 @@
     .route-panel { position: absolute; bottom: 0; left: 0; width: 100%; height: 35vh; background: var(--surface-card); z-index: 10; border-top-left-radius: 30px; border-top-right-radius: 30px; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transition: height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); display: flex; flex-direction: column; will-change: height; }
     .route-panel.expanded { height: 85vh; }
     
-    /* Progress Bar Header */
-    .panel-progress-bg { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: rgba(16, 185, 129, 0.1); border-top-left-radius: 30px; border-top-right-radius: 30px; overflow: hidden; }
-    .panel-progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s ease; }
+    /* Progress Bar Header (Upgraded to 8px and curved) */
+    .panel-progress-bg { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(16, 185, 129, 0.1); border-top-left-radius: 30px; border-top-right-radius: 30px; overflow: hidden; }
+    .panel-progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s ease; border-top-left-radius: 30px; border-top-right-radius: 30px; }
 
-    .panel-handle-area { padding: 15px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; touch-action: none; position: relative; }
+    .panel-handle-area { padding: 15px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; touch-action: none; position: relative; margin-top: 5px; }
     .panel-handle-area:active { cursor: grabbing; }
     .panel-handle { width: 50px; height: 6px; background: var(--border); border-radius: 10px; }
 
@@ -244,6 +244,7 @@
     let agentMarker = null;
     let customerMarkers = {};
     let isMapLocked = true; // Controls Auto-Snapping vs Free Roam
+    window.isGpsSearching = false; // Controls Loading State Fallback
 
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const todayStr = daysOfWeek[new Date().getDay()];
@@ -285,9 +286,12 @@
             const existingCache = localStorage.getItem(cacheKey);
             if(existingCache) {
                 localRouteData = JSON.parse(existingCache);
-                document.getElementById('screen-start').classList.add('hidden');
-                document.getElementById('screen-route').classList.remove('hidden');
-                startUberEngine();
+                
+                // Show loader while Pre-Flight Hold executes
+                document.getElementById('start-loader').style.display = 'block';
+                document.getElementById('start-ui').style.display = 'none';
+                
+                executePreFlightHold();
                 return;
             }
 
@@ -334,7 +338,6 @@
                 const c = d.data();
                 let totalPending = 0;
                 
-                // Calculate Live Pending purely to filter out paid-off customers
                 if(c.products) {
                     c.products.forEach(p => {
                         const pTotal = parseInt(p.total) || parseInt(p.amount) || 0;
@@ -344,7 +347,6 @@
                     });
                 }
 
-                // If they owe money, push them to the routing manifest (Amount is NOT saved)
                 if(totalPending > 0) {
                     let lat = 0, lon = 0;
                     if(c.location && c.location.includes(',')) {
@@ -365,13 +367,10 @@
                 }
             });
 
-            // Save clean manifest to storage
             localStorage.setItem(cacheKey, JSON.stringify(localRouteData));
             
-            document.getElementById('screen-start').classList.add('hidden');
-            document.getElementById('screen-route').classList.remove('hidden');
-            
-            startUberEngine();
+            // Execute Enterprise Pre-Flight Hold instead of immediate transition
+            executePreFlightHold();
 
         } catch(e) {
             console.error("Cache build failed", e);
@@ -381,27 +380,70 @@
         }
     };
 
-    // --- 3. The Uber GPS & Math Engine ---
-    function startUberEngine() {
-        initLeafletMap();
-        pingGPS(); 
+    // --- 3. ENTERPRISE PRE-FLIGHT HOLD (Eliminates Map Jumping) ---
+    async function executePreFlightHold() {
+        let gpsLocked = false;
         
+        // Promise 1: Wait for actual GPS hardware
+        const gpsPromise = new Promise((resolve) => {
+            if(!navigator.geolocation) return resolve(false);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    agentLocation.lat = pos.coords.latitude;
+                    agentLocation.lon = pos.coords.longitude;
+                    gpsLocked = true;
+                    resolve(true);
+                },
+                (err) => resolve(false),
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        });
+
+        // Promise 2: Strict 4-Second Timeout (Anti-Freeze Fallback)
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(false), 4000));
+
+        // Race them! Wait for whichever finishes first.
+        await Promise.race([gpsPromise, timeoutPromise]);
+
+        // If GPS failed to lock in 4s, we trigger the gentle "Locating GPS..." UI state
+        window.isGpsSearching = !gpsLocked;
+
+        // Pre-calculate distances & setup map invisibly at True North
+        recalculateAndRender();
+        initLeafletMap();
+
+        // The Seamless Curtain Drop
+        document.getElementById('screen-start').classList.add('hidden');
+        document.getElementById('screen-route').classList.remove('hidden');
+        
+        // Force Leaflet to recalculate its grid exactly after unhiding
+        setTimeout(() => { if(map) map.invalidateSize(); }, 200);
+
+        // Start continuous background loop
+        startBackgroundWatchers();
+    }
+
+    function startBackgroundWatchers() {
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(
-                (pos) => updateLocationData(pos.coords.latitude, pos.coords.longitude),
+                (pos) => {
+                    window.isGpsSearching = false; // Clear finding flag
+                    updateLocationData(pos.coords.latitude, pos.coords.longitude);
+                },
                 (err) => console.warn("Watch GPS Denied.", err),
                 { enableHighAccuracy: true, maximumAge: 10000 }
             );
             setInterval(pingGPS, 10000);
-        } else {
-            recalculateAndRender();
         }
     }
 
     function pingGPS() {
         if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => updateLocationData(pos.coords.latitude, pos.coords.longitude),
+                (pos) => {
+                    window.isGpsSearching = false;
+                    updateLocationData(pos.coords.latitude, pos.coords.longitude);
+                },
                 (err) => console.warn("Ping GPS Denied.", err),
                 { enableHighAccuracy: true, timeout: 5000 }
             );
@@ -473,7 +515,15 @@
         // Render Nearest Customer Card (Stop #1)
         if(activeList.length > 0) {
             const nearest = activeList[0];
-            const distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km` : "Unknown";
+            
+            // Handle "Locating GPS..." Fallback State securely
+            let distStr = "";
+            if (window.isGpsSearching) {
+                distStr = `<span style="opacity: 0.7;">Locating GPS...</span>`;
+            } else {
+                distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km` : "Unknown";
+            }
+            
             const mapLink = `https://maps.google.com/?daddr=${nearest.lat},${nearest.lon}`;
             
             nextStopSection.innerHTML = `
@@ -482,7 +532,7 @@
                     <div style="flex: 1; padding-right: 10px;">
                         <div class="cust-main-name">${nearest.name}</div>
                         <div class="dist-text">
-                            <span style="color:var(--primary); font-weight:800; font-size:1.15rem; margin-right:8px; letter-spacing:0.5px;">📍 Stop #1</span>
+                            <span style="color:var(--primary); font-weight:800; font-size:1.15rem; margin-right:8px; letter-spacing:0.5px;">#1</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${distStr}
                         </div>
                     </div>
@@ -511,7 +561,13 @@
         let upNextHtml = '';
         for(let i = 1; i < activeList.length; i++) {
             const c = activeList[i];
-            const distStr = c.distance < 9999 ? `${c.distance.toFixed(1)} km` : "N/A";
+            let distStr = "";
+            if (window.isGpsSearching) {
+                distStr = "Locating GPS...";
+            } else {
+                distStr = c.distance < 9999 ? `${c.distance.toFixed(1)} km` : "N/A";
+            }
+            
             const stopNum = i + 1; // Dynamic Queue Math
             upNextHtml += `
                 <div class="mini-card active-card-item" data-name="${c.name.toLowerCase()}">
