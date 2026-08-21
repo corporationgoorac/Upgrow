@@ -47,7 +47,7 @@
     .screen-content { flex: 1; overflow-y: auto; padding: 0 20px 120px 20px; }
 
     /* --- Top Header & Search --- */
-    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: 1px solid var(--border); }
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: none; }
     .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     .icon-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; }
     
@@ -64,31 +64,23 @@
     .card-sub { font-size: 0.85rem; color: var(--text-sub); font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
     .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 
+    /* --- Ledger Map Header (Ported from line.html) --- */
+    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 15px; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
+    .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    .detail-row svg { width: 18px; height: 18px; stroke: currentColor; }
+
     /* --- Product & Ledger UI (Level 2) --- */
-    .product-card { background: var(--surface-card); border: 2px solid var(--border); border-radius: 18px; margin-top: 20px; overflow: hidden; box-shadow: var(--shadow); }
-    .prod-header { padding: 15px 18px; background: var(--bg-color); display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); }
-    .prod-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
-    .prod-actions { display: flex; gap: 10px; }
+    .product-item { background: var(--surface-card); padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .product-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main); }
+    .product-math { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-sub); font-weight: 700; }
+    .val-pending { color: var(--danger); font-weight: 800; }
+
     .btn-circle { width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: white; transition: transform 0.2s; }
     .btn-circle:active { transform: scale(0.9); }
     .btn-csv { background: #8b5cf6; }
     .btn-add { background: var(--primary); }
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
-
-    .prod-stats { display: flex; padding: 15px; gap: 10px; border-bottom: 1px solid var(--border); }
-    .stat-box { flex: 1; text-align: center; background: var(--bg-color); padding: 10px; border-radius: 12px; }
-    .stat-lbl { font-size: 0.7rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
-    .stat-val { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
-    .stat-val.pending { color: var(--danger); }
-    .stat-val.paid { color: var(--primary); }
-
-    .ledger-list { padding: 0; margin: 0; list-style: none; }
-    .ledger-item { padding: 15px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
-    .ledger-item:active { background: var(--bg-color); }
-    .ledger-item:last-child { border-bottom: none; }
-    .lg-date { font-size: 0.85rem; font-weight: 700; color: var(--text-sub); }
-    .lg-method { font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-top: 4px; }
-    .lg-amt { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
 
     /* --- Modals & Overlays --- */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
@@ -104,6 +96,13 @@
     .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
     .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
     .btn-full:active { transform: scale(0.97); }
+
+    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .dash-card { background: var(--bg-color); padding: 12px; border-radius: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+    .dash-title { font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; }
+    .dash-value { font-size: 1.2rem; font-weight: 800; }
+    .dash-value.pending { color: var(--danger); }
+    .dash-value.paid { color: var(--primary); }
 
     /* Loading & Pagination */
     .loader-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
@@ -134,8 +133,10 @@
     
     <div class="screen-content" id="main-scroll-area">
       <div id="customer-list">
-        <!-- Initial Skeleton Loaders -->
-        <div class="skeleton-box"></div><div class="skeleton-box"></div><div class="skeleton-box"></div>
+        <!-- High-Quality Skeletons -->
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:70%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:40%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:60%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:50%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:80%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:30%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
       </div>
       <div id="load-more-trigger" style="height: 20px; width: 100%;"></div>
       <div class="loader-spinner" id="pagination-loader" style="display: none;"></div>
@@ -149,7 +150,7 @@
 
   <!-- ================= LEVEL 2: CUSTOMER DETAIL ================= -->
   <div id="screen-detail" class="screen hidden-right">
-    <div class="header">
+    <div class="header" style="border-bottom: 1px solid var(--border);">
       <button class="back-btn" onclick="window.history.back()">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
       </button>
@@ -157,7 +158,29 @@
     </div>
     
     <div class="screen-content">
-        <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; margin-bottom: 10px; margin-top: 15px;">Active Products</div>
+        
+        <!-- UPGRADED: Map Header from line.html -->
+        <div class="ledger-summary" id="ledger-header">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: invert(100%) hue-rotate(180deg) brightness(85%); opacity: 0.85; pointer-events: none;">
+                <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
+            </div>
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(18,18,18,0.95) 10%, rgba(18,18,18,0.65) 100%); z-index: -1;"></div>
+
+            <h3 id="ledger-cust-name-inner">Customer Name</h3>
+            <div class="detail-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                <span id="ledger-cust-phone">Loading...</span>
+            </div>
+            <div class="detail-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span id="ledger-cust-loc">Loading...</span>
+            </div>
+            <div class="detail-row" style="margin-top: 15px;">
+                <span style="font-weight: 700; color: #f9fafb; font-size: 1.1rem;">Total Pending: <span id="ledger-total-pending" style="color: #f87171;">₹0</span></span>
+            </div>
+        </div>
+
+        <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; margin-bottom: 10px;">Active Products</div>
         <div id="product-list"></div>
     </div>
   </div>
@@ -171,12 +194,12 @@
     <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-title">Record Payment</h3>
     <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700;" id="sheet-sub">Product Name</p>
     
-    <div class="dashboard" style="margin-top: 0; margin-bottom: 20px;">
-        <div class="dash-card" style="padding: 12px;">
+    <div class="dashboard">
+        <div class="dash-card">
             <div class="dash-title">Total Pending</div>
             <div class="dash-value pending" id="sheet-pending">₹0</div>
         </div>
-        <div class="dash-card" style="padding: 12px;">
+        <div class="dash-card">
             <div class="dash-title">Total Paid</div>
             <div class="dash-value paid" id="sheet-paid">₹0</div>
         </div>
@@ -200,20 +223,21 @@
       </select>
     </div>
 
+    <!-- NATIVE HTML ONCLICK -->
     <button class="btn-full" id="btn-save-payment" onclick="savePayment()">Save Payment</button>
   </div>
 
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter, orderBy } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // --- Global State ---
     let currentUser = null;
-    let localSearchCache = []; // Offline dictionary for instant search
+    let localSearchCache = []; 
     let activeCustomer = null;
     let activeProductIndex = null;
-    let activePaymentIndex = null; // null = Add, number = Edit
+    let activePaymentIndex = null; 
     let isSearchMode = false;
     let searchTimeout = null;
 
@@ -222,6 +246,12 @@
     let isFetching = false;
     let hasMoreDocs = true;
     const ITEMS_PER_PAGE = 10;
+
+    const richSkeletonHTML = `
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:70%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:40%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:60%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:50%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:80%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:30%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
+    `;
 
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
     const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
@@ -239,7 +269,6 @@
     const paymentSheet = document.getElementById('payment-sheet');
     const modalOverlay = document.getElementById('modal-overlay');
 
-    // Modal Inputs
     const payAmount = document.getElementById('pay-amount');
     const payDate = document.getElementById('pay-date');
     const payMethod = document.getElementById('pay-method');
@@ -265,7 +294,7 @@
         activeCustomer = null;
       }
       if (!state || state.search !== 'active') {
-          closeSearch(true); // true = prevent triggering history back again
+          closeSearch(true);
       }
     });
 
@@ -278,10 +307,8 @@
       }
     });
 
-    // --- 1. Background Search Dictionary Fetcher ---
     async function buildSearchDictionaryBackground() {
         try {
-            // Fetch lightweight basic info for search without dragging full ledger arrays
             const snap = await getDocs(collection(db, "customers"));
             snap.forEach(d => {
                 const data = d.data();
@@ -300,12 +327,14 @@
     async function fetchInitialCustomers() {
         if(isFetching) return;
         isFetching = true;
-        customerListEl.innerHTML = ''; 
+        customerListEl.innerHTML = richSkeletonHTML; 
         
         try {
             const q = query(collection(db, "customers"), limit(ITEMS_PER_PAGE));
             const snap = await getDocs(q);
             
+            customerListEl.innerHTML = ''; 
+
             if(snap.empty) {
                 emptyState.style.display = 'block';
             } else {
@@ -314,7 +343,7 @@
                 setupIntersectionObserver();
             }
         } catch (e) {
-            customerListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Failed to load ledger.</p>';
+            customerListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Failed to load.</p>';
         }
         isFetching = false;
     }
@@ -383,7 +412,7 @@
         customerListEl.innerHTML = '';
         lastVisibleDoc = null;
         hasMoreDocs = true;
-        fetchInitialCustomers(); // Reset list
+        fetchInitialCustomers(); 
         if(!fromHistory) window.history.back();
     };
 
@@ -392,7 +421,7 @@
         const term = e.target.value.toLowerCase().trim();
         
         if(term.length === 0) {
-            customerListEl.innerHTML = '';
+            customerListEl.innerHTML = richSkeletonHTML;
             fetchInitialCustomers();
             emptyState.style.display = 'none';
             return;
@@ -403,7 +432,6 @@
             let matchedNames = [];
             let matchedIDs = [];
 
-            // Find 5 Names and 5 IDs
             for(let c of localSearchCache) {
                 if(matchedNames.length < 5 && c.name.includes(term)) matchedNames.push(c);
                 else if(matchedIDs.length < 5 && c.id.includes(term)) matchedIDs.push(c);
@@ -431,7 +459,7 @@
                     customerListEl.appendChild(card);
                 });
             }
-        }, 400); // 400ms Debounce
+        }, 400); 
     });
 
     // --- 4. Level 2: Customer Ledger & Products ---
@@ -448,7 +476,25 @@
             if(!docSnap.exists()) throw new Error("Not found");
             
             activeCustomer = { id: custId, ref: doc(db, "customers", custId), data: docSnap.data() };
-            document.getElementById('detail-cust-name').innerText = activeCustomer.data.name;
+            const c = activeCustomer.data;
+            
+            document.getElementById('detail-cust-name').innerText = c.name;
+            document.getElementById('ledger-cust-name-inner').innerText = c.name;
+            document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
+            document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
+
+            // Dark Mode GPS Setup
+            if (c.location && c.location.includes(',')) {
+                const parts = c.location.split(',');
+                const lat = parseFloat(parts[0].trim());
+                const lon = parseFloat(parts[1].trim());
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
+                    document.getElementById('ledger-map-frame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+                }
+            } else {
+                document.getElementById('ledger-map-frame').src = "";
+            }
             
             renderProducts();
         } catch(e) {
@@ -456,50 +502,67 @@
         }
     }
 
+    // Dropdown UI Toggle
+    window.toggleLedger = (index) => {
+        vibrate(15);
+        const collapse = document.getElementById(`ledger-collapse-${index}`);
+        const chevron = document.getElementById(`chevron-${index}`);
+        if(collapse.style.display === 'none') {
+            collapse.style.display = 'block';
+            chevron.style.transform = 'rotate(180deg)';
+        } else {
+            collapse.style.display = 'none';
+            chevron.style.transform = 'rotate(0deg)';
+        }
+    };
+
     function renderProducts() {
         productListEl.innerHTML = '';
         const prods = activeCustomer.data.products || [];
+        let grandTotalPending = 0;
         
         if(prods.length === 0) {
             productListEl.innerHTML = '<p style="text-align:center; color:var(--text-sub); margin-top:20px;">No products found.</p>';
+            document.getElementById('ledger-total-pending').innerText = "₹0";
             return;
         }
 
         prods.forEach((p, pIndex) => {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const total = parseInt(p.amount) || 0;
+            // FIX: Ensure math hooks into p.total, NOT p.amount
+            const total = parseInt(p.total) || 0; 
             const paid = parseInt(p.paid) || 0;
             const pending = parseInt(p.pending) || 0;
+            grandTotalPending += pending;
             
-            // Build Ledger HTML
-            let ledgerHtml = '';
+            let payHtml = '';
             if(p.payments && p.payments.length > 0) {
-                // Sort payments newest first visually
                 const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
                                       .sort((a,b) => new Date(b.date) - new Date(a.date));
                                       
                 sortedPayments.forEach(pay => {
-                    const dateStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
-                    ledgerHtml += `
-                        <li class="ledger-item" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
-                            <div>
-                                <div class="lg-date">${dateStr}</div>
-                                <div class="lg-method">${pay.method || 'CASH'}</div>
-                            </div>
-                            <div class="lg-amt">${fmt(pay.amount)}</div>
-                        </li>
-                    `;
+                    const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+                    payHtml += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 12px 10px;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
+                        <td style="padding: 12px 10px; color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
+                        <td style="padding: 12px 10px; color:var(--danger); font-weight:700;">${fmt(pay.pendingAfter)}</td>
+                        <td style="padding: 12px 10px; text-align:center;">
+                            <button class="icon-btn edit" style="background:transparent; padding:4px; box-shadow:none; display:inline-block;" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                        </td>
+                    </tr>`;
                 });
             } else {
-                ledgerHtml = '<li class="ledger-item"><div class="lg-date" style="text-align:center; width:100%;">No payments recorded yet.</div></li>';
+                payHtml = `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-sub);">No payments recorded yet.</td></tr>`;
             }
 
+            const card = document.createElement('div');
+            card.className = 'product-item';
             card.innerHTML = `
-                <div class="prod-header">
-                    <h3>${p.name || 'Product'}</h3>
-                    <div class="prod-actions">
+                <div class="product-header">
+                    <span>${p.name || 'Product'}</span>
+                    <div class="prod-actions" style="display:flex; gap:10px;">
                         <button class="btn-circle btn-csv" onclick="window.downloadCSV(${pIndex})">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         </button>
@@ -508,22 +571,46 @@
                         </button>
                     </div>
                 </div>
-                <div class="prod-stats">
-                    <div class="stat-box"><div class="stat-lbl">Total</div><div class="stat-val">${fmt(total)}</div></div>
-                    <div class="stat-box"><div class="stat-lbl">Paid</div><div class="stat-val paid">${fmt(paid)}</div></div>
-                    <div class="stat-box"><div class="stat-lbl">Pending</div><div class="stat-val pending">${fmt(pending)}</div></div>
+                <div class="product-math" style="margin-bottom: 15px; font-weight:800;">
+                    <span>Total: ${fmt(total)}</span> | 
+                    <span style="color:var(--primary);">Paid: ${fmt(paid)}</span> | 
+                    <span class="val-pending">Pending: ${fmt(pending)}</span>
                 </div>
-                <ul class="ledger-list">${ledgerHtml}</ul>
+                
+                <div class="ledger-toggle" onclick="window.toggleLedger(${pIndex})" style="padding: 10px; text-align: center; color: var(--primary); font-weight: 800; font-size: 0.8rem; cursor: pointer; background: var(--bg-color); border-radius:8px; display: flex; justify-content: center; align-items: center; gap: 6px; text-transform: uppercase;">
+                    Payment History <svg id="chevron-${pIndex}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition: transform 0.3s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                
+                <div id="ledger-collapse-${pIndex}" style="display: none; margin-top: 10px;">
+                    <div class="product-table-wrapper" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border);">
+                      <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.85rem;">
+                        <thead style="background: rgba(107, 114, 128, 0.1);">
+                          <tr>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Date</th>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Paid</th>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Remaining</th>
+                            <th style="padding: 10px; text-align: center; border-bottom:1px solid var(--border);">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${payHtml}
+                        </tbody>
+                      </table>
+                    </div>
+                </div>
             `;
             productListEl.appendChild(card);
         });
+
+        document.getElementById('ledger-total-pending').innerText = fmt(grandTotalPending);
     }
 
     // --- 5. Ledger Editing & Math Recalculation Engine ---
     window.openAddPayment = (pIndex) => {
+        if (document.getElementById('payment-sheet').classList.contains('active')) return;
         vibrate();
         activeProductIndex = pIndex;
-        activePaymentIndex = null; // null triggers 'Add' logic
+        activePaymentIndex = null; 
         const prod = activeCustomer.data.products[pIndex];
         
         document.getElementById('sheet-title').innerText = "Record Payment";
@@ -532,18 +619,19 @@
         document.getElementById('sheet-paid').innerText = fmt(prod.paid);
         
         payAmount.value = '';
-        payDate.value = new Date().toISOString().split('T')[0]; // Today
+        payDate.value = new Date().toISOString().split('T')[0]; 
         payMethod.value = 'cash';
 
-        window.history.pushState({ screen: 'detail', modal: 'add' }, '');
+        window.history.pushState({ screen: 'detail', modal: 'add' }, ''); 
         modalOverlay.classList.add('active');
         paymentSheet.classList.add('active');
     };
 
     window.openEditPayment = (pIndex, payIndex) => {
+        if (document.getElementById('payment-sheet').classList.contains('active')) return;
         vibrate();
         activeProductIndex = pIndex;
-        activePaymentIndex = payIndex; // number triggers 'Edit' logic
+        activePaymentIndex = payIndex; 
         const prod = activeCustomer.data.products[pIndex];
         const pay = prod.payments[payIndex];
         
@@ -565,19 +653,18 @@
     window.savePayment = async () => {
         vibrate();
         const amt = parseInt(payAmount.value);
-        if (!amt || amt < 0) return alert("Enter a valid amount.");
+        if (isNaN(amt) || amt < 0) return alert("Enter a valid amount.");
 
         btnSavePayment.innerText = "Saving...";
         btnSavePayment.disabled = true;
 
         try {
-            // Deep Clone to ensure Reactivity/Save
+            // Deep Clone
             let safeProducts = JSON.parse(JSON.stringify(activeCustomer.data.products));
             let targetProd = safeProducts[activeProductIndex];
             if(!targetProd.payments) targetProd.payments = [];
 
             if (activePaymentIndex === null) {
-                // ADD LOGIC
                 targetProd.payments.push({
                     id: 'MANUAL_' + Date.now(),
                     amount: amt,
@@ -585,31 +672,29 @@
                     type: 'collection',
                     method: payMethod.value,
                     agent_uid: currentUser.uid,
-                    pendingAfter: 0 // Will recalculate below
+                    pendingAfter: 0 
                 });
             } else {
-                // EDIT LOGIC
                 targetProd.payments[activePaymentIndex].amount = amt;
                 targetProd.payments[activePaymentIndex].date = new Date(payDate.value).toISOString();
                 targetProd.payments[activePaymentIndex].method = payMethod.value;
             }
 
-            // --- THE MASTER RECALCULATION ENGINE ---
+            // --- MASTER RECALCULATION ENGINE (FIXED TO targetProd.total) ---
             let totalPaidCalculated = 0;
             targetProd.payments.forEach(p => {
                 totalPaidCalculated += (parseInt(p.amount) || 0);
             });
 
             targetProd.paid = totalPaidCalculated;
-            targetProd.pending = Math.max(0, (parseInt(targetProd.amount) || 0) - totalPaidCalculated);
+            // FIXED BUG: Using targetProd.total instead of amount
+            targetProd.pending = Math.max(0, (parseInt(targetProd.total) || 0) - totalPaidCalculated);
 
-            // Re-map pendingAfter for clean history visuals (optional but good practice)
-            let runningPending = parseInt(targetProd.amount) || 0;
+            let runningPending = parseInt(targetProd.total) || 0;
             targetProd.payments.forEach(p => {
                 runningPending -= (parseInt(p.amount) || 0);
                 p.pendingAfter = Math.max(0, runningPending);
             });
-            // ----------------------------------------
 
             await updateDoc(activeCustomer.ref, { products: safeProducts });
             
@@ -617,8 +702,8 @@
             activeCustomer.data.products = safeProducts;
             
             vibrate([30, 50]);
-            renderProducts(); // Refresh UI instantly
-            window.history.back(); // Close Sheet
+            renderProducts(); 
+            window.history.back(); 
 
         } catch (e) {
             alert("Failed to save: " + e.message);
@@ -635,7 +720,6 @@
 
         let csvContent = "Date,Receipt ID,Method,Amount,Remaining Balance After\n";
         
-        // Sort chronologically for CSV
         const sorted = [...prod.payments].sort((a,b) => new Date(a.date) - new Date(b.date));
         
         sorted.forEach(p => {
@@ -653,7 +737,6 @@
         document.body.removeChild(link);
     };
 
-    // Close Modals on Overlay Click
     modalOverlay.addEventListener('click', () => window.history.back());
   </script>
 </body>
