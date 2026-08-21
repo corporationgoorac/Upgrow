@@ -121,7 +121,7 @@
     .mini-actions { display: flex; gap: 8px; align-items: center; }
     .btn-visit-again { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
     
-    /* --- NEW: Advanced Enterprise CSS for Delete Button & Animated Shimmer Button --- */
+    /* --- Advanced Enterprise CSS for Delete Button & Animated Shimmer Button --- */
     .btn-delete-skip { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .btn-delete-skip svg { width: 16px; height: 16px; stroke-width: 2.5; }
     
@@ -130,6 +130,7 @@
     .shimmer-sweep { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent); transform: skewX(-20deg); animation: shimmerSweep 3s infinite; pointer-events: none; }
     @keyframes shimmerSweep { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
     @keyframes gentleHeartbeat { 0% { transform: scale(1); } 5% { transform: scale(1.03); } 10% { transform: scale(1); } 15% { transform: scale(1.03); } 20% { transform: scale(1); } 100% { transform: scale(1); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     /* Custom Mobile-Safe Confirmation Modal */
     .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -154,7 +155,7 @@
 </head>
 <body>
 
-  <!-- ================= NEW: GPS PERMISSION WARNING BANNER ================= -->
+  <!-- ================= GPS PERMISSION WARNING BANNER ================= -->
   <div id="gps-warning" style="display:none; position:absolute; top:calc(env(safe-area-inset-top) + 10px); left:10px; right:10px; background:rgba(239, 68, 68, 0.95); color:white; padding:12px; border-radius:12px; z-index:9999; text-align:center; font-weight:800; backdrop-filter:blur(5px); box-shadow:var(--shadow); border:1px solid rgba(255,255,255,0.2);">
       ⚠️ GPS Permission Denied. Live Map Disabled.
   </div>
@@ -238,11 +239,13 @@
                 <h3 style="font-size:1.5rem; font-weight:800; color:var(--primary); margin-bottom:10px;">Route Complete!</h3>
                 <p style="color:var(--text-sub); font-weight:600; margin-bottom:25px;">You have collected or skipped all stops for today.</p>
                 
-                <!-- NEW: Premium Animated Check Route Button -->
-                <button class="btn-check-route-animated" onclick="window.checkForNewRoute()">
-                    Check for New Route
-                    <div class="shimmer-sweep"></div>
-                </button>
+                <!-- <button class="btn-check-route-animated" onclick="window.checkForNewRoute()"> --> <!-- OLD LINE COMMENTED OUT -->
+                    <!-- Check for New Route --> <!-- OLD LINE COMMENTED OUT -->
+                    <!-- <div class="shimmer-sweep"></div> --> <!-- OLD LINE COMMENTED OUT -->
+                <!-- </button> --> <!-- OLD LINE COMMENTED OUT -->
+                
+                <!-- NEW: Dynamic Enterprise Smart Check Container -->
+                <div id="dynamic-new-route-container"></div>
             </div>
         </div>
 
@@ -254,7 +257,7 @@
     </div>
   </div>
 
-  <!-- ================= NEW: SAFE DELETE SKIPPED MODAL ================= -->
+  <!-- ================= SAFE DELETE SKIPPED MODAL ================= -->
   <div class="modal-overlay" id="delete-modal-overlay" style="z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; background: rgba(0,0,0,0.6); position: fixed; inset: 0; backdrop-filter: blur(2px);"></div>
   <div class="alert-modal" id="delete-confirm-modal">
     <div class="alert-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger);">
@@ -304,7 +307,7 @@
     // Haptic Feedback Engine
     const vibrate = (ms = 30) => { if(navigator.vibrate) navigator.vibrate(ms); };
 
-    // --- NEW: Smart Distance Formatter ---
+    // --- Smart Distance Formatter ---
     function formatDistance(distKm) {
         if (!distKm || distKm >= 9999) return "Unknown";
         if (distKm < 1) {
@@ -396,14 +399,78 @@
         }
     }
 
-    // --- NEW FEATURE: The Workflow Reset Button ---
+    // --- OLD FEATURE LOGIC PRESERVED ---
     window.checkForNewRoute = () => {
         vibrate([30, 50]);
-        // Wipe local memory to force fresh DB fetch
+        localStorage.removeItem(cacheKey);
+        localRouteData = [];
+        document.getElementById('route-panel').classList.remove('expanded');
+        document.getElementById('route-panel').style.height = ''; 
+        document.getElementById('screen-route').classList.add('hidden');
+        document.getElementById('screen-start').classList.remove('hidden');
+        document.getElementById('start-ui').style.display = 'none';
+        document.getElementById('start-loader').style.display = 'block';
+        checkAgentSchedule(); 
+    };
+
+    // --- NEW: Enterprise Smart Background Sync ---
+    window.isCheckingBackgroundRoute = false;
+    async function checkNewRouteBackground() {
+        window.isCheckingBackgroundRoute = true;
+        try {
+            // Read 1: Agent Profile (1 read)
+            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            if(!userDoc.exists()) return;
+            
+            const schedule = userDoc.data().schedule || {};
+            const rawSchedule = schedule[todayStr];
+            const newArray = Array.isArray(rawSchedule) ? rawSchedule : (rawSchedule ? [rawSchedule] : []);
+            
+            // Compare Arrays to see if Admin assigned a new route
+            if(JSON.stringify(newArray) !== JSON.stringify(todayLineArray) && newArray.length > 0) {
+                // Read 2: Line Details for Premium UI (1 read)
+                const firstLineId = newArray[0];
+                const lineDoc = await getDoc(doc(db, "lines", firstLineId));
+                let lineName = firstLineId;
+                let lineClass = "grad-6";
+                
+                if(lineDoc.exists()) {
+                    const lineData = lineDoc.data();
+                    lineName = lineData.name || firstLineId;
+                    lineClass = lineData.color || "grad-6";
+                }
+
+                if(newArray.length > 1) {
+                    lineName += ` (+${newArray.length - 1})`;
+                }
+                
+                // Inject Dynamic Animated Button matching the Route's actual Color
+                const container = document.getElementById('dynamic-new-route-container');
+                container.innerHTML = `
+                    <p style="color:var(--primary); font-size:1.1rem; font-weight:800; margin-top:15px; margin-bottom: 8px; animation: fadeIn 0.5s;">New Route Available!</p>
+                    <button class="btn-check-route-animated ${lineClass}" style="margin-top: 5px; border:none;" onclick="window.startNewAssignedRoute('${encodeURIComponent(JSON.stringify(newArray))}')">
+                        Start ${lineName}
+                        <div class="shimmer-sweep"></div>
+                    </button>
+                `;
+            }
+        } catch (err) {
+            console.warn("Background check failed:", err);
+        }
+    }
+
+    window.startNewAssignedRoute = (newArrayStr) => {
+        vibrate([30, 50, 30]);
+        const newArray = JSON.parse(decodeURIComponent(newArrayStr));
+        
+        // 1. Wipe local memory completely for today
         localStorage.removeItem(cacheKey);
         localRouteData = [];
         
-        // Reset UI to start screen smoothly
+        // 2. Set the internal state to the new assignment
+        todayLineArray = newArray;
+        
+        // 3. Reset UI & Reload
         document.getElementById('route-panel').classList.remove('expanded');
         document.getElementById('route-panel').style.height = ''; 
         document.getElementById('screen-route').classList.add('hidden');
@@ -412,7 +479,7 @@
         document.getElementById('start-ui').style.display = 'none';
         document.getElementById('start-loader').style.display = 'block';
         
-        // Re-run the schedule check
+        // Re-run the schedule logic naturally
         checkAgentSchedule(); 
     };
 
@@ -562,7 +629,7 @@
         }
     }
 
-    // --- NEW: Upgraded Location Function with Anti-Jitter ---
+    // --- Upgraded Location Function with Anti-Jitter ---
     function updateLocationData(lat, lon, accuracy) {
         if(accuracy && accuracy > 100) return; // Strict Accuracy Filter
         
@@ -634,7 +701,17 @@
             document.getElementById('route-panel').classList.remove('expanded');
             document.getElementById('route-panel').style.height = ''; 
             document.getElementById('expanded-list-section').style.display = 'none';
+            
+            // --- NEW: Trigger Background Smart Check ---
+            if (!window.isCheckingBackgroundRoute) {
+                checkNewRouteBackground();
+            }
+            // -------------------------------------------
             return;
+        } else {
+            // Reset state if they unskip someone
+            window.isCheckingBackgroundRoute = false; 
+            document.getElementById('dynamic-new-route-container').innerHTML = ''; 
         }
         
         allDoneMsg.style.display = 'none';
@@ -726,7 +803,7 @@
                             <h4 style="text-decoration: line-through;">${c.name}</h4>
                             <p style="color:var(--text-sub);">Skipped</p>
                         </div>
-                        <!-- NEW SAFE DELETE BUTTON ADDED NEXT TO REVISIT -->
+                        <!-- SAFE DELETE BUTTON ADDED NEXT TO REVISIT -->
                         <div style="display:flex; gap: 8px;">
                             <button class="btn-delete-skip" onclick="window.confirmDeleteSkip('${c.id}')" title="Delete Forever">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -746,7 +823,7 @@
         runLiveFilter();
     }
 
-    // --- NEW: Safe Delete Skipped Feature (Mobile Back Button Support) ---
+    // --- Safe Delete Skipped Feature (Mobile Back Button Support) ---
     window.confirmDeleteSkip = (id) => {
         vibrate([50, 50]);
         pendingDeleteId = id;
