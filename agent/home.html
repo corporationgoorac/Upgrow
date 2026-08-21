@@ -26,6 +26,7 @@
       --skeleton-highlight: #f3f4f6;
     }
 
+    /* THE PROFESSIONAL DARK MAP FILTER APPLIED HERE */
     @media (prefers-color-scheme: dark) {
       :root {
         --bg-color: #121212;
@@ -37,6 +38,8 @@
         --shadow: 0 8px 30px -5px rgba(0, 0, 0, 0.6);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
+        /* Advanced CSS Filter: Turns bright white Google map into sleek dark dashboard while preserving clarity */
+        --map-filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%);
       }
     }
 
@@ -68,7 +71,7 @@
     .btn-start-route span { font-size: 0.9rem; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
 
     /* --- Live Map Screen --- */
-    #map-container { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; background: var(--bg-color); }
+    #map-container { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; background: var(--bg-color); filter: var(--map-filter, none); }
     
     /* Floating Map Controls */
     .map-controls { position: absolute; top: calc(env(safe-area-inset-top) + 20px); right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
@@ -114,7 +117,6 @@
     .section-title { font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 10px 0; }
     .mini-card { background: var(--bg-color); border: 1px solid var(--border); padding: 15px; border-radius: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: opacity 0.2s, display 0.2s; }
     .mini-info h4 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
-    .mini-info p { font-size: 0.85rem; font-weight: 700; color: var(--warning); }
     
     .mini-actions { display: flex; gap: 8px; align-items: center; }
     .btn-visit-again { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
@@ -181,7 +183,7 @@
             <div class="panel-progress-fill" id="route-progress-bar"></div>
         </div>
 
-        <!-- Draggable Handle Area -->
+        <!-- Draggable Handle Area (Vibration Trigger Attached Here) -->
         <div class="panel-handle-area" id="panel-drag-handle">
             <div class="panel-handle"></div>
         </div>
@@ -248,8 +250,8 @@
     const todayDate = new Date().toISOString().split('T')[0];
     const cacheKey = `route_data_${todayDate}`;
 
-    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
-    const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
+    // Haptic Feedback Engine
+    const vibrate = (ms = 30) => { if(navigator.vibrate) navigator.vibrate(ms); };
 
     // --- 1. Initialization & Auth ---
     onAuthStateChanged(auth, async (user) => {
@@ -316,7 +318,7 @@
         }
     }
 
-    // --- 2. The Batch Fetch ---
+    // --- 2. The Batch Fetch (No Financial Cache Saved) ---
     window.initializeRouteCache = async () => {
         vibrate();
         document.getElementById('start-ui').style.display = 'none';
@@ -331,6 +333,8 @@
             snap.forEach(d => {
                 const c = d.data();
                 let totalPending = 0;
+                
+                // Calculate Live Pending purely to filter out paid-off customers
                 if(c.products) {
                     c.products.forEach(p => {
                         const pTotal = parseInt(p.total) || parseInt(p.amount) || 0;
@@ -340,6 +344,7 @@
                     });
                 }
 
+                // If they owe money, push them to the routing manifest (Amount is NOT saved)
                 if(totalPending > 0) {
                     let lat = 0, lon = 0;
                     if(c.location && c.location.includes(',')) {
@@ -354,13 +359,13 @@
                         phone: c.phone || '',
                         lat: lat,
                         lon: lon,
-                        pendingAmount: totalPending,
                         status: 'pending', 
                         active: true       
                     });
                 }
             });
 
+            // Save clean manifest to storage
             localStorage.setItem(cacheKey, JSON.stringify(localRouteData));
             
             document.getElementById('screen-start').classList.add('hidden');
@@ -440,7 +445,7 @@
         updateMapPins(activeList);
     }
 
-    // --- 4. UI Rendering ---
+    // --- 4. Dynamic Queue UI Rendering (1, 2, 3...) ---
     function renderUI(activeList, skippedList) {
         const nextStopSection = document.getElementById('next-stop-section');
         const upNextList = document.getElementById('up-next-list');
@@ -465,7 +470,7 @@
         upNextTitle.style.display = activeList.length > 1 ? 'block' : 'none';
         document.getElementById('up-next-count').innerText = Math.max(0, activeList.length - 1);
 
-        // Render Sleek Nearest Customer Card
+        // Render Nearest Customer Card (Stop #1)
         if(activeList.length > 0) {
             const nearest = activeList[0];
             const distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km` : "Unknown";
@@ -477,7 +482,7 @@
                     <div style="flex: 1; padding-right: 10px;">
                         <div class="cust-main-name">${nearest.name}</div>
                         <div class="dist-text">
-                            <span style="color:var(--primary); font-weight:800; font-size:1.1rem; margin-right:8px;">${fmt(nearest.pendingAmount)}</span>
+                            <span style="color:var(--primary); font-weight:800; font-size:1.15rem; margin-right:8px; letter-spacing:0.5px;">📍 Stop #1</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${distStr}
                         </div>
                     </div>
@@ -502,16 +507,17 @@
             nextStopSection.innerHTML = `<div class="next-stop-header" style="color:var(--text-sub);">No active stops remaining. Swipe up to see skipped.</div>`;
         }
 
-        // Render Expanded Up Next List
+        // Render Expanded Up Next List (Stop #2, #3, etc.)
         let upNextHtml = '';
         for(let i = 1; i < activeList.length; i++) {
             const c = activeList[i];
             const distStr = c.distance < 9999 ? `${c.distance.toFixed(1)} km` : "N/A";
+            const stopNum = i + 1; // Dynamic Queue Math
             upNextHtml += `
                 <div class="mini-card active-card-item" data-name="${c.name.toLowerCase()}">
                     <div class="mini-info">
                         <h4>${c.name}</h4>
-                        <p>${fmt(c.pendingAmount)} • ${distStr}</p>
+                        <p style="color:var(--primary); font-weight:800; font-size:0.9rem;">#${stopNum} <span style="color:var(--text-sub); margin-left:4px; font-weight:700;">• ${distStr}</span></p>
                     </div>
                     <div class="mini-actions">
                         <a href="tel:${c.phone}" class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="#10B981"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></a>
@@ -532,7 +538,7 @@
                     <div class="mini-card skipped-card-item" data-name="${c.name.toLowerCase()}" style="opacity:0.75;">
                         <div class="mini-info">
                             <h4 style="text-decoration: line-through;">${c.name}</h4>
-                            <p style="color:var(--text-sub);">${fmt(c.pendingAmount)}</p>
+                            <p style="color:var(--text-sub);">Skipped</p>
                         </div>
                         <button class="btn-visit-again" onclick="window.actionUnskip('${c.id}')">Visit Again</button>
                     </div>
@@ -548,7 +554,7 @@
         runLiveFilter();
     }
 
-    // --- 5. Advanced Interactive Features ---
+    // --- 5. Advanced Interactive Features & Haptics ---
     
     // Feature A: Live Route Filter
     const routeFilter = document.getElementById('route-filter');
@@ -575,11 +581,11 @@
         }
     });
     window.jumpToTop = () => {
-        vibrate(10);
+        vibrate(15);
         panelContent.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Feature C: Native Pull-to-Collapse Physics
+    // Feature C: Native Pull-to-Collapse Physics with Haptics
     const panel = document.getElementById('route-panel');
     const dragHandle = document.getElementById('panel-drag-handle');
     let startY = 0;
@@ -588,16 +594,19 @@
 
     // Handle Dragging
     dragHandle.addEventListener('touchstart', (e) => {
+        vibrate(10); // Micro-tick on grab
         startY = e.touches[0].clientY;
         startHeight = panel.clientHeight;
         panel.style.transition = 'none'; 
     }, {passive: true});
+    
     dragHandle.addEventListener('touchmove', (e) => {
         const newHeight = startHeight + (startY - e.touches[0].clientY);
         if(newHeight > window.innerHeight * 0.25 && newHeight < window.innerHeight * 0.9) {
             panel.style.height = newHeight + 'px';
         }
     }, {passive: true});
+    
     dragHandle.addEventListener('touchend', finalizeDrag);
 
     // Content Dragging (Only pull down when at the top of scroll)
@@ -609,6 +618,7 @@
             panel.style.transition = 'none';
         }
     }, {passive: true});
+    
     panelContent.addEventListener('touchmove', (e) => {
         if (!isDraggingContent) return;
         const deltaY = startY - e.touches[0].clientY;
@@ -616,6 +626,7 @@
             panel.style.height = (startHeight + deltaY) + 'px';
         }
     }, {passive: true});
+    
     panelContent.addEventListener('touchend', () => {
         if(isDraggingContent) { isDraggingContent = false; finalizeDrag(); }
     });
@@ -623,9 +634,11 @@
     function finalizeDrag() {
         panel.style.transition = 'height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1)';
         if (panel.clientHeight > window.innerHeight * 0.55) {
+            if(!panel.classList.contains('expanded')) vibrate(30); // Solid snap up
             panel.classList.add('expanded');
             document.getElementById('expanded-list-section').style.display = 'block';
         } else {
+            if(panel.classList.contains('expanded')) vibrate(20); // Quick snap down
             panel.classList.remove('expanded');
             document.getElementById('expanded-list-section').style.display = 'none';
         }
@@ -634,10 +647,16 @@
 
     // Manual Click Toggle fallback
     window.toggleRoutePanel = () => {
-        vibrate(15);
-        panel.classList.toggle('expanded');
+        if(panel.classList.contains('expanded')) {
+            vibrate(20);
+            panel.classList.remove('expanded');
+            document.getElementById('expanded-list-section').style.display = 'none';
+        } else {
+            vibrate(30);
+            panel.classList.add('expanded');
+            document.getElementById('expanded-list-section').style.display = 'block';
+        }
         panel.style.height = ''; 
-        document.getElementById('expanded-list-section').style.display = panel.classList.contains('expanded') ? 'block' : 'none';
     };
 
     window.actionSkip = (id) => {
@@ -674,21 +693,19 @@
         }
     });
 
-    // --- 7. Leaflet Map Engine (Dynamic Theme Natively Rendered) ---
+    // --- 7. Leaflet Map Engine (Google Road Tiles + Dark Filter Support) ---
     function initLeafletMap() {
         if(map) return; 
         
         map = L.map('map-container', { zoomControl: false }).setView([agentLocation.lat, agentLocation.lon], 15);
         
-        // NATIVE DARK MODE DETECTION (Zero CSS Inversion, Pure Professional Tiles)
-        const isDarkTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const tileUrl = isDarkTheme ? 
-            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : // True Dark Mode Vector Map
-            'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';            // Crisp Google Light Road Map
+        // STANDARD GOOGLE ROAD TILES 
+        // Note: The CSS `--map-filter` handles turning this into Dark Mode for night view
+        const tileUrl = 'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
 
         L.tileLayer(tileUrl, {
             maxZoom: 20,
-            subdomains: isDarkTheme ? ['a', 'b', 'c', 'd'] : ['mt0', 'mt1', 'mt2', 'mt3']
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         }).addTo(map);
 
         map.on('dragstart', () => {
@@ -740,18 +757,19 @@
         activeList.forEach((c, index) => {
             if(c.lat && c.lon) {
                 const isNearest = index === 0;
-                const color = isNearest ? '#10B981' : '#f59e0b';
+                const color = isNearest ? '#10B981' : '#6b7280';
                 const zIndex = isNearest ? 1000 : 100;
+                const stopNum = index + 1; // Dynamic Queue Number for Map Pin
                 
                 const icon = L.divIcon({
                     className: 'custom-div-icon',
-                    html: `<div style="background:${color}; width:24px; height:24px; border-radius:50%; border:3px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:800;">${isNearest ? '1' : ''}</div>`,
+                    html: `<div style="background:${color}; width:24px; height:24px; border-radius:50%; border:3px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:800;">${stopNum}</div>`,
                     iconSize: [24, 24],
                     iconAnchor: [12, 12]
                 });
 
                 const marker = L.marker([c.lat, c.lon], {icon: icon, zIndexOffset: zIndex}).addTo(map);
-                marker.bindPopup(`<b>${c.name}</b><br>Pending: ${fmt(c.pendingAmount)}`);
+                marker.bindPopup(`<b>${c.name}</b><br>Stop #${stopNum}`);
                 customerMarkers[c.id] = marker;
                 bounds.extend([c.lat, c.lon]);
             }
