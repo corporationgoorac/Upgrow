@@ -46,6 +46,22 @@
       padding: 0;
       font-family: system-ui, -apple-system, sans-serif;
       -webkit-tap-highlight-color: transparent;
+      
+      /* --- NEW ADDITIONS TO PREVENT LONG-PRESS MENUS --- */
+      -webkit-touch-callout: none; /* Disables the long-press popup on iOS */
+      -webkit-user-select: none;   /* Disables text selection (Safari) */
+      -moz-user-select: none;      /* Disables text selection (Firefox) */
+      -ms-user-select: none;       /* Disables text selection (Edge) */
+      user-select: none;           /* Disables text selection (Standard) */
+    }
+
+    /* IMPORTANT: Re-enable selection and callouts for input fields if your app has forms! */
+    input, textarea {
+      -webkit-touch-callout: default;
+      -webkit-user-select: auto;
+      -moz-user-select: auto;
+      -ms-user-select: auto;
+      user-select: auto;
     }
 
     ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
@@ -377,6 +393,11 @@
   </div>
 
   <script type="module">
+    // --- Prevent the default context menu (long press / right-click) globally ---
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
+    
     import { auth } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
