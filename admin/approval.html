@@ -784,6 +784,7 @@
                 prod.paid = (parseInt(prod.paid) || 0) + amt;
                 if(!prod.payments) prod.payments = [];
                 
+                // NEW FIX: Omitting cash_split and online_split completely from the push to Master Ledger database.
                 prod.payments.push({
                     id: 'PAY_' + Date.now() + Math.floor(Math.random()*1000),
                     amount: amt,
@@ -791,9 +792,7 @@
                     type: 'collection',
                     method: item.method || 'cash',
                     agent_uid: item.agentId || 'system',
-                    pendingAfter: prod.pending,
-                    cash_split: parseInt(item.cash_split) || 0,
-                    online_split: parseInt(item.online_split) || 0
+                    pendingAfter: prod.pending
                 });
 
                 customerUpdates[custId].logsToDelete.push(item);
