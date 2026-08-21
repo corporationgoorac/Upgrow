@@ -75,7 +75,7 @@
     .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; }
     .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; }
 
-    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
+    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
     .line-card:active { transform: scale(0.98); }
     .line-info h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 5px; }
     .line-info p { font-size: 0.95rem; opacity: 0.95; font-weight: 600; font-family: monospace; }
@@ -452,6 +452,19 @@
     // Format Currency
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
     const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // UPGRADED: Custom Ordinal Date Formatter
+    const formatOrdDate = (dateStr) => {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d)) return "";
+      const day = d.getDate();
+      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const month = monthNames[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day}${suffix} ${month} ${year}`;
+    };
 
     // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
     window.handleFirebaseError = function(e, fallbackToAlert = false) {
@@ -975,7 +988,7 @@
           let payHtml = '';
           if (p.payments && p.payments.length > 0) {
               p.payments.forEach((pay, idx) => {
-                  const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+                  const dStr = formatOrdDate(pay.date);
                   payHtml += `<tr>
                     <td>${idx + 1}</td>
                     <td>${dStr}</td>
