@@ -67,7 +67,7 @@
 
     /* --- Ledger Map Header (Ported from line.html) --- */
     /* UPGRADED: Removed margin-top to sit flush below the header */
-    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 0px; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
+    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 0px !important; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
     .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
     .detail-row svg { width: 18px; height: 18px; stroke: currentColor; }
@@ -160,10 +160,11 @@
       <h2 style="font-size: 1.15rem; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="detail-cust-name">Customer</h2>
     </div>
     
-    <div class="screen-content">
+    <!-- UPGRADED: Padding top 0 ensures the marginless header directly touches the top nav -->
+    <div class="screen-content" style="padding-top: 0 !important;">
         
-        <!-- UPGRADED: Map Header from line.html -->
-        <div class="ledger-summary" id="ledger-header">
+        <!-- UPGRADED: Removed borders and radiuses at the top to sit totally flush -->
+        <div class="ledger-summary" id="ledger-header" style="border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: invert(100%) hue-rotate(180deg) brightness(85%); opacity: 0.85; pointer-events: none;">
                 <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
             </div>
@@ -233,7 +234,7 @@
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter, where } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // --- Global State ---
     let currentUser = null;
@@ -319,21 +320,17 @@
     });
 
     async function buildSearchDictionaryBackground() {
+        // UPGRADED: CACHE SYSTEM DISABLED TO REDUCE HEAVY FIREBASE READS.
+        // The array remains empty, keeping the function definition purely to honor the strict code structure rule.
+        /* 
         try {
             const snap = await getDocs(collection(db, "customers"));
-            const newCache = []; // FIX: Prevent array duplication staleness
-            snap.forEach(d => {
-                const data = d.data();
-                newCache.push({
-                    id: d.id.toLowerCase(),
-                    name: (data.name || '').toLowerCase(),
-                    rawName: data.name || 'Unknown',
-                    rawId: d.id,
-                    phone: data.phone || ''
-                });
-            });
+            const newCache = []; 
+            snap.forEach(d => { ... });
             localSearchCache = newCache;
         } catch(e) { console.error("Cache build failed", e); }
+        */
+        localSearchCache = []; 
     }
 
     // --- 2. Pagination Engine ---
@@ -408,7 +405,7 @@
         observer.observe(loadMoreTrigger);
     }
 
-    // --- 3. Instant Search Engine ---
+    // --- 3. Instant Search Engine (UPGRADED TO DIRECT QUERY) ---
     window.openSearch = () => {
         vibrate();
         window.history.pushState({ search: 'active' }, '');
@@ -418,7 +415,7 @@
     };
 
     window.closeSearch = (fromHistory = false) => {
-        // UPGRADED: Safety lock prevents UI thrashing if search wasn't open
+        // UPGRADED: Safety lock prevents UI thrashing if search wasn't even open
         if (!isSearchMode) return;
         
         searchBar.classList.remove('active');
@@ -436,7 +433,7 @@
 
     searchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
-        const term = e.target.value.toLowerCase().trim();
+        const term = e.target.value.trim();
         
         if(term.length === 0) {
             customerListEl.innerHTML = richSkeletonHTML;
@@ -445,53 +442,70 @@
             return;
         }
 
-        searchTimeout = setTimeout(() => {
-            customerListEl.innerHTML = '';
-            let matchedNames = [];
-            let matchedIDs = [];
+        // UPGRADED: Wait for 3 characters to execute query, vastly reducing Firebase reads.
+        if (term.length < 3) return;
 
-            for(let c of localSearchCache) {
-                if(matchedNames.length < 5 && c.name.includes(term)) matchedNames.push(c);
-                else if(matchedIDs.length < 5 && c.id.includes(term)) matchedIDs.push(c);
-                if(matchedNames.length === 5 && matchedIDs.length === 5) break;
-            }
+        searchTimeout = setTimeout(async () => {
+            customerListEl.innerHTML = '<div class="loader-spinner"></div>';
+            emptyState.style.display = 'none';
 
-            const combined = [...matchedNames, ...matchedIDs];
-            
-            if(combined.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-                combined.forEach(c => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <div class="card-top">
-                            <div>
-                                <div class="card-title">${c.rawName}</div>
-                                <div class="card-sub">ID: ${c.rawId} | 📞 ${c.phone}</div>
+            try {
+                // UPGRADED: Execute targeted Firebase queries natively instead of filtering a massive cache
+                const capTerm = term.charAt(0).toUpperCase() + term.slice(1);
+                const upperTerm = term.toUpperCase();
+
+                const qName = query(collection(db, "customers"), where("name", ">=", capTerm), where("name", "<=", capTerm + "\uf8ff"), limit(5));
+                const qId = query(collection(db, "customers"), where("id", ">=", upperTerm), where("id", "<=", upperTerm + "\uf8ff"), limit(5));
+
+                const [snapName, snapId] = await Promise.all([getDocs(qName), getDocs(qId)]);
+                
+                customerListEl.innerHTML = '';
+                const combinedMap = new Map();
+                snapName.forEach(d => combinedMap.set(d.id, d.data()));
+                snapId.forEach(d => combinedMap.set(d.id, d.data()));
+
+                if(combinedMap.size === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                    combinedMap.forEach((cData, cId) => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.innerHTML = `
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-title">${cData.name || 'Unknown'}</div>
+                                    <div class="card-sub">ID: ${cId} | 📞 ${cData.phone || 'N/A'}</div>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                    card.onclick = () => loadCustomerDetail(c.rawId);
-                    customerListEl.appendChild(card);
-                });
+                        `;
+                        card.onclick = () => loadCustomerDetail(cId);
+                        customerListEl.appendChild(card);
+                    });
+                }
+            } catch(err) {
+                console.error("Direct Search Error:", err);
+                customerListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Search failed.</p>';
             }
-        }, 400); 
+        }, 500); 
     });
 
     // --- 4. Level 2: Customer Ledger & Products ---
     async function loadCustomerDetail(custId) {
-        if (isOpeningCustomer) return; // FIXED: Prevent Ghost Double-Taps
+        if (isOpeningCustomer) return; 
         isOpeningCustomer = true;
 
         vibrate();
+        
+        // UPGRADED: Critical conditional stops multiple back button pushes!
+        if (screenDetail.classList.contains('hidden-right')) {
+            window.history.pushState({ screen: 'detail' }, '');
+            screenDetail.classList.remove('hidden-right');
+        }
+
         document.getElementById('detail-cust-name').innerText = "Loading...";
         productListEl.innerHTML = '<div class="loader-spinner"></div>';
         
-        window.history.pushState({ screen: 'detail' }, '');
-        screenDetail.classList.remove('hidden-right');
-
         try {
             const docSnap = await getDoc(doc(db, "customers", custId));
             if(!docSnap.exists()) throw new Error("Not found");
@@ -521,7 +535,7 @@
         } catch(e) {
             productListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Error loading details.</p>';
         } finally {
-            isOpeningCustomer = false; // UPGRADED: Release lock only when execution completely finishes
+            isOpeningCustomer = false; // UPGRADED: Lock fully releases ONLY after execution finishes
         }
     }
 
@@ -551,10 +565,8 @@
         }
 
         prods.forEach((p, pIndex) => {
-            // FIX: Ensure math hooks into p.total, NOT p.amount, with fallback for old data
             const total = parseInt(p.total) || parseInt(p.amount) || 0; 
             
-            // DYNAMIC MATH OVERRIDE: Calculate exact paid from array to fix old bugs
             let calcPaid = 0;
             if (p.payments) p.payments.forEach(pay => calcPaid += (parseInt(pay.amount) || 0));
             const paid = calcPaid > 0 ? calcPaid : (parseInt(p.paid) || 0);
@@ -564,16 +576,25 @@
             
             let payHtml = '';
             if(p.payments && p.payments.length > 0) {
+                // UPGRADED: Sort ascending chronologically to perform flawless dynamic math
                 const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
-                                      .sort((a,b) => new Date(b.date) - new Date(a.date));
-                                      
+                                      .sort((a,b) => new Date(a.date) - new Date(b.date));
+                
+                let dynamicPending = total;
                 sortedPayments.forEach(pay => {
+                    let amt = parseInt(pay.amount) || 0;
+                    dynamicPending = Math.max(0, dynamicPending - amt);
+                    pay.displayPending = dynamicPending; // Lock in the dynamic calculation
+                });
+
+                // UPGRADED: Reverse array backward for rendering visually (newest first)
+                sortedPayments.reverse().forEach(pay => {
                     const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
                     payHtml += `
                     <tr style="border-bottom: 1px solid var(--border);">
                         <td style="padding: 12px 10px;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
                         <td style="padding: 12px 10px; color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
-                        <td style="padding: 12px 10px; color:var(--danger); font-weight:700;">${fmt(pay.pendingAfter)}</td>
+                        <td style="padding: 12px 10px; color:var(--danger); font-weight:700;">${fmt(pay.displayPending)}</td>
                         <td style="padding: 12px 10px; text-align:center;">
                             <button class="icon-btn edit" style="background:transparent; padding:4px; box-shadow:none; display:inline-block;" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -687,7 +708,6 @@
         btnSavePayment.disabled = true;
 
         try {
-            // Deep Clone
             let safeProducts = JSON.parse(JSON.stringify(activeCustomer.data.products));
             let targetProd = safeProducts[activeProductIndex];
             if(!targetProd.payments) targetProd.payments = [];
@@ -708,10 +728,7 @@
                 targetProd.payments[activePaymentIndex].method = payMethod.value;
             }
 
-            // --- MASTER RECALCULATION ENGINE (FIXED) ---
             let totalPaidCalculated = 0;
-            
-            // UPGRADED: Force a chronological sort BEFORE math sequence execution
             targetProd.payments.sort((a,b) => new Date(a.date) - new Date(b.date));
 
             targetProd.payments.forEach(p => {
@@ -719,7 +736,6 @@
             });
 
             targetProd.paid = totalPaidCalculated;
-            // FIXED BUG: Using targetProd.total instead of amount (with fallback)
             const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
             targetProd.pending = Math.max(0, safeTotal - totalPaidCalculated);
 
@@ -731,12 +747,11 @@
 
             await updateDoc(activeCustomer.ref, { products: safeProducts });
             
-            // Sync Local Data
             activeCustomer.data.products = safeProducts;
             
             vibrate([30, 50]);
             renderProducts(); 
-            buildSearchDictionaryBackground(); // UPGRADED: Keeps cache fresh silently
+            buildSearchDictionaryBackground();
             window.history.back(); 
 
         } catch (e) {
