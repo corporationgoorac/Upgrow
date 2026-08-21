@@ -48,8 +48,8 @@
     .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; background: var(--bg-color); }
     .screen.hidden { opacity: 0; pointer-events: none; z-index: -1; }
     
-    /* --- Header --- */
-    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 20; position: relative; border-bottom: 1px solid var(--border); }
+    /* --- Header (Hidden for Full Screen Map) --- */
+    .header { padding: 15px 20px; display: none !important; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 20; position: relative; border-bottom: 1px solid var(--border); }
     .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     .agent-dp { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
 
@@ -68,11 +68,11 @@
     .btn-start-route span { font-size: 0.9rem; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
 
     /* --- Live Map Screen --- */
-    #map-container { width: 100%; height: 60vh; position: absolute; top: 0; left: 0; z-index: 1; filter: var(--map-filter, none); }
+    #map-container { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; filter: var(--map-filter, none); }
     @media (prefers-color-scheme: dark) { :root { --map-filter: invert(100%) hue-rotate(180deg) brightness(85%); } }
 
     /* Floating "Recenter" Button */
-    .btn-recenter { position: absolute; top: 80px; right: 15px; z-index: 10; background: var(--surface-card); border: 2px solid var(--border); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); cursor: pointer; color: var(--text-main); }
+    .btn-recenter { position: absolute; top: calc(env(safe-area-inset-top) + 20px); right: 15px; z-index: 10; background: var(--surface-card); border: 2px solid var(--border); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); cursor: pointer; color: var(--text-main); }
     .btn-recenter:active { transform: scale(0.9); }
 
     /* --- Bottom Sheet Routing Engine --- */
@@ -127,7 +127,7 @@
 
   <!-- ================= SCREEN 1: "GOOD MORNING" START ================= -->
   <div id="screen-start" class="screen">
-    <div class="header" style="justify-content: center; padding: 25px 20px;">
+    <div class="header" style="justify-content: center; padding: 25px 20px; display: none !important;">
       <h2 style="font-size: 1.5rem;">Up Field</h2>
     </div>
     
@@ -152,7 +152,7 @@
 
   <!-- ================= SCREEN 2: LIVE UBER MAP & ROUTING ================= -->
   <div id="screen-route" class="screen hidden">
-    <div class="header">
+    <div class="header" style="display: none !important;">
       <h2 style="font-size: 1.1rem;" id="active-line-header">Route</h2>
       <img id="agent-dp" class="agent-dp" src="" onerror="this.style.display='none'">
     </div>
