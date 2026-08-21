@@ -623,6 +623,11 @@
               // Master Batch Execute for 1 item
               await executeMasterApproval([ groupedAgents[activeAgentId].entries.find(e => e.key === pay.key) ]);
               // Animation handled inside executeMasterApproval
+          } else if (type === 'approve_all') {
+              // FIX: Added missing handler here directly
+              const toApprove = groupedAgents[activeAgentId].entries.filter(en => en.status === 'submitted');
+              confirmActionType = null; // Consume action to prevent double execution below
+              await executeMasterApproval(toApprove);
           }
 
       } catch (e) {
@@ -636,9 +641,28 @@
         const ag = groupedAgents[activeAgentId];
         const idx = ag.entries.findIndex(e => e.docId === docId && e.key === key);
         if(idx !== -1) {
+            // --- ADDED FIX: Update internal counters so Level 1 stays synced ---
+            const oldItem = ag.entries[idx];
+            if (action === 'delete') {
+                if(oldItem.status === 'pending') ag.pending--;
+                if(oldItem.status === 'submitted') ag.submitted--;
+                ag.totalAmt -= (parseInt(oldItem.amount) || 0);
+            } else if (action === 'update') {
+                if (updates.status && updates.status !== oldItem.status) {
+                    if(oldItem.status === 'pending') ag.pending--;
+                    if(oldItem.status === 'submitted') ag.submitted--;
+                    if(updates.status === 'pending') ag.pending++;
+                    if(updates.status === 'submitted') ag.submitted++;
+                }
+                if (updates.amount && parseInt(updates.amount) !== parseInt(oldItem.amount)) {
+                    ag.totalAmt += (parseInt(updates.amount) - parseInt(oldItem.amount));
+                }
+            }
+            // -------------------------------------------------------------------
             if(action === 'delete') ag.entries.splice(idx, 1);
             if(action === 'update') ag.entries[idx] = { ...ag.entries[idx], ...updates };
             renderLevel2Items();
+            renderLevel1(); // Ensure Level 1 dashboard syncs instantly
         }
     }
 
@@ -798,9 +822,13 @@
             itemsToApprove.forEach(i => refreshLocalDataAndUI(i.docId, i.key, 'delete'));
             
             setTimeout(() => {
-                window.history.back(); // Close modal
-                if(groupedAgents[activeAgentId].entries.length === 0) {
-                    window.history.back(); // Close Level 2
+                if (document.getElementById('confirm-modal').classList.contains('active')) {
+                    window.history.back(); // Close modal safely
+                }
+                if(groupedAgents[activeAgentId] && groupedAgents[activeAgentId].entries.length === 0) {
+                    if (!document.getElementById('screen-detail').classList.contains('hidden-right')) {
+                        window.history.back(); // Close Level 2 safely
+                    }
                     fetchGlobalLogs(); // Refresh Level 1
                 }
             }, 1800);
