@@ -68,9 +68,8 @@
     .btn-start-route span { font-size: 0.9rem; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
 
     /* --- Live Map Screen --- */
-    #map-container { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; filter: var(--map-filter, none); }
-    @media (prefers-color-scheme: dark) { :root { --map-filter: invert(100%) hue-rotate(180deg) brightness(85%); } }
-
+    #map-container { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; background: var(--bg-color); }
+    
     /* Floating Map Controls */
     .map-controls { position: absolute; top: calc(env(safe-area-inset-top) + 20px); right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
     .btn-map-icon { background: var(--surface-card); border: 2px solid var(--border); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); cursor: pointer; color: var(--text-main); transition: all 0.2s; }
@@ -81,11 +80,15 @@
     .route-panel { position: absolute; bottom: 0; left: 0; width: 100%; height: 35vh; background: var(--surface-card); z-index: 10; border-top-left-radius: 30px; border-top-right-radius: 30px; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transition: height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); display: flex; flex-direction: column; will-change: height; }
     .route-panel.expanded { height: 85vh; }
     
-    .panel-handle-area { padding: 15px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; touch-action: none; }
+    /* Progress Bar Header */
+    .panel-progress-bg { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: rgba(16, 185, 129, 0.1); border-top-left-radius: 30px; border-top-right-radius: 30px; overflow: hidden; }
+    .panel-progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s ease; }
+
+    .panel-handle-area { padding: 15px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; touch-action: none; position: relative; }
     .panel-handle-area:active { cursor: grabbing; }
     .panel-handle { width: 50px; height: 6px; background: var(--border); border-radius: 10px; }
 
-    .panel-content { padding: 0 20px 30px 20px; overflow-y: auto; flex: 1; }
+    .panel-content { padding: 0 20px 30px 20px; overflow-y: auto; flex: 1; position: relative; }
 
     /* --- Sleek Compact "Next Stop" Card --- */
     .next-stop-header { font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
@@ -104,13 +107,23 @@
     .btn-collect:active { transform: scale(0.96); }
 
     /* Mini Cards for Expanded List */
-    .section-title { font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; margin: 25px 0 15px 0; }
-    .mini-card { background: var(--bg-color); border: 1px solid var(--border); padding: 15px; border-radius: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .sticky-filter { position: sticky; top: 0; background: var(--surface-card); z-index: 5; padding: 10px 0; margin-bottom: 5px; }
+    .filter-input { width: 100%; padding: 12px 15px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-weight: 600; outline: none; transition: border-color 0.2s; font-size: 0.95rem; }
+    .filter-input:focus { border-color: var(--primary); }
+
+    .section-title { font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 10px 0; }
+    .mini-card { background: var(--bg-color); border: 1px solid var(--border); padding: 15px; border-radius: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: opacity 0.2s, display 0.2s; }
     .mini-info h4 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
     .mini-info p { font-size: 0.85rem; font-weight: 700; color: var(--warning); }
     
     .mini-actions { display: flex; gap: 8px; align-items: center; }
     .btn-visit-again { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
+
+    /* Jump to Top Button */
+    .btn-jump-top { position: fixed; bottom: 25px; right: 20px; width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); cursor: pointer; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; transform: translateY(20px); }
+    .btn-jump-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .btn-jump-top:active { transform: scale(0.9); }
+    .btn-jump-top svg { width: 24px; height: 24px; stroke-width: 2.5; }
 
     /* Loaders */
     .loader-circle { width: 50px; height: 50px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
@@ -148,7 +161,7 @@
   <!-- ================= SCREEN 2: LIVE UBER MAP & ROUTING ================= -->
   <div id="screen-route" class="screen hidden">
     
-    <!-- Leaflet Map Container (Google Hybrid Layer) -->
+    <!-- Leaflet Map Container -->
     <div id="map-container"></div>
     
     <div class="map-controls">
@@ -162,6 +175,12 @@
 
     <!-- Swipeable Bottom Sheet -->
     <div class="route-panel" id="route-panel">
+        
+        <!-- Advanced Feature: Dynamic Progress Bar -->
+        <div class="panel-progress-bg">
+            <div class="panel-progress-fill" id="route-progress-bar"></div>
+        </div>
+
         <!-- Draggable Handle Area -->
         <div class="panel-handle-area" id="panel-drag-handle">
             <div class="panel-handle"></div>
@@ -173,9 +192,15 @@
                 <!-- Injected via JS -->
             </div>
 
-            <!-- 2. The Expanded List Section (Hidden until pulled up) -->
+            <!-- 2. The Expanded List Section -->
             <div id="expanded-list-section" style="display: none;">
-                <div class="section-title">Up Next</div>
+                
+                <!-- Advanced Feature: Live Route Search -->
+                <div class="sticky-filter">
+                    <input type="text" class="filter-input" id="route-filter" placeholder="Find customer in route...">
+                </div>
+
+                <div class="section-title" id="up-next-title">Up Next (<span id="up-next-count">0</span>)</div>
                 <div id="up-next-list"></div>
 
                 <div class="section-title" id="skipped-title" style="display: none;">Skipped Today</div>
@@ -188,6 +213,12 @@
                 <p style="color:var(--text-sub); font-weight:600;">You have collected or skipped all stops for today.</p>
             </div>
         </div>
+
+        <!-- Advanced Feature: Jump to Top -->
+        <button class="btn-jump-top" id="btn-jump-top" onclick="jumpToTop()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+        </button>
+
     </div>
   </div>
 
@@ -249,7 +280,6 @@
 
     async function checkAgentSchedule() {
         try {
-            // Check if cache exists
             const existingCache = localStorage.getItem(cacheKey);
             if(existingCache) {
                 localRouteData = JSON.parse(existingCache);
@@ -300,7 +330,6 @@
 
             snap.forEach(d => {
                 const c = d.data();
-                
                 let totalPending = 0;
                 if(c.products) {
                     c.products.forEach(p => {
@@ -350,17 +379,14 @@
     // --- 3. The Uber GPS & Math Engine ---
     function startUberEngine() {
         initLeafletMap();
-        pingGPS(); // Initial immediate ping
+        pingGPS(); 
         
-        // Background watch
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(
                 (pos) => updateLocationData(pos.coords.latitude, pos.coords.longitude),
                 (err) => console.warn("Watch GPS Denied.", err),
                 { enableHighAccuracy: true, maximumAge: 10000 }
             );
-            
-            // 10-Second Heartbeat to ensure GPS stays alive
             setInterval(pingGPS, 10000);
         } else {
             recalculateAndRender();
@@ -384,23 +410,18 @@
         recalculateAndRender();
     }
 
-    // Haversine Distance Formula
     function getDistance(lat1, lon1, lat2, lon2) {
         if(!lat1 || !lon1 || !lat2 || !lon2) return 9999;
         const R = 6371; 
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
     }
 
     function recalculateAndRender() {
-        localRouteData.forEach(c => {
-            c.distance = getDistance(agentLocation.lat, agentLocation.lon, c.lat, c.lon);
-        });
+        localRouteData.forEach(c => { c.distance = getDistance(agentLocation.lat, agentLocation.lon, c.lat, c.lon); });
 
         const activeList = localRouteData.filter(c => c.active === true && c.status === 'pending');
         const skippedList = localRouteData.filter(c => c.active === true && c.status === 'skipped');
@@ -408,14 +429,22 @@
         activeList.sort((a, b) => a.distance - b.distance);
         skippedList.sort((a, b) => a.distance - b.distance);
 
+        // Update Progress Bar
+        const totalInitialStops = localRouteData.length;
+        const currentActiveStops = activeList.length + skippedList.length;
+        const completedStops = totalInitialStops - currentActiveStops;
+        const progressPercent = totalInitialStops > 0 ? Math.round((completedStops / totalInitialStops) * 100) : 0;
+        document.getElementById('route-progress-bar').style.width = `${progressPercent}%`;
+
         renderUI(activeList, skippedList);
         updateMapPins(activeList);
     }
 
-    // --- 4. UI Rendering (Sleek Compact Card) ---
+    // --- 4. UI Rendering ---
     function renderUI(activeList, skippedList) {
         const nextStopSection = document.getElementById('next-stop-section');
         const upNextList = document.getElementById('up-next-list');
+        const upNextTitle = document.getElementById('up-next-title');
         const skippedContainer = document.getElementById('skipped-list');
         const skippedTitle = document.getElementById('skipped-title');
         const allDoneMsg = document.getElementById('all-done-msg');
@@ -423,15 +452,18 @@
         if(activeList.length === 0 && skippedList.length === 0) {
             nextStopSection.innerHTML = '';
             upNextList.innerHTML = '';
+            upNextTitle.style.display = 'none';
             skippedContainer.innerHTML = '';
             skippedTitle.style.display = 'none';
             allDoneMsg.style.display = 'block';
             document.getElementById('route-panel').classList.remove('expanded');
-            document.getElementById('route-panel').style.height = ''; // Clear touch physics
+            document.getElementById('route-panel').style.height = ''; 
             return;
         }
         
         allDoneMsg.style.display = 'none';
+        upNextTitle.style.display = activeList.length > 1 ? 'block' : 'none';
+        document.getElementById('up-next-count').innerText = Math.max(0, activeList.length - 1);
 
         // Render Sleek Nearest Customer Card
         if(activeList.length > 0) {
@@ -476,7 +508,7 @@
             const c = activeList[i];
             const distStr = c.distance < 9999 ? `${c.distance.toFixed(1)} km` : "N/A";
             upNextHtml += `
-                <div class="mini-card">
+                <div class="mini-card active-card-item" data-name="${c.name.toLowerCase()}">
                     <div class="mini-info">
                         <h4>${c.name}</h4>
                         <p>${fmt(c.pendingAmount)} • ${distStr}</p>
@@ -489,7 +521,7 @@
                 </div>
             `;
         }
-        upNextList.innerHTML = upNextHtml || '<p style="color:var(--text-sub); font-size:0.85rem;">No other pending stops.</p>';
+        upNextList.innerHTML = upNextHtml;
 
         // Render Skipped List
         if(skippedList.length > 0) {
@@ -497,7 +529,7 @@
             let skipHtml = '';
             skippedList.forEach(c => {
                 skipHtml += `
-                    <div class="mini-card" style="opacity:0.75;">
+                    <div class="mini-card skipped-card-item" data-name="${c.name.toLowerCase()}" style="opacity:0.75;">
                         <div class="mini-info">
                             <h4 style="text-decoration: line-through;">${c.name}</h4>
                             <p style="color:var(--text-sub);">${fmt(c.pendingAmount)}</p>
@@ -511,47 +543,94 @@
             skippedTitle.style.display = 'none';
             skippedContainer.innerHTML = '';
         }
+        
+        // Re-apply current filter if any
+        runLiveFilter();
     }
 
-    // --- 5. Actions & Gestures ---
+    // --- 5. Advanced Interactive Features ---
     
-    // Swipeable Touch Physics for Bottom Sheet
+    // Feature A: Live Route Filter
+    const routeFilter = document.getElementById('route-filter');
+    routeFilter.addEventListener('input', runLiveFilter);
+    function runLiveFilter() {
+        const term = routeFilter.value.toLowerCase().trim();
+        document.querySelectorAll('.active-card-item, .skipped-card-item').forEach(card => {
+            if(term === "" || card.dataset.name.includes(term)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    // Feature B: Jump to Top
+    const panelContent = document.getElementById('panel-content');
+    const btnJumpTop = document.getElementById('btn-jump-top');
+    panelContent.addEventListener('scroll', () => {
+        if(panelContent.scrollTop > 300) {
+            btnJumpTop.classList.add('visible');
+        } else {
+            btnJumpTop.classList.remove('visible');
+        }
+    });
+    window.jumpToTop = () => {
+        vibrate(10);
+        panelContent.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Feature C: Native Pull-to-Collapse Physics
     const panel = document.getElementById('route-panel');
     const dragHandle = document.getElementById('panel-drag-handle');
     let startY = 0;
     let startHeight = 0;
+    let isDraggingContent = false;
 
+    // Handle Dragging
     dragHandle.addEventListener('touchstart', (e) => {
         startY = e.touches[0].clientY;
         startHeight = panel.clientHeight;
-        panel.style.transition = 'none'; // Disable CSS transition for 1:1 finger tracking
+        panel.style.transition = 'none'; 
     }, {passive: true});
-
     dragHandle.addEventListener('touchmove', (e) => {
-        const deltaY = startY - e.touches[0].clientY;
-        const newHeight = startHeight + deltaY;
-        const vh = window.innerHeight;
-        // Limit dragging between 25vh and 90vh
-        if(newHeight > vh * 0.25 && newHeight < vh * 0.9) {
+        const newHeight = startHeight + (startY - e.touches[0].clientY);
+        if(newHeight > window.innerHeight * 0.25 && newHeight < window.innerHeight * 0.9) {
             panel.style.height = newHeight + 'px';
         }
     }, {passive: true});
+    dragHandle.addEventListener('touchend', finalizeDrag);
 
-    dragHandle.addEventListener('touchend', (e) => {
+    // Content Dragging (Only pull down when at the top of scroll)
+    panelContent.addEventListener('touchstart', (e) => {
+        if (panelContent.scrollTop <= 0) {
+            startY = e.touches[0].clientY;
+            startHeight = panel.clientHeight;
+            isDraggingContent = true;
+            panel.style.transition = 'none';
+        }
+    }, {passive: true});
+    panelContent.addEventListener('touchmove', (e) => {
+        if (!isDraggingContent) return;
+        const deltaY = startY - e.touches[0].clientY;
+        if (deltaY < 0) { // Only allow dragging DOWN to collapse
+            panel.style.height = (startHeight + deltaY) + 'px';
+        }
+    }, {passive: true});
+    panelContent.addEventListener('touchend', () => {
+        if(isDraggingContent) { isDraggingContent = false; finalizeDrag(); }
+    });
+
+    function finalizeDrag() {
         panel.style.transition = 'height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1)';
-        const vh = window.innerHeight;
-        
-        // Snap Threshold: If dragged above 50% of screen, expand. Otherwise collapse.
-        if (panel.clientHeight > vh * 0.5) {
+        if (panel.clientHeight > window.innerHeight * 0.55) {
             panel.classList.add('expanded');
-            panel.style.height = ''; // Clear inline height to let CSS take over
             document.getElementById('expanded-list-section').style.display = 'block';
         } else {
             panel.classList.remove('expanded');
-            panel.style.height = ''; 
             document.getElementById('expanded-list-section').style.display = 'none';
         }
-    });
+        panel.style.height = ''; 
+    }
 
     // Manual Click Toggle fallback
     window.toggleRoutePanel = () => {
@@ -589,29 +668,29 @@
     // --- 6. Instant Wake-Up / Visibility Loop ---
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
-            // 1. Re-read Cache (in case entry.html saved a payment)
             const freshCache = localStorage.getItem(cacheKey);
-            if(freshCache) {
-                localRouteData = JSON.parse(freshCache);
-            }
-            // 2. Instant GPS Ping to wake up tracking
+            if(freshCache) localRouteData = JSON.parse(freshCache);
             pingGPS();
         }
     });
 
-    // --- 7. Leaflet Map Engine (Google Hybrid) ---
+    // --- 7. Leaflet Map Engine (Dynamic Theme Natively Rendered) ---
     function initLeafletMap() {
         if(map) return; 
         
         map = L.map('map-container', { zoomControl: false }).setView([agentLocation.lat, agentLocation.lon], 15);
         
-        // UPGRADED: Google Hybrid Layer (Satellite + HD Streets/Labels)
-        L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        // NATIVE DARK MODE DETECTION (Zero CSS Inversion, Pure Professional Tiles)
+        const isDarkTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const tileUrl = isDarkTheme ? 
+            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : // True Dark Mode Vector Map
+            'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';            // Crisp Google Light Road Map
+
+        L.tileLayer(tileUrl, {
             maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            subdomains: isDarkTheme ? ['a', 'b', 'c', 'd'] : ['mt0', 'mt1', 'mt2', 'mt3']
         }).addTo(map);
 
-        // Free Roam Detection
         map.on('dragstart', () => {
             isMapLocked = false;
             document.getElementById('btn-map-lock').classList.remove('locked');
@@ -644,7 +723,7 @@
         });
 
         if(agentMarker) {
-            agentMarker.setLatLng([agentLocation.lat, agentLocation.lon]); // Smooth Glide
+            agentMarker.setLatLng([agentLocation.lat, agentLocation.lon]); 
         } else {
             agentMarker = L.marker([agentLocation.lat, agentLocation.lon], {icon: agentIcon, zIndexOffset: 2000}).addTo(map);
         }
@@ -678,7 +757,6 @@
             }
         });
 
-        // Only snap camera if Map is Locked
         if(isMapLocked && activeList.length > 0) {
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
         }
