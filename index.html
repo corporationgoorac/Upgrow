@@ -270,6 +270,43 @@
 
             if (data) {
                 activeCustomerData = data;
+                
+                // --- NEW OPTIMIZED LOW-READ QUERY (INJECTED WITHOUT REMOVING OLD LINES) ---
+                try {
+                    const logsQuery = query(
+                        collection(db, "daily_logs"), 
+                        where("activeCustomers", "array-contains", rawId) 
+                    );
+                    const logsSnap = await getDocs(logsQuery);
+                    
+                    logsSnap.forEach(d => {
+                        const logData = d.data();
+                        Object.keys(logData).forEach(key => {
+                            if (key.startsWith(rawId + "_")) {
+                                const entry = logData[key];
+                                const pIndex = parseInt(key.split("_")[1]);
+                                
+                                if(entry.status === 'pending' || entry.status === 'submitted') {
+                                    if (activeCustomerData.products && activeCustomerData.products[pIndex]) {
+                                        if (!activeCustomerData.products[pIndex].payments) {
+                                            activeCustomerData.products[pIndex].payments = [];
+                                        }
+                                        activeCustomerData.products[pIndex].payments.push({
+                                            amount: entry.amount,
+                                            date: entry.timestamp,
+                                            status: entry.status, // "pending" or "submitted"
+                                            method: entry.method || entry.type
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                    });
+                } catch (err) {
+                    console.warn("Could not fetch logs:", err);
+                }
+                // --------------------------------------------------------------------------
+
                 renderDashboard();
                 
                 // Seamless Transition
@@ -322,25 +359,50 @@
 
         activeCustomerData.products.forEach((prod, index) => {
             const pTotal = parseInt(prod.total) || parseInt(prod.amount) || 0;
+            
+            // let pPaid = 0; // <--- OLD LINE COMMENTED OUT
+            
+            // if (prod.payments) { // <--- OLD LINE COMMENTED OUT
+            //     prod.payments.forEach(pay => { // <--- OLD LINE COMMENTED OUT
+            //         // Only count successful/paid statuses towards actual paid amount // <--- OLD LINE COMMENTED OUT
+            //         const status = (pay.status || "success").toLowerCase(); // <--- OLD LINE COMMENTED OUT
+            //         if(status === "success" || status === "paid" || status === "completed") { // <--- OLD LINE COMMENTED OUT
+            //             pPaid += (parseInt(pay.amount) || 0); // <--- OLD LINE COMMENTED OUT
+            //         } // <--- OLD LINE COMMENTED OUT
+            //     }); // <--- OLD LINE COMMENTED OUT
+            // } // <--- OLD LINE COMMENTED OUT
+
+            // const pPending = Math.max(0, pTotal - pPaid); // <--- OLD LINE COMMENTED OUT
+            // globalPending += pPending; // <--- OLD LINE COMMENTED OUT
+            // activeProdCount++; // <--- OLD LINE COMMENTED OUT
+
+            // Calculate Progress % // <--- OLD LINE COMMENTED OUT
+            // let progressPercent = pTotal > 0 ? Math.round((pPaid / pTotal) * 100) : 0; // <--- OLD LINE COMMENTED OUT
+            // if(progressPercent > 100) progressPercent = 100; // <--- OLD LINE COMMENTED OUT
+            
+            // --- NEW INJECTED MATH ENGINE ---
             let pPaid = 0;
+            let pProcessing = 0; // <--- NEW: Track pending drafts
             
             if (prod.payments) {
                 prod.payments.forEach(pay => {
-                    // Only count successful/paid statuses towards actual paid amount
                     const status = (pay.status || "success").toLowerCase();
+                    const amt = parseInt(pay.amount) || 0;
                     if(status === "success" || status === "paid" || status === "completed") {
-                        pPaid += (parseInt(pay.amount) || 0);
+                        pPaid += amt;
+                    } else if (status === "pending" || status === "submitted" || status === "processing") {
+                        pProcessing += amt; // <--- NEW: Add to processing
                     }
                 });
             }
 
-            const pPending = Math.max(0, pTotal - pPaid);
+            const pPending = Math.max(0, pTotal - pPaid - pProcessing); // <--- NEW: Deduct both
             globalPending += pPending;
             activeProdCount++;
 
-            // Calculate Progress %
-            let progressPercent = pTotal > 0 ? Math.round((pPaid / pTotal) * 100) : 0;
+            let progressPercent = pTotal > 0 ? Math.round(((pPaid + pProcessing) / pTotal) * 100) : 0; // <--- NEW: Include processing in progress
             if(progressPercent > 100) progressPercent = 100;
+            // ---------------------------------
 
             const card = document.createElement('div');
             card.className = 'product-card';
