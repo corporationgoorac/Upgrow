@@ -71,50 +71,45 @@
     #map-container { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; filter: var(--map-filter, none); }
     @media (prefers-color-scheme: dark) { :root { --map-filter: invert(100%) hue-rotate(180deg) brightness(85%); } }
 
-    /* Floating "Recenter" Button */
-    .btn-recenter { position: absolute; top: calc(env(safe-area-inset-top) + 20px); right: 15px; z-index: 10; background: var(--surface-card); border: 2px solid var(--border); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); cursor: pointer; color: var(--text-main); }
-    .btn-recenter:active { transform: scale(0.9); }
+    /* Floating Map Controls */
+    .map-controls { position: absolute; top: calc(env(safe-area-inset-top) + 20px); right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
+    .btn-map-icon { background: var(--surface-card); border: 2px solid var(--border); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); cursor: pointer; color: var(--text-main); transition: all 0.2s; }
+    .btn-map-icon:active { transform: scale(0.9); }
+    .btn-map-icon.locked { color: #3b82f6; border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
 
-    /* --- Bottom Sheet Routing Engine --- */
-    .route-panel { position: absolute; bottom: 0; left: 0; width: 100%; height: 45vh; background: var(--surface-card); z-index: 10; border-top-left-radius: 30px; border-top-right-radius: 30px; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transition: height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); display: flex; flex-direction: column; }
+    /* --- Bottom Sheet Routing Engine (Swipeable) --- */
+    .route-panel { position: absolute; bottom: 0; left: 0; width: 100%; height: 35vh; background: var(--surface-card); z-index: 10; border-top-left-radius: 30px; border-top-right-radius: 30px; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transition: height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); display: flex; flex-direction: column; will-change: height; }
     .route-panel.expanded { height: 85vh; }
     
-    .panel-handle-area { padding: 15px 0; display: flex; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .panel-handle-area { padding: 15px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; touch-action: none; }
+    .panel-handle-area:active { cursor: grabbing; }
     .panel-handle { width: 50px; height: 6px; background: var(--border); border-radius: 10px; }
 
     .panel-content { padding: 0 20px 30px 20px; overflow-y: auto; flex: 1; }
 
-    /* Next Stop Card (Large) */
-    .next-stop-header { font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    /* --- Sleek Compact "Next Stop" Card --- */
+    .next-stop-header { font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
     .next-stop-header .pulse-dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; animation: pulseLoc 1.5s infinite; }
     @keyframes pulseLoc { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
-    .cust-main-name { font-size: 1.6rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 5px; }
-    .cust-dist-amt { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 15px; }
-    .amt-pill { background: rgba(245, 158, 11, 0.15); color: var(--warning); padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 1.1rem; }
-    .dist-text { color: var(--text-sub); font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 4px; }
+    .cust-main-name { font-size: 1.4rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    .dist-text { color: var(--text-sub); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 4px; }
 
-    /* 4-Action Grid */
-    .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-    .btn-action { background: var(--bg-color); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-main); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: transform 0.1s; text-decoration: none; }
-    .btn-action:active { transform: scale(0.95); background: var(--border); }
-    .btn-action svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; }
-    .btn-action.skip { color: var(--text-sub); }
+    /* Compact Action Icons */
+    .icon-circle { width: 42px; height: 42px; border-radius: 50%; background: var(--bg-color); border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; color: var(--text-main); text-decoration: none; cursor: pointer; transition: transform 0.1s; flex-shrink: 0; }
+    .icon-circle:active { transform: scale(0.9); background: var(--border); }
+    .icon-circle svg { width: 20px; height: 20px; stroke-width: 2.5; }
 
-    .btn-collect { width: 100%; background: var(--primary); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 1.2rem; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); cursor: pointer; transition: transform 0.1s; }
+    .btn-collect { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.15rem; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); cursor: pointer; transition: transform 0.1s; margin-top: 15px; }
     .btn-collect:active { transform: scale(0.96); }
 
     /* Mini Cards for Expanded List */
     .section-title { font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; margin: 25px 0 15px 0; }
     .mini-card { background: var(--bg-color); border: 1px solid var(--border); padding: 15px; border-radius: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-    .mini-info h4 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+    .mini-info h4 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
     .mini-info p { font-size: 0.85rem; font-weight: 700; color: var(--warning); }
     
     .mini-actions { display: flex; gap: 8px; align-items: center; }
-    .icon-circle { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-card); border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; color: var(--text-main); text-decoration: none; cursor: pointer; }
-    .icon-circle:active { transform: scale(0.9); }
-    .icon-circle svg { width: 16px; height: 16px; stroke-width: 2.5; }
-    
     .btn-visit-again { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
 
     /* Loaders */
@@ -152,20 +147,23 @@
 
   <!-- ================= SCREEN 2: LIVE UBER MAP & ROUTING ================= -->
   <div id="screen-route" class="screen hidden">
-    <div class="header" style="display: none !important;">
-      <h2 style="font-size: 1.1rem;" id="active-line-header">Route</h2>
-      <img id="agent-dp" class="agent-dp" src="" onerror="this.style.display='none'">
+    
+    <!-- Leaflet Map Container (Google Hybrid Layer) -->
+    <div id="map-container"></div>
+    
+    <div class="map-controls">
+        <button class="btn-map-icon locked" id="btn-map-lock" onclick="toggleMapLock()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+        </button>
+        <button class="btn-map-icon" onclick="centerMapOnAgent()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+        </button>
     </div>
 
-    <!-- Leaflet Map Container -->
-    <div id="map-container"></div>
-    <button class="btn-recenter" onclick="centerMapOnAgent()">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
-    </button>
-
-    <!-- Expandable Bottom Sheet -->
+    <!-- Swipeable Bottom Sheet -->
     <div class="route-panel" id="route-panel">
-        <div class="panel-handle-area" onclick="toggleRoutePanel()">
+        <!-- Draggable Handle Area -->
+        <div class="panel-handle-area" id="panel-drag-handle">
             <div class="panel-handle"></div>
         </div>
 
@@ -212,6 +210,7 @@
     let map = null;
     let agentMarker = null;
     let customerMarkers = {};
+    let isMapLocked = true; // Controls Auto-Snapping vs Free Roam
 
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const todayStr = daysOfWeek[new Date().getDay()];
@@ -225,7 +224,6 @@
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
-            document.getElementById('agent-dp').src = user.photoURL || '';
             document.getElementById('greeting-text').innerText = getGreeting();
             document.getElementById('date-text').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' });
             
@@ -251,7 +249,7 @@
 
     async function checkAgentSchedule() {
         try {
-            // Check if we ALREADY built the cache today. If so, skip Firebase entirely!
+            // Check if cache exists
             const existingCache = localStorage.getItem(cacheKey);
             if(existingCache) {
                 localRouteData = JSON.parse(existingCache);
@@ -261,7 +259,6 @@
                 return;
             }
 
-            // Otherwise, 1 Read to get today's Line
             const userDoc = await getDoc(doc(db, "users", currentUser.uid));
             if(!userDoc.exists()) throw new Error("Agent profile not found.");
             
@@ -274,7 +271,6 @@
             if(!todayLineId) {
                 document.getElementById('no-route-msg').style.display = 'block';
             } else {
-                // Get Line Styling
                 const lineDoc = await getDoc(doc(db, "lines", todayLineId));
                 if(lineDoc.exists()) todayLineData = lineDoc.data();
                 
@@ -282,7 +278,6 @@
                 btn.style.display = 'flex';
                 btn.className = `btn-start-route ${todayLineData ? (todayLineData.color || 'grad-6') : 'grad-6'}`;
                 document.getElementById('start-line-name').innerText = todayLineData ? todayLineData.name : todayLineId;
-                document.getElementById('active-line-header').innerText = todayLineData ? todayLineData.name : 'Route';
             }
 
         } catch (error) {
@@ -291,7 +286,7 @@
         }
     }
 
-    // --- 2. The Batch Fetch (Only runs once per day) ---
+    // --- 2. The Batch Fetch ---
     window.initializeRouteCache = async () => {
         vibrate();
         document.getElementById('start-ui').style.display = 'none';
@@ -306,7 +301,6 @@
             snap.forEach(d => {
                 const c = d.data();
                 
-                // Calculate Live Pending (Backwards Compatible)
                 let totalPending = 0;
                 if(c.products) {
                     c.products.forEach(p => {
@@ -317,7 +311,6 @@
                     });
                 }
 
-                // Only add if they owe money
                 if(totalPending > 0) {
                     let lat = 0, lon = 0;
                     if(c.location && c.location.includes(',')) {
@@ -333,16 +326,14 @@
                         lat: lat,
                         lon: lon,
                         pendingAmount: totalPending,
-                        status: 'pending', // 'pending' or 'skipped'
-                        active: true       // Set to false by entry.html when paid
+                        status: 'pending', 
+                        active: true       
                     });
                 }
             });
 
-            // Save to offline storage
             localStorage.setItem(cacheKey, JSON.stringify(localRouteData));
             
-            // Transition UI
             document.getElementById('screen-start').classList.add('hidden');
             document.getElementById('screen-route').classList.remove('hidden');
             
@@ -359,30 +350,43 @@
     // --- 3. The Uber GPS & Math Engine ---
     function startUberEngine() {
         initLeafletMap();
+        pingGPS(); // Initial immediate ping
         
-        // Start watching GPS live
+        // Background watch
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(
-                (pos) => {
-                    agentLocation.lat = pos.coords.latitude;
-                    agentLocation.lon = pos.coords.longitude;
-                    updateAgentMarker();
-                    recalculateAndRender(); // Re-sort list based on new GPS
-                },
-                (err) => {
-                    console.warn("GPS Denied or weak. Using default sorting.", err);
-                    recalculateAndRender();
-                },
+                (pos) => updateLocationData(pos.coords.latitude, pos.coords.longitude),
+                (err) => console.warn("Watch GPS Denied.", err),
                 { enableHighAccuracy: true, maximumAge: 10000 }
             );
+            
+            // 10-Second Heartbeat to ensure GPS stays alive
+            setInterval(pingGPS, 10000);
         } else {
             recalculateAndRender();
         }
     }
 
-    // Haversine Distance Formula (Returns Kilometers)
+    function pingGPS() {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => updateLocationData(pos.coords.latitude, pos.coords.longitude),
+                (err) => console.warn("Ping GPS Denied.", err),
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+    }
+
+    function updateLocationData(lat, lon) {
+        agentLocation.lat = lat;
+        agentLocation.lon = lon;
+        updateAgentMarker();
+        recalculateAndRender();
+    }
+
+    // Haversine Distance Formula
     function getDistance(lat1, lon1, lat2, lon2) {
-        if(!lat1 || !lon1 || !lat2 || !lon2) return 9999; // Push bad GPS to bottom
+        if(!lat1 || !lon1 || !lat2 || !lon2) return 9999;
         const R = 6371; 
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -394,16 +398,13 @@
     }
 
     function recalculateAndRender() {
-        // Recalculate distance for every customer
         localRouteData.forEach(c => {
             c.distance = getDistance(agentLocation.lat, agentLocation.lon, c.lat, c.lon);
         });
 
-        // Split into Active and Skipped
         const activeList = localRouteData.filter(c => c.active === true && c.status === 'pending');
         const skippedList = localRouteData.filter(c => c.active === true && c.status === 'skipped');
 
-        // Sort by closest distance
         activeList.sort((a, b) => a.distance - b.distance);
         skippedList.sort((a, b) => a.distance - b.distance);
 
@@ -411,7 +412,7 @@
         updateMapPins(activeList);
     }
 
-    // --- 4. UI Rendering ---
+    // --- 4. UI Rendering (Sleek Compact Card) ---
     function renderUI(activeList, skippedList) {
         const nextStopSection = document.getElementById('next-stop-section');
         const upNextList = document.getElementById('up-next-list');
@@ -426,39 +427,42 @@
             skippedTitle.style.display = 'none';
             allDoneMsg.style.display = 'block';
             document.getElementById('route-panel').classList.remove('expanded');
+            document.getElementById('route-panel').style.height = ''; // Clear touch physics
             return;
         }
         
         allDoneMsg.style.display = 'none';
 
-        // Render Nearest Customer (The Top Card)
+        // Render Sleek Nearest Customer Card
         if(activeList.length > 0) {
             const nearest = activeList[0];
-            const distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km away` : "GPS Unknown";
+            const distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km` : "Unknown";
             const mapLink = `https://maps.google.com/?daddr=${nearest.lat},${nearest.lon}`;
             
             nextStopSection.innerHTML = `
                 <div class="next-stop-header"><div class="pulse-dot"></div> NEXT STOP</div>
-                <div class="cust-main-name">${nearest.name}</div>
-                <div class="cust-dist-amt">
-                    <span class="dist-text"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${distStr}</span>
-                    <span class="amt-pill">${fmt(nearest.pendingAmount)}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1; padding-right: 10px;">
+                        <div class="cust-main-name">${nearest.name}</div>
+                        <div class="dist-text">
+                            <span style="color:var(--primary); font-weight:800; font-size:1.1rem; margin-right:8px;">${fmt(nearest.pendingAmount)}</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${distStr}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <a href="${mapLink}" target="_blank" class="icon-circle" title="Navigate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+                        </a>
+                        <a href="tel:${nearest.phone}" class="icon-circle" title="Call">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#10B981"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </a>
+                        <button class="icon-circle" onclick="window.actionSkip('${nearest.id}')" title="Skip">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-sub)"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
                 </div>
-                
-                <div class="action-grid">
-                    <a href="${mapLink}" target="_blank" class="btn-action">
-                        <svg viewBox="0 0 24 24" fill="none"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg> Navigate
-                    </a>
-                    <a href="tel:${nearest.phone}" class="btn-action">
-                        <svg viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg> Call
-                    </a>
-                    <button class="btn-action skip" onclick="window.actionSkip('${nearest.id}')">
-                        <svg viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Skip
-                    </button>
-                </div>
-                
                 <button class="btn-collect" onclick="window.actionCollect('${nearest.id}')">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg>
                     Collect Payment
                 </button>
             `;
@@ -466,7 +470,7 @@
             nextStopSection.innerHTML = `<div class="next-stop-header" style="color:var(--text-sub);">No active stops remaining. Swipe up to see skipped.</div>`;
         }
 
-        // Render Expanded Up Next List (Skipping the nearest which is already shown)
+        // Render Expanded Up Next List
         let upNextHtml = '';
         for(let i = 1; i < activeList.length; i++) {
             const c = activeList[i];
@@ -478,8 +482,8 @@
                         <p>${fmt(c.pendingAmount)} • ${distStr}</p>
                     </div>
                     <div class="mini-actions">
-                        <a href="tel:${c.phone}" class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></a>
-                        <a href="https://maps.google.com/?daddr=${c.lat},${c.lon}" target="_blank" class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg></a>
+                        <a href="tel:${c.phone}" class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="#10B981"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></a>
+                        <a href="https://maps.google.com/?daddr=${c.lat},${c.lon}" target="_blank" class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg></a>
                         <button class="icon-circle" style="background:var(--primary); color:white; border:none;" onclick="window.actionCollect('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg></button>
                     </div>
                 </div>
@@ -509,11 +513,51 @@
         }
     }
 
-    // --- 5. Actions ---
+    // --- 5. Actions & Gestures ---
+    
+    // Swipeable Touch Physics for Bottom Sheet
+    const panel = document.getElementById('route-panel');
+    const dragHandle = document.getElementById('panel-drag-handle');
+    let startY = 0;
+    let startHeight = 0;
+
+    dragHandle.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        startHeight = panel.clientHeight;
+        panel.style.transition = 'none'; // Disable CSS transition for 1:1 finger tracking
+    }, {passive: true});
+
+    dragHandle.addEventListener('touchmove', (e) => {
+        const deltaY = startY - e.touches[0].clientY;
+        const newHeight = startHeight + deltaY;
+        const vh = window.innerHeight;
+        // Limit dragging between 25vh and 90vh
+        if(newHeight > vh * 0.25 && newHeight < vh * 0.9) {
+            panel.style.height = newHeight + 'px';
+        }
+    }, {passive: true});
+
+    dragHandle.addEventListener('touchend', (e) => {
+        panel.style.transition = 'height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1)';
+        const vh = window.innerHeight;
+        
+        // Snap Threshold: If dragged above 50% of screen, expand. Otherwise collapse.
+        if (panel.clientHeight > vh * 0.5) {
+            panel.classList.add('expanded');
+            panel.style.height = ''; // Clear inline height to let CSS take over
+            document.getElementById('expanded-list-section').style.display = 'block';
+        } else {
+            panel.classList.remove('expanded');
+            panel.style.height = ''; 
+            document.getElementById('expanded-list-section').style.display = 'none';
+        }
+    });
+
+    // Manual Click Toggle fallback
     window.toggleRoutePanel = () => {
         vibrate(15);
-        const panel = document.getElementById('route-panel');
         panel.classList.toggle('expanded');
+        panel.style.height = ''; 
         document.getElementById('expanded-list-section').style.display = panel.classList.contains('expanded') ? 'block' : 'none';
     };
 
@@ -539,72 +583,92 @@
 
     window.actionCollect = (id) => {
         vibrate();
-        // The URL Bridge: Open entry.html and skip search
         window.location.href = `entry.html?custId=${id}`;
     };
 
-    // --- 6. The Perfect Visibility Loop ---
-    // When the agent hits "Back" from entry.html, this fires.
-    // It re-reads the cache. If entry.html set active:false, they vanish instantly!
+    // --- 6. Instant Wake-Up / Visibility Loop ---
     document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && map) {
+        if (!document.hidden) {
+            // 1. Re-read Cache (in case entry.html saved a payment)
             const freshCache = localStorage.getItem(cacheKey);
             if(freshCache) {
                 localRouteData = JSON.parse(freshCache);
-                recalculateAndRender();
             }
+            // 2. Instant GPS Ping to wake up tracking
+            pingGPS();
         }
     });
 
-    // --- 7. Leaflet Map Engine ---
+    // --- 7. Leaflet Map Engine (Google Hybrid) ---
     function initLeafletMap() {
-        if(map) return; // Only init once
+        if(map) return; 
         
-        map = L.map('map-container', { zoomControl: false }).setView([agentLocation.lat, agentLocation.lon], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        map = L.map('map-container', { zoomControl: false }).setView([agentLocation.lat, agentLocation.lon], 15);
+        
+        // UPGRADED: Google Hybrid Layer (Satellite + HD Streets/Labels)
+        L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        }).addTo(map);
 
-        // Fix map rendering when display unhides
+        // Free Roam Detection
+        map.on('dragstart', () => {
+            isMapLocked = false;
+            document.getElementById('btn-map-lock').classList.remove('locked');
+            document.getElementById('btn-map-lock').style.color = 'var(--text-main)';
+            document.getElementById('btn-map-lock').style.borderColor = 'var(--border)';
+            document.getElementById('btn-map-lock').style.background = 'var(--surface-card)';
+        });
+
         setTimeout(() => map.invalidateSize(), 500);
     }
+
+    window.toggleMapLock = () => {
+        vibrate(15);
+        isMapLocked = true;
+        const lockBtn = document.getElementById('btn-map-lock');
+        lockBtn.classList.add('locked');
+        lockBtn.style.color = '#3b82f6';
+        lockBtn.style.borderColor = '#3b82f6';
+        lockBtn.style.background = 'rgba(59, 130, 246, 0.1)';
+        centerMapOnAgent();
+    };
 
     function updateAgentMarker() {
         if(!map) return;
         const agentIcon = L.divIcon({
             className: 'custom-div-icon',
-            html: `<div style="background:#3b82f6; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(59,130,246,0.8); animation: pulseLoc 2s infinite;"></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8]
+            html: `<div style="background:#3b82f6; width:18px; height:18px; border-radius:50%; border:3px solid white; box-shadow:0 0 15px rgba(59,130,246,0.9); animation: pulseLoc 2s infinite;"></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
         });
 
         if(agentMarker) {
-            agentMarker.setLatLng([agentLocation.lat, agentLocation.lon]);
+            agentMarker.setLatLng([agentLocation.lat, agentLocation.lon]); // Smooth Glide
         } else {
-            agentMarker = L.marker([agentLocation.lat, agentLocation.lon], {icon: agentIcon}).addTo(map);
+            agentMarker = L.marker([agentLocation.lat, agentLocation.lon], {icon: agentIcon, zIndexOffset: 2000}).addTo(map);
         }
     }
 
     function updateMapPins(activeList) {
         if(!map) return;
 
-        // Clear old customer markers
         Object.values(customerMarkers).forEach(m => map.removeLayer(m));
         customerMarkers = {};
 
-        // Build bounds to auto-zoom map
         const bounds = L.latLngBounds([agentLocation.lat, agentLocation.lon]);
 
         activeList.forEach((c, index) => {
             if(c.lat && c.lon) {
-                // The absolute closest customer gets a special Green marker
                 const isNearest = index === 0;
-                const color = isNearest ? '#10B981' : '#6b7280';
+                const color = isNearest ? '#10B981' : '#f59e0b';
                 const zIndex = isNearest ? 1000 : 100;
                 
                 const icon = L.divIcon({
                     className: 'custom-div-icon',
-                    html: `<div style="background:${color}; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:bold;">${isNearest ? '1' : ''}</div>`,
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
+                    html: `<div style="background:${color}; width:24px; height:24px; border-radius:50%; border:3px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:800;">${isNearest ? '1' : ''}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
                 });
 
                 const marker = L.marker([c.lat, c.lon], {icon: icon, zIndexOffset: zIndex}).addTo(map);
@@ -614,14 +678,17 @@
             }
         });
 
-        if(activeList.length > 0) {
+        // Only snap camera if Map is Locked
+        if(isMapLocked && activeList.length > 0) {
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
         }
     }
 
     window.centerMapOnAgent = () => {
         vibrate(15);
-        if(map) map.setView([agentLocation.lat, agentLocation.lon], 15);
+        if(map) {
+            map.setView([agentLocation.lat, agentLocation.lon], 16);
+        }
     };
 
   </script>
