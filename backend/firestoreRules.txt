@@ -13,15 +13,21 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    // FIXED: Added exists() check to prevent crash on new user login
     function isAdmin() {
-      return isSignedIn() && (
+      return isSignedIn() 
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && (
         getUserData().isAdmin == true ||
         getUserData().role == 'admin'
       );
     }
 
+    // FIXED: Added exists() check to prevent crash on new user login
     function isAgent() {
-      return isSignedIn() && (
+      return isSignedIn() 
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && (
         getUserData().isAgent == true ||
         getUserData().role == 'agent'
       );
