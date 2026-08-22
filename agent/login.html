@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <!-- Added maximum-scale=1.0 and user-scalable=no to prevent zooming -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- THE FIX: Single dark theme color to force Android's status bar to match the body -->
+  <meta name="theme-color" content="#121212">
+  
+  <!-- Re-linked manifest for proper PWA standalone support -->
+  <link rel="manifest" href="manifest.json">
+  
   <title>Up Grow - Login</title>
   
   <style>
