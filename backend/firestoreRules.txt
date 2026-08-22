@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================================
+    // HELPER FUNCTIONS
+    // ========================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        getUserData().isAdmin == true ||
+        getUserData().role == 'admin'
+      );
+    }
+
+    function isAgent() {
+      return isSignedIn() && (
+        getUserData().isAgent == true ||
+        getUserData().role == 'agent'
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ========================================================
+    // GLOBAL RULES (Public Read & Admin God Mode)
+    // ========================================================
+    match /{document=**} {
+      // 1. Anyone (even unauthenticated visitors) can read all collections and documents
+      allow read: if true;
+
+      // 2. Admin God Mode: Admins have unrestricted write (create, update, delete) access to everything
+      allow write: if isAdmin();
+    }
+
+    // ========================================================
+    // SPECIFIC COLLECTION RULES (Non-Admin Restrictions)
+    // ========================================================
+
+    // --- 1. Users Collection ---
+    match /users/{userId} {
+      // Onboarding: Users can create their own profile, but cannot assign themselves Admin or Agent privileges
+      allow create: if isOwner(userId)
+        && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false)
+        && (!('isAgent' in request.resource.data) || request.resource.data.isAgent == false)
+        && (!('role' in request.resource.data) || (request.resource.data.role != 'admin' && request.resource.data.role != 'agent'));
+
+      // Profile Management: Users can edit their profile info (e.g. name, phone), but cannot edit role/privilege fields
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'isAgent', 'role', 'schedule']);
+    }
+
+    // --- 2. Customers Collection ---
+    match /customers/{customerId} {
+      // Agents can ONLY update the GPS 'location' field; all ledger/balance modifications remain Admin-only
+      allow update: if isAgent()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['location']);
+    }
+
+    // --- 3. Daily Logs Collection ---
+    match /daily_logs/{logId} {
+      // Agents can create, edit, or delete ONLY their own daily collection entries (matching their UID)
+      // Reading other agents' logs is permitted by the global read rule above
+      allow write: if isAgent() && logId.matches('^' + request.auth.uid + '_.*');
+    }
+
+    // --- 4. Master Lines Collection ---
+    match /lines/{lineId} {
+      // Handled by global rules: read is open to all, write is restricted to Admins
+    }
+  }
+}
