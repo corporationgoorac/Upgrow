@@ -205,6 +205,8 @@
       background-color: var(--bg-color);
       position: relative;
       overflow: hidden;
+      /* THE FIX: Prevents iframe content from hiding behind the pinned bottom nav */
+      margin-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
     }
 
     #content-frame {
@@ -216,6 +218,12 @@
 
     /* --- Mobile Bottom Nav --- */
     .bottom-nav {
+      /* THE FIX: Pin to bottom regardless of dynamic viewport height calculation errors */
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      
       display: flex;
       height: var(--nav-height);
       min-height: calc(var(--nav-height) + env(safe-area-inset-bottom));
