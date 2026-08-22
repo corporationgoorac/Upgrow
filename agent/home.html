@@ -350,18 +350,21 @@
             if(existingCache) {
                 localRouteData = JSON.parse(existingCache);
                 
-                // ✅ FIX & AUTO-HEAL: Load the saved route array so the app remembers what route it's on
+                // ✅ STRICT RAM LOGIC: Load the saved route array. If missing, trust RAM and assume empty.
                 const cachedLines = localStorage.getItem(cacheKey + '_lines');
                 if(cachedLines) {
                     todayLineArray = JSON.parse(cachedLines);
                 } else {
                     // 🚨 AUTO-HEAL: If testing an old cache, fetch it from DB so memory isn't blank
-                    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-                    if(userDoc.exists()) {
-                        const raw = (userDoc.data().schedule || {})[todayStr];
-                        todayLineArray = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-                        localStorage.setItem(cacheKey + '_lines', JSON.stringify(todayLineArray));
-                    }
+                    // const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    // if(userDoc.exists()) {
+                    //     const raw = (userDoc.data().schedule || {})[todayStr];
+                    //     todayLineArray = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+                    //     localStorage.setItem(cacheKey + '_lines', JSON.stringify(todayLineArray));
+                    // }
+                    
+                    // ✅ STRICT RAM LOGIC: Trust the RAM completely. No hidden database reads.
+                    todayLineArray = [];
                 }
                 
                 // Show loader while Pre-Flight Hold executes
@@ -721,7 +724,11 @@
             // ✅ THE FIX: Only force the panel closed if this is the FIRST time we hit "All Done"
             if (allDoneMsg.style.display !== 'block') {
                 // Clean UI transition fix for the very last card
-                document.getElementById('route-panel').classList.remove('expanded');
+                // document.getElementById('route-panel').classList.remove('expanded'); // OLD LINE
+                // document.getElementById('route-panel').style.height = ''; // OLD LINE
+                
+                // ✅ RECOMMENDED UX FIX: Auto-expand panel so "Route Complete" screen fits perfectly
+                document.getElementById('route-panel').classList.add('expanded');
                 document.getElementById('route-panel').style.height = ''; 
                 document.getElementById('expanded-list-section').style.display = 'none';
             }
