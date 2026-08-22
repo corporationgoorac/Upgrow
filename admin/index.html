@@ -165,8 +165,6 @@
       flex: 1;
       overflow: hidden;
       position: relative;
-      /* THE FIX: Prevents content from hiding behind the pinned bottom nav */
-      margin-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
     }
 
     /* --- Desktop Sidebar --- */
@@ -302,6 +300,9 @@
       .bottom-nav-inner { width: 100%; } 
       header { background-color: var(--bg-color); border-bottom-color: transparent; } 
       .bottom-nav { background-color: var(--bg-color); border-top-color: transparent; }
+      
+      /* THE FIX: Apply margin-bottom only on mobile devices where the nav is visible */
+      .body-wrapper { margin-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom)); }
     }
 
     .hidden { display: none !important; }
