@@ -349,6 +349,10 @@
             if(existingCache) {
                 localRouteData = JSON.parse(existingCache);
                 
+                // ✅ FIX: Load the saved route array so the app remembers what route it's on
+                const cachedLines = localStorage.getItem(cacheKey + '_lines');
+                if(cachedLines) todayLineArray = JSON.parse(cachedLines);
+                
                 // Show loader while Pre-Flight Hold executes
                 document.getElementById('start-loader').style.display = 'block';
                 document.getElementById('start-ui').style.display = 'none';
@@ -465,6 +469,7 @@
         
         // 1. Wipe local memory completely for today
         localStorage.removeItem(cacheKey);
+        localStorage.removeItem(cacheKey + '_lines'); // ✅ FIX: Clear the old lines memory too
         localRouteData = [];
         
         // 2. Set the internal state to the new assignment
@@ -535,6 +540,9 @@
             });
 
             localStorage.setItem(cacheKey, JSON.stringify(localRouteData));
+            
+            // ✅ FIX: Save the active route array into memory alongside the customers
+            localStorage.setItem(cacheKey + '_lines', JSON.stringify(todayLineArray));
             
             // Execute Enterprise Pre-Flight Hold instead of immediate transition
             executePreFlightHold();
@@ -695,12 +703,16 @@
             upNextTitle.style.display = 'none';
             skippedContainer.innerHTML = '';
             skippedTitle.style.display = 'none';
-            allDoneMsg.style.display = 'block';
             
-            // Clean UI transition fix for the very last card
-            document.getElementById('route-panel').classList.remove('expanded');
-            document.getElementById('route-panel').style.height = ''; 
-            document.getElementById('expanded-list-section').style.display = 'none';
+            // ✅ THE FIX: Only force the panel closed if this is the FIRST time we hit "All Done"
+            if (allDoneMsg.style.display !== 'block') {
+                // Clean UI transition fix for the very last card
+                document.getElementById('route-panel').classList.remove('expanded');
+                document.getElementById('route-panel').style.height = ''; 
+                document.getElementById('expanded-list-section').style.display = 'none';
+            }
+            
+            allDoneMsg.style.display = 'block';
             
             // --- NEW: Trigger Background Smart Check ---
             if (!window.isCheckingBackgroundRoute) {
