@@ -208,6 +208,126 @@
       transform: scale(0.96);
     }
 
+    /* --- Custom Logout Modal (Mobile Bottom Sheet Style) --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: flex-end; /* Bottom sheet behavior on mobile */
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background-color: var(--surface-card);
+      width: 100%;
+      max-width: 450px;
+      padding: 30px 20px 25px;
+      border-radius: 24px 24px 0 0;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    /* Desktop/Tablet Override */
+    @media (min-width: 480px) {
+      .modal-overlay {
+        align-items: center;
+      }
+      .modal-content {
+        border-radius: 20px;
+        transform: translateY(20px) scale(0.95);
+        padding: 30px 25px;
+      }
+      .modal-overlay.active .modal-content {
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0); /* For mobile */
+    }
+
+    .modal-icon {
+      width: 60px;
+      height: 60px;
+      background-color: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .modal-content h3 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: var(--text-main);
+    }
+
+    .modal-content p {
+      color: var(--text-sub);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 25px;
+      padding: 0 10px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 15px;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-cancel {
+      background-color: var(--skeleton-base);
+      color: var(--text-main);
+    }
+
+    .btn-cancel:active {
+      transform: scale(0.96);
+      background-color: var(--border);
+    }
+
+    .btn-confirm {
+      background-color: var(--danger);
+      color: #fff;
+    }
+
+    .btn-confirm:active {
+      transform: scale(0.96);
+      background-color: var(--danger-hover);
+    }
   </style>
 </head>
 <body>
@@ -251,6 +371,21 @@
     Logout of Up Field
   </button>
 
+  <!-- Custom Logout Modal -->
+  <div id="logout-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </div>
+      <h3>Log Out</h3>
+      <p>Are you sure you want to log out of your Up Field account? You will need to sign in again to access your field data.</p>
+      <div class="modal-actions">
+        <button id="modal-btn-cancel" class="modal-btn btn-cancel">Cancel</button>
+        <button id="modal-btn-confirm" class="modal-btn btn-confirm">Yes, Log Out</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
@@ -265,8 +400,14 @@
     const inputEmail = document.getElementById('input-email');
     const btnSave = document.getElementById('btn-save');
     const btnLogout = document.getElementById('btn-logout');
+    
+    // Modal Elements
+    const modalOverlay = document.getElementById('logout-modal-overlay');
+    const modalBtnCancel = document.getElementById('modal-btn-cancel');
+    const modalBtnConfirm = document.getElementById('modal-btn-confirm');
 
     let currentUserUid = null;
+    let isModalOpen = false;
 
     // Haptics
     function vibrate(pattern = 30) {
@@ -348,23 +489,69 @@
       }, 2000);
     });
 
-    // 3. Logout Logic
-    btnLogout.addEventListener('click', async () => {
+    // 3. Custom Modal Logic & Mobile Back Button Support
+    function openModal() {
+      modalOverlay.classList.add('active');
+      isModalOpen = true;
+      // Push state to history so mobile back button can be intercepted
+      history.pushState({ modalOpen: true }, '', document.location.href);
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+      isModalOpen = false;
+    }
+
+    // Listen for hardware back button or browser back
+    window.addEventListener('popstate', (event) => {
+      if (isModalOpen) {
+        closeModal();
+      }
+    });
+
+    // 4. Logout Logic (Triggering Custom Modal)
+    btnLogout.addEventListener('click', () => {
+      vibrate(40);
+      openModal();
+    });
+
+    // Modal Cancel triggers history back (which securely closes the modal via popstate)
+    modalBtnCancel.addEventListener('click', () => {
+      vibrate(20);
+      if (isModalOpen) {
+        history.back();
+      }
+    });
+
+    // Close on clicking outside the modal content
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay && isModalOpen) {
+        history.back();
+      }
+    });
+
+    // Final Confirm Logout Action inside Modal
+    modalBtnConfirm.addEventListener('click', async () => {
       vibrate([50, 50, 50]);
       
-      // Basic confirmation before logging out
-      if(confirm("Are you sure you want to log out?")) {
-        try {
-          // Clear cached images to prevent next user seeing them instantly
-          localStorage.removeItem('upfield_dp'); 
-          
-          await signOut(auth);
-          // Redirect the *parent window* to login, not just the iframe
-          window.parent.location.href = "login.html";
-        } catch (error) {
-          console.error("Error logging out:", error);
-          alert("Error logging out. Please check your internet connection.");
-        }
+      const originalText = modalBtnConfirm.innerText;
+      modalBtnConfirm.innerText = "Logging out...";
+      modalBtnConfirm.disabled = true;
+      
+      try {
+        // Clear cached images to prevent next user seeing them instantly
+        localStorage.removeItem('upfield_dp'); 
+        
+        await signOut(auth);
+        // Redirect the *parent window* to login, not just the iframe
+        window.parent.location.href = "login.html";
+      } catch (error) {
+        console.error("Error logging out:", error);
+        alert("Error logging out. Please check your internet connection.");
+        modalBtnConfirm.innerText = originalText;
+        modalBtnConfirm.disabled = false;
+        // If it fails, simulate closing the modal
+        history.back();
       }
     });
 
