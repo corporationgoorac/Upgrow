@@ -209,7 +209,7 @@
         </div>
 
         <!-- Draggable Handle Area (Vibration Trigger Attached Here) -->
-        <div class="panel-handle-area" id="panel-drag-handle">
+        <div class="panel-handle-area" id="panel-drag-handle" onclick="window.toggleRoutePanel()">
             <div class="panel-handle"></div>
         </div>
 
@@ -337,7 +337,8 @@
 
     function cleanOldCaches() {
         Object.keys(localStorage).forEach(key => {
-            if(key.startsWith('route_data_') && key !== cacheKey) {
+            // ✅ FIX: Protect both the customer cache AND the lines cache from deletion
+            if(key.startsWith('route_data_') && key !== cacheKey && key !== (cacheKey + '_lines')) {
                 localStorage.removeItem(key);
             }
         });
@@ -349,9 +350,19 @@
             if(existingCache) {
                 localRouteData = JSON.parse(existingCache);
                 
-                // ✅ FIX: Load the saved route array so the app remembers what route it's on
+                // ✅ FIX & AUTO-HEAL: Load the saved route array so the app remembers what route it's on
                 const cachedLines = localStorage.getItem(cacheKey + '_lines');
-                if(cachedLines) todayLineArray = JSON.parse(cachedLines);
+                if(cachedLines) {
+                    todayLineArray = JSON.parse(cachedLines);
+                } else {
+                    // 🚨 AUTO-HEAL: If testing an old cache, fetch it from DB so memory isn't blank
+                    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    if(userDoc.exists()) {
+                        const raw = (userDoc.data().schedule || {})[todayStr];
+                        todayLineArray = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+                        localStorage.setItem(cacheKey + '_lines', JSON.stringify(todayLineArray));
+                    }
+                }
                 
                 // Show loader while Pre-Flight Hold executes
                 document.getElementById('start-loader').style.display = 'block';
@@ -460,6 +471,9 @@
             }
         } catch (err) {
             console.warn("Background check failed:", err);
+        } finally {
+            // ✅ FIX: Release the lock so the app can check again on the next GPS tick
+            window.isCheckingBackgroundRoute = false; 
         }
     }
 
