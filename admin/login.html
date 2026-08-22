@@ -67,14 +67,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 0px; /* Removed padding for true edge-to-edge full screen */
+      
+      /* Use dvh for exact mobile height, fallback to vh */
+      height: 100vh;
+      height: 100dvh; 
+      padding: 0px; 
+      
       /* Hide scrollbar for IE, Edge and Firefox */
       -ms-overflow-style: none !important;  
       scrollbar-width: none !important;
-      /* Changed from hidden to auto to allow vertical scrolling on small screens */
-      overflow-y: auto; 
-      overflow-x: hidden;
+      
+      /* THE FIX: Lock the body so the 40px animation doesn't stretch the page */
+      overflow: hidden; 
     }
 
     /* --- Animations --- */
@@ -122,7 +126,9 @@
       background-color: transparent; /* Made transparent to blend with body */
       width: 100%;
       max-width: 500px; /* Increased for PC, keeps it cleanly centered without a box */
-      min-height: 100vh; /* Forces full height on mobile */
+      
+      /* REMOVED: min-height: 100vh (Let the locked body center this naturally) */
+      
       display: flex; /* Added for centering content */
       flex-direction: column; /* Added for vertical stacking */
       justify-content: center; /* Added to vertically center content */
