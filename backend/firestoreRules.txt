@@ -76,6 +76,8 @@ service cloud.firestore {
     // --- 4. Master Lines Collection ---
     match /lines/{lineId} {
       // Handled by global rules: read is open to all, write is restricted to Admins
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
