@@ -38,8 +38,8 @@
         --shadow: 0 8px 30px -5px rgba(0, 0, 0, 0.6);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
-        /* Advanced CSS Filter: Upgraded to look muted, stealthy, and professional */
-        --map-filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(105%) grayscale(25%);
+        /* Advanced CSS Filter: Brightened up with invert(90%) to stop the map from looking too pitch dark */
+        --map-filter: invert(90%) hue-rotate(180deg) brightness(105%) contrast(85%) grayscale(20%);
       }
       
       /* Feed a white background to Leaflet so the invert filter turns it black to fix the splash */
@@ -106,7 +106,8 @@
     .next-stop-header .pulse-dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; animation: pulseLoc 1.5s infinite; }
     @keyframes pulseLoc { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
-    .cust-main-name { font-size: 1.4rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    /* Advanced Flexbox Truncation Fix: Removed max-width entirely, rely on flex min-width: 0 */
+    .cust-main-name { font-size: 1.4rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .dist-text { color: var(--text-sub); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 4px; }
 
     /* Compact Action Icons */
@@ -124,7 +125,10 @@
 
     .section-title { font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 10px 0; }
     .mini-card { background: var(--bg-color); border: 1px solid var(--border); padding: 15px; border-radius: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: opacity 0.2s, display 0.2s; }
-    .mini-info h4 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+    
+    /* Flexbox dynamic truncation wrapper */
+    .mini-info { flex: 1; min-width: 0; padding-right: 10px; }
+    .mini-info h4 { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
     .mini-actions { display: flex; gap: 8px; align-items: center; }
     .btn-visit-again { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
@@ -315,23 +319,16 @@
     // Haptic Feedback Engine
     const vibrate = (ms = 30) => { if(navigator.vibrate) navigator.vibrate(ms); };
 
-    // --- Smart Distance Formatter (Upgraded Anti-Jitter) ---
+    // --- Smart Distance Formatter ---
     function formatDistance(distKm) {
         if (!distKm || distKm >= 9999) return "Unknown";
-        
         if (distKm < 1) {
-            // Convert to raw meters
-            let rawMeters = Math.round(distKm * 1000);
-            
             // Advanced Trick: Round to the nearest 10 to hide GPS drift
+            let rawMeters = Math.round(distKm * 1000);
             let bucketedMeters = Math.round(rawMeters / 10) * 10;
-            
-            // Prevent showing "0 m" if they are standing right on it
             if (bucketedMeters === 0) return "Here"; 
-            
             return bucketedMeters + " m"; 
         }
-        
         return distKm.toFixed(1) + " km"; 
     }
 
@@ -784,10 +781,11 @@
             
             const mapLink = `https://maps.google.com/?daddr=${nearest.lat},${nearest.lon}`;
             
+            // Applied min-width: 0 here to completely fix the long name layout bug for Stop #1
             nextStopSection.innerHTML = `
                 <div class="next-stop-header"><div class="pulse-dot"></div> NEXT STOP</div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="flex: 1; padding-right: 10px;">
+                    <div style="flex: 1; padding-right: 10px; min-width: 0;">
                         <div class="cust-main-name">${nearest.name}</div>
                         <div class="dist-text">
                             <span style="color:var(--primary); font-weight:800; font-size:1.15rem; margin-right:8px; letter-spacing:0.5px;">#1</span>
