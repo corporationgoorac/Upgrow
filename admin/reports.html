@@ -238,7 +238,7 @@
     <button class="btn-full" id="btn-save-payment" onclick="savePayment()">Save Payment</button>
   </div>
 
-  <!-- UPGRADED: Edit Info Modal -->
+  <!-- UPGRADED: Edit Info Modal with GPS Auto-Fetch -->
   <div class="bottom-sheet" id="edit-customer-sheet">
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Edit Info</h3>
@@ -260,7 +260,12 @@
     
     <div class="input-group">
       <label>GPS Location</label>
-      <input type="text" id="edit-cust-loc">
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="edit-cust-loc">
+        <button id="btn-fetch-edit-gps" class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); border-radius: 14px; padding: 0 16px; flex-shrink: 0;" onclick="fetchEditGps()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        </button>
+      </div>
     </div>
     
     <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
@@ -875,6 +880,22 @@
         
         btn.innerText = "Save Changes";
         btn.disabled = false;
+    };
+
+    // --- GPS Fetch for Edit Modal ---
+    window.fetchEditGps = () => {
+        vibrate();
+        const locIn = document.getElementById('edit-cust-loc');
+        const originalVal = locIn.value;
+        locIn.value = "Fetching...";
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                p => locIn.value = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)}`,
+                e => { locIn.value = originalVal; alert("GPS Denied/Error"); }
+            );
+        } else {
+            locIn.value = originalVal; alert("GPS Not Supported");
+        }
     };
 
     // --- 6. Native CSV Exporter ---
