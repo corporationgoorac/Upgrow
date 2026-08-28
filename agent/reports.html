@@ -34,6 +34,8 @@
         --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
+        /* Advanced CSS Filter: Turns bright white Google map into sleek dark dashboard while preserving clarity */
+        --map-filter: invert(92%) hue-rotate(180deg) brightness(95%) contrast(105%);
       }
     }
 
@@ -156,15 +158,19 @@
   <!-- ================= LEVEL 2: CUSTOMER DETAIL ================= -->
   <div id="screen-detail" class="screen hidden-right">
     <div class="header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 10px;">
-      <button class="back-btn icon-btn" onclick="window.history.back()" style="padding-left: 0;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-      </button>
-      <h2 style="font-size: 1.15rem; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="detail-cust-name">Customer</h2>
+      <!-- UPGRADED HEADER LAYOUT -->
+      <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
+        <button class="back-btn icon-btn" onclick="window.history.back()" style="padding-left: 0; flex-shrink: 0; margin-right: 5px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <h2 style="font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0;" id="detail-cust-name">Customer</h2>
+      </div>
+      <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); font-size: 0.85rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; flex-shrink: 0;" onclick="openEditCustomerModal()">Edit Info</button>
     </div>
     
     <div class="screen-content" style="padding-top: 0 !important;">
         <div class="ledger-summary" id="ledger-header" style="border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: invert(100%) hue-rotate(180deg) brightness(85%); opacity: 0.85; pointer-events: none;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: var(--map-filter, none); opacity: 0.85; pointer-events: none;">
                 <!-- Frame holder for dynamic injection -->
                 <div id="ledger-map-container" style="width: 100%; height: 100%;">
                     <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
@@ -175,7 +181,8 @@
             <h3 id="ledger-cust-name-inner">Customer Name</h3>
             <div class="detail-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                <span id="ledger-cust-phone">Loading...</span>
+                <!-- UPGRADED: Anchor tag to launch phone dialer natively -->
+                <a href="#" id="ledger-cust-phone" style="color: inherit; text-decoration: none;">Loading...</a>
             </div>
             <div class="detail-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
@@ -229,7 +236,41 @@
       </select>
     </div>
 
+    <!-- NATIVE HTML ONCLICK -->
     <button class="btn-full" id="btn-save-payment" onclick="savePayment()">Save Payment</button>
+  </div>
+
+  <!-- UPGRADED: Edit Info Modal with GPS Auto-Fetch -->
+  <div class="bottom-sheet" id="edit-customer-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Edit Info</h3>
+    
+    <div class="input-group">
+      <label>Customer ID (Read-only)</label>
+      <input type="text" id="edit-cust-id" readonly style="opacity: 0.7; background: var(--skeleton-base);">
+    </div>
+    
+    <div class="input-group">
+      <label>Customer Name</label>
+      <input type="text" id="edit-cust-name">
+    </div>
+    
+    <div class="input-group">
+      <label>Phone Number</label>
+      <input type="tel" id="edit-cust-phone">
+    </div>
+    
+    <div class="input-group">
+      <label>GPS Location</label>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="edit-cust-loc">
+        <button id="btn-fetch-edit-gps" class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); border-radius: 14px; padding: 0 16px; flex-shrink: 0;" onclick="fetchEditGps()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        </button>
+      </div>
+    </div>
+    
+    <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
   </div>
 
   <script type="module">
@@ -264,7 +305,7 @@
 
     // --- DOM Elements ---
     const customerListEl = document.getElementById('customer-list');
-    const searchResultsListEl = document.getElementById('search-results-list'); 
+    const searchResultsListEl = document.getElementById('search-results-list'); // UPGRADED CONTAINER
     const loadMoreTrigger = document.getElementById('load-more-trigger');
     const paginationLoader = document.getElementById('pagination-loader');
     const searchBar = document.getElementById('search-bar');
@@ -286,6 +327,13 @@
     // ============================================================================
     function closeTopUI() {
         // 1. Modals (Highest Layer)
+        // UPGRADED: Also close edit-customer-sheet seamlessly
+        const editSheet = document.getElementById('edit-customer-sheet');
+        if (editSheet && editSheet.classList.contains('active')) {
+            editSheet.classList.remove('active');
+            modalOverlay.classList.remove('active');
+            return;
+        }
         if (paymentSheet && paymentSheet.classList.contains('active')) {
             paymentSheet.classList.remove('active');
             modalOverlay.classList.remove('active');
@@ -306,7 +354,7 @@
             isSearchMode = false;
             emptyState.style.display = 'none';
             
-            // 0-READ CLOSING: Hide search container, restore existing home DOM instantly
+            // UPGRADED 0-READ CLOSING: Hide search container, restore existing home DOM instantly
             searchResultsListEl.style.display = 'none';
             searchResultsListEl.innerHTML = '';
             customerListEl.style.display = 'block';
@@ -332,7 +380,7 @@
       }
     });
 
-    // RAM Cache Restored. Fetches once in background.
+    // UPGRADED: RAM Cache Restored. Fetches once in background.
     async function buildSearchDictionaryBackground() {
         try {
             const snap = await getDocs(collection(db, "customers"));
@@ -423,7 +471,7 @@
         observer.observe(loadMoreTrigger);
     }
 
-    // --- 3. Instant Live Search Engine (RAM CACHE + 0-READ CLOSING) ---
+    // --- 3. Instant Live Search Engine (UPGRADED TO RAM CACHE + 0-READ CLOSING) ---
     window.openSearch = () => {
         vibrate();
         window.history.pushState({ panel: 'search' }, ''); 
@@ -458,7 +506,7 @@
             let matchedNames = [];
             let matchedIDs = [];
 
-            // 0-Read instant filtering from background memory
+            // UPGRADED: 0-Read instant filtering from background memory
             for(let c of localSearchCache) {
                 if(matchedNames.length < 10 && c.name.includes(term)) matchedNames.push(c);
                 else if(matchedIDs.length < 10 && c.id.includes(term)) matchedIDs.push(c);
@@ -513,7 +561,11 @@
             
             document.getElementById('detail-cust-name').innerText = c.name;
             document.getElementById('ledger-cust-name-inner').innerText = c.name;
+            
+            // UPGRADED: Set the dialer link instead of just static text
             document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
+            document.getElementById('ledger-cust-phone').href = c.phone ? 'tel:' + c.phone : '#';
+            
             document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
 
             const mapParent = document.getElementById('ledger-map-container');
@@ -522,8 +574,7 @@
                 const lat = parseFloat(parts[0].trim());
                 const lon = parseFloat(parts[1].trim());
                 if (!isNaN(lat) && !isNaN(lon)) {
-                    const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
-                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"></iframe>`;
+                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
                 }
             } else {
                 mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
@@ -593,7 +644,7 @@
                         <td style="padding: 12px 10px; color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
                         <td style="padding: 12px 10px; color:var(--danger); font-weight:700;">${fmt(pay.displayPending)}</td>
                         <td style="padding: 12px 10px; text-align:center;">
-                            <button class="icon-btn edit" style="background:transparent; padding:4px; box-shadow:none; display:none;" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
+                            <button class="icon-btn edit" style="background:transparent; padding:4px; box-shadow:none; display:inline-block;" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             </button>
                         </td>
@@ -611,6 +662,9 @@
                     <div class="prod-actions" style="display:flex; gap:10px;">
                         <button class="btn-circle btn-csv" onclick="window.downloadCSV(${pIndex})">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        </button>
+                        <button class="btn-circle btn-add" onclick="window.openAddPayment(${pIndex})">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
                 </div>
@@ -752,6 +806,96 @@
         }
         btnSavePayment.innerText = "Save Payment";
         btnSavePayment.disabled = false;
+    };
+
+    // --- UPGRADED: Edit Info Modal Engine ---
+    window.openEditCustomerModal = () => {
+        if (!activeCustomer) return;
+        vibrate();
+        const c = activeCustomer.data;
+        
+        document.getElementById('edit-cust-id').value = activeCustomer.id;
+        document.getElementById('edit-cust-name').value = c.name || '';
+        document.getElementById('edit-cust-phone').value = c.phone || '';
+        document.getElementById('edit-cust-loc').value = c.location || '';
+        
+        window.history.pushState({ modal: 'edit-customer' }, '');
+        modalOverlay.classList.add('active');
+        document.getElementById('edit-customer-sheet').classList.add('active');
+    };
+
+    window.saveCustomerEdit = async () => {
+        vibrate();
+        const btn = document.getElementById('btn-save-cust');
+        const newName = document.getElementById('edit-cust-name').value.trim();
+        const newPhone = document.getElementById('edit-cust-phone').value.trim();
+        const newLoc = document.getElementById('edit-cust-loc').value.trim();
+
+        if (!newName) return alert("Name is required");
+
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+
+        try {
+            await updateDoc(activeCustomer.ref, {
+                name: newName,
+                phone: newPhone,
+                location: newLoc
+            });
+
+            // Update Local State synchronously for instantly smooth UX
+            activeCustomer.data.name = newName;
+            activeCustomer.data.phone = newPhone;
+            activeCustomer.data.location = newLoc;
+
+            // Update UI
+            document.getElementById('detail-cust-name').innerText = newName;
+            document.getElementById('ledger-cust-name-inner').innerText = newName;
+            
+            document.getElementById('ledger-cust-phone').innerText = newPhone || 'No Phone';
+            document.getElementById('ledger-cust-phone').href = newPhone ? 'tel:' + newPhone : '#';
+            
+            document.getElementById('ledger-cust-loc').innerText = newLoc || 'No Location';
+            
+            const mapParent = document.getElementById('ledger-map-container');
+            if (newLoc && newLoc.includes(',')) {
+                const parts = newLoc.split(',');
+                const lat = parseFloat(parts[0].trim());
+                const lon = parseFloat(parts[1].trim());
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
+                }
+            } else {
+                mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
+            }
+
+            // Trigger quiet sync of search list cache in the background
+            buildSearchDictionaryBackground(); 
+            
+            vibrate([30, 50]);
+            window.history.back(); // Invokes popstate securely
+        } catch(e) {
+            alert("Failed to save: " + e.message);
+        }
+        
+        btn.innerText = "Save Changes";
+        btn.disabled = false;
+    };
+
+    // --- GPS Fetch for Edit Modal ---
+    window.fetchEditGps = () => {
+        vibrate();
+        const locIn = document.getElementById('edit-cust-loc');
+        const originalVal = locIn.value;
+        locIn.value = "Fetching...";
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                p => locIn.value = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)}`,
+                e => { locIn.value = originalVal; alert("GPS Denied/Error"); }
+            );
+        } else {
+            locIn.value = originalVal; alert("GPS Not Supported");
+        }
     };
 
     // --- 6. Native CSV Exporter ---
