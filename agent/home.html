@@ -38,9 +38,8 @@
         --shadow: 0 8px 30px -5px rgba(0, 0, 0, 0.6);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
-        
-        /* THE BLACK CRUSH CURE: Contrast lowered and brightness raised to turn the pitch-black void into a premium slate-gray */
-        --map-filter: invert(100%) hue-rotate(180deg) brightness(115%) contrast(80%) grayscale(20%);
+        /* Advanced CSS Filter: Upgraded to look muted, stealthy, and professional */
+        --map-filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(105%) grayscale(25%);
       }
       
       /* Feed a white background to Leaflet so the invert filter turns it black to fix the splash */
@@ -248,6 +247,11 @@
                 <h3 style="font-size:1.5rem; font-weight:800; color:var(--primary); margin-bottom:10px;">Route Complete!</h3>
                 <p style="color:var(--text-sub); font-weight:600; margin-bottom:25px;">You have collected or skipped all stops for today.</p>
                 
+                <!-- <button class="btn-check-route-animated" onclick="window.checkForNewRoute()"> --> <!-- OLD LINE COMMENTED OUT -->
+                    <!-- Check for New Route --> <!-- OLD LINE COMMENTED OUT -->
+                    <!-- <div class="shimmer-sweep"></div> --> <!-- OLD LINE COMMENTED OUT -->
+                <!-- </button> --> <!-- OLD LINE COMMENTED OUT -->
+                
                 <!-- NEW: Dynamic Enterprise Smart Check Container -->
                 <div id="dynamic-new-route-container"></div>
             </div>
@@ -316,13 +320,13 @@
         if (!distKm || distKm >= 9999) return "Unknown";
         
         if (distKm < 1) {
-            // Convert to raw exact meters
+            // Convert to raw meters
             let rawMeters = Math.round(distKm * 1000);
             
             // Advanced Trick: Round to the nearest 10 to hide GPS drift
             let bucketedMeters = Math.round(rawMeters / 10) * 10;
             
-            // Prevent showing "0 m" if they are right on it
+            // Prevent showing "0 m" if they are standing right on it
             if (bucketedMeters === 0) return "Here"; 
             
             return bucketedMeters + " m"; 
@@ -370,6 +374,14 @@
                 if(cachedLines) {
                     todayLineArray = JSON.parse(cachedLines);
                 } else {
+                    // 🚨 AUTO-HEAL: If testing an old cache, fetch it from DB so memory isn't blank
+                    // const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    // if(userDoc.exists()) {
+                    //     const raw = (userDoc.data().schedule || {})[todayStr];
+                    //     todayLineArray = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+                    //     localStorage.setItem(cacheKey + '_lines', JSON.stringify(todayLineArray));
+                    // }
+                    
                     // ✅ STRICT RAM LOGIC: Trust the RAM completely. No hidden database reads.
                     todayLineArray = [];
                 }
@@ -388,6 +400,7 @@
             const schedule = userDoc.data().schedule || {};
             
             // --- INJECTED ARRAY SUPPORT LOGIC ---
+            // todayLineId = schedule[todayStr]; // <--- OLD LINE COMMENTED OUT
             const rawSchedule = schedule[todayStr];
             todayLineArray = Array.isArray(rawSchedule) ? rawSchedule : (rawSchedule ? [rawSchedule] : []);
             // ------------------------------------
@@ -395,6 +408,7 @@
             document.getElementById('start-loader').style.display = 'none';
             document.getElementById('start-ui').style.display = 'flex';
 
+            // if(!todayLineId) { // <--- OLD LINE COMMENTED OUT
             if(todayLineArray.length === 0) { // <--- NEW ARRAY CHECK
                 document.getElementById('no-route-msg').style.display = 'block';
                 document.getElementById('btn-start').style.display = 'none'; // Ensure hidden if no route
@@ -517,6 +531,8 @@
         document.getElementById('start-loader').style.display = 'block';
 
         try {
+            // const q = query(collection(db, "customers"), where("lineId", "==", todayLineId)); // <--- OLD LINE COMMENTED OUT
+            
             // --- NEW: Firestore 'in' Query supports up to 10 array items ---
             if(todayLineArray.length === 0) throw new Error("No array found");
             const q = query(collection(db, "customers"), where("lineId", "in", todayLineArray));
@@ -726,6 +742,9 @@
             
             // ✅ THE FIX: Only force the panel closed if this is the FIRST time we hit "All Done"
             if (allDoneMsg.style.display !== 'block') {
+                // Clean UI transition fix for the very last card
+                // document.getElementById('route-panel').classList.remove('expanded'); // OLD LINE
+                // document.getElementById('route-panel').style.height = ''; // OLD LINE
                 
                 // ✅ RECOMMENDED UX FIX: Auto-expand panel so "Route Complete" screen fits perfectly
                 document.getElementById('route-panel').classList.add('expanded');
@@ -759,7 +778,8 @@
             if (window.isGpsSearching) {
                 distStr = `<span style="opacity: 0.7;">Locating GPS...</span>`;
             } else {
-                distStr = formatDistance(nearest.distance);
+                // distStr = nearest.distance < 9999 ? `${nearest.distance.toFixed(1)} km` : "Unknown"; // <--- OLD LINE COMMENTED OUT
+                distStr = formatDistance(nearest.distance); // <--- NEW SMART FORMATTER
             }
             
             const mapLink = `https://maps.google.com/?daddr=${nearest.lat},${nearest.lon}`;
@@ -803,7 +823,8 @@
             if (window.isGpsSearching) {
                 distStr = "Locating GPS...";
             } else {
-                distStr = formatDistance(c.distance);
+                // distStr = c.distance < 9999 ? `${c.distance.toFixed(1)} km` : "N/A"; // <--- OLD LINE COMMENTED OUT
+                distStr = formatDistance(c.distance); // <--- NEW SMART FORMATTER
             }
             
             const stopNum = i + 1; // Dynamic Queue Math
