@@ -459,8 +459,7 @@
           
           // Attach Click Event
           if(liveBalance > 0) {
-             // Explicitly attached to window to prevent ReferenceErrors in Strict ES Modules
-             card.onclick = () => window.openPaymentSheet(prod.name || 'Unnamed Product', liveBalance, index);
+             card.onclick = () => openPaymentSheet(prod.name || 'Unnamed Product', liveBalance, index);
              card.style.border = "2px solid rgba(16, 185, 129, 0.2)";
           } else {
              card.style.opacity = '0.6';
