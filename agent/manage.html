@@ -60,6 +60,31 @@
     @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
     @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
 
+    /* --- Skeleton Loading System --- */
+    @keyframes skeletonLoading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-active {
+      color: transparent !important;
+      background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%) !important;
+      background-size: 200% 100% !important;
+      animation: skeletonLoading 1.5s infinite !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+      pointer-events: none !important;
+      user-select: none !important;
+    }
+    
+    .skeleton-active::placeholder { 
+      color: transparent !important; 
+    }
+    
+    .skeleton-active svg { 
+      opacity: 0 !important; 
+    }
+
     /* --- Profile Header Area --- */
     .profile-header {
       display: flex;
@@ -80,6 +105,7 @@
       margin-bottom: 15px;
       background-color: var(--bg-color);
       box-shadow: var(--shadow);
+      overflow: hidden;
     }
 
     .avatar {
@@ -335,38 +361,39 @@
   <!-- Profile Header -->
   <div class="profile-header">
     <div class="avatar-wrapper">
+      <div id="dp-skeleton" class="skeleton-active" style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; z-index:2;"></div>
       <img id="profile-pic" class="avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzEwQjk4MSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDkwIEMyMCA2MCA4MCA2MCA4MCA5MCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==" alt="Profile" referrerpolicy="no-referrer">
     </div>
-    <h2 id="display-name">Loading...</h2>
-    <p id="display-email">...</p>
-    <div class="role-badge">Field Agent</div>
+    <h2 id="display-name" class="skeleton-active" style="border-radius: 8px; min-width: 180px;">Loading...</h2>
+    <p id="display-email" class="skeleton-active" style="border-radius: 6px; min-width: 150px; margin-top: 4px;">...</p>
+    <div id="role-badge" class="role-badge skeleton-active">Field Agent</div>
   </div>
 
   <!-- Settings Form -->
   <div class="card">
     <div class="input-group">
       <label for="input-name">Full Name</label>
-      <input type="text" id="input-name" placeholder="Enter your full name">
+      <input type="text" id="input-name" class="skeleton-active" placeholder="Enter your full name">
     </div>
 
     <div class="input-group">
       <label for="input-phone">Mobile Number</label>
-      <input type="tel" id="input-phone" placeholder="e.g. +91 9876543210">
+      <input type="tel" id="input-phone" class="skeleton-active" placeholder="e.g. +91 9876543210">
     </div>
 
     <div class="input-group">
       <label for="input-email">Email Address (Read Only)</label>
-      <input type="email" id="input-email" disabled>
+      <input type="email" id="input-email" class="skeleton-active" disabled>
     </div>
 
-    <button id="btn-save" class="btn-full btn-save">
+    <button id="btn-save" class="btn-full btn-save skeleton-active">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
       Save Changes
     </button>
   </div>
 
   <!-- Logout Button -->
-  <button id="btn-logout" class="btn-full btn-logout">
+  <button id="btn-logout" class="btn-full btn-logout skeleton-active">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
     Logout of Up Field
   </button>
@@ -419,6 +446,13 @@
       if (user) {
         currentUserUid = user.uid;
         
+        // Remove Auth-level skeletons immediately
+        document.getElementById('display-email').classList.remove('skeleton-active');
+        document.getElementById('input-email').classList.remove('skeleton-active');
+        document.getElementById('role-badge').classList.remove('skeleton-active');
+        document.getElementById('btn-logout').classList.remove('skeleton-active');
+        document.getElementById('dp-skeleton').style.display = 'none';
+        
         // Load Google Profile Picture if available
         if (user.photoURL) {
           profilePic.src = user.photoURL;
@@ -445,6 +479,13 @@
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
+          displayName.innerText = "Agent";
+        } finally {
+          // Remove Firestore-level skeletons
+          document.getElementById('display-name').classList.remove('skeleton-active');
+          document.getElementById('input-name').classList.remove('skeleton-active');
+          document.getElementById('input-phone').classList.remove('skeleton-active');
+          document.getElementById('btn-save').classList.remove('skeleton-active');
         }
       }
     });
