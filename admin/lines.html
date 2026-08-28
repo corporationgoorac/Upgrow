@@ -235,11 +235,11 @@
 
       <h3 id="ledger-cust-name">Customer Name</h3>
       <div class="detail-row">
-        <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-        <span id="ledger-cust-phone">Loading...</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+        <a href="#" id="ledger-cust-phone" style="color: inherit; text-decoration: none;">Loading...</a>
       </div>
       <div class="detail-row">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
         <span id="ledger-cust-loc">Loading...</span>
       </div>
       <div class="detail-row" style="margin-top: 15px;">
@@ -392,7 +392,7 @@
     <div class="input-group">
       <label>GPS Location</label>
       <div style="display:flex; gap:10px;">
-        <input type="text" id="cust-loc" placeholder="Auto-fetching..." readonly>
+        <input type="text" id="cust-loc" placeholder="Tap icon to auto-fetch or enter coords">
         <button class="icon-btn add" id="btn-fetch-gps"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
       </div>
     </div>
@@ -626,13 +626,14 @@
     document.getElementById('btn-fetch-gps').onclick = () => {
       vibrate();
       const locIn = document.getElementById('cust-loc');
+      const originalVal = locIn.value;
       locIn.value = "Fetching...";
       if(navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           p => locIn.value = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)}`,
-          e => locIn.value = "GPS Denied/Error"
+          e => { locIn.value = originalVal || ""; customAlert("GPS Denied/Error", "Error"); }
         );
-      } else locIn.value = "Not Supported";
+      } else { locIn.value = originalVal || ""; customAlert("GPS Not Supported", "Error"); }
     };
 
     // --- Skeletons ---
@@ -868,7 +869,7 @@
           html += `
             <div class="customer-card" onclick="openLedgerView('${c.id}')">
               <div class="cust-top">
-                <div class="cust-info"><h3>${c.name}</h3><p>${c.id} • ${c.phone || 'No Phone'}</p></div>
+                <div class="cust-info"><h3>${c.name}</h3><p>${c.id} • <a href="tel:${c.phone}" style="color: inherit; text-decoration: none;" onclick="event.stopPropagation();">${c.phone || 'No Phone'}</a></p></div>
                 <div class="actions-wrap">
                   <button class="icon-btn add" onclick="event.stopPropagation(); openAddProductModal('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
                   <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
@@ -962,6 +963,7 @@
 
         document.getElementById('ledger-cust-name').innerText = c.name;
         document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
+        document.getElementById('ledger-cust-phone').href = c.phone ? 'tel:' + c.phone : '#';
         document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
 
         // UPGRADED: Destroy and rebuild iframe to completely bypass the browser history trap
