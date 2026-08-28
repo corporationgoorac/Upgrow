@@ -34,6 +34,8 @@
         --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
+        /* Advanced CSS Filter: Turns bright white Google map into sleek dark dashboard while preserving clarity */
+        --map-filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%);
       }
     }
 
@@ -168,7 +170,7 @@
     
     <div class="screen-content" style="padding-top: 0 !important;">
         <div class="ledger-summary" id="ledger-header" style="border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: invert(100%) hue-rotate(180deg) brightness(85%); opacity: 0.85; pointer-events: none;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: var(--map-filter, none); opacity: 0.85; pointer-events: none;">
                 <!-- Frame holder for dynamic injection -->
                 <div id="ledger-map-container" style="width: 100%; height: 100%;">
                     <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
@@ -573,7 +575,7 @@
                 const lon = parseFloat(parts[1].trim());
                 if (!isNaN(lat) && !isNaN(lon)) {
                     const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
-                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"></iframe>`;
+                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
                 }
             } else {
                 mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
@@ -863,7 +865,7 @@
                 const lon = parseFloat(parts[1].trim());
                 if (!isNaN(lat) && !isNaN(lon)) {
                     const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
-                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"></iframe>`;
+                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
                 }
             } else {
                 mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
