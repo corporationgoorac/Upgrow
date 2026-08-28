@@ -311,38 +311,16 @@
     // Haptic Feedback Engine
     const vibrate = (ms = 30) => { if(navigator.vibrate) navigator.vibrate(ms); };
 
-    // --- Smart Distance Formatter (UPGRADED WITH ENTERPRISE RAM HYSTERESIS) ---
-    function formatDistance(distKm, customerId) {
+    // --- Smart Distance Formatter (Upgraded Anti-Jitter) ---
+    function formatDistance(distKm) {
         if (!distKm || distKm >= 9999) return "Unknown";
         
         if (distKm < 1) {
-            // 1. Convert to raw exact meters
+            // Convert to raw exact meters
             let rawMeters = Math.round(distKm * 1000);
             
-            // 2. Round to the nearest 10 for clean UI
+            // Advanced Trick: Round to the nearest 10 to hide GPS drift
             let bucketedMeters = Math.round(rawMeters / 10) * 10;
-            
-            // 3. ADVANCED STICKY RAM ENGINE (Prevents 10m/20m UI twitching)
-            if (customerId) {
-                const targetCust = localRouteData.find(c => c.id === customerId);
-                if (targetCust) {
-                    // If we have a previously saved UI state in RAM...
-                    if (targetCust.stickyMeters !== undefined) {
-                        // Calculate how far they actually drifted from the locked number
-                        const drift = Math.abs(rawMeters - targetCust.stickyMeters);
-                        
-                        // Strict Gatekeeper: Only update if they undeniably moved 15+ meters away
-                        if (drift < 15) {
-                            bucketedMeters = targetCust.stickyMeters; // Keep UI Locked
-                        } else {
-                            targetCust.stickyMeters = bucketedMeters; // Set New Lock
-                        }
-                    } else {
-                        // First time seeing this customer, create the lock in RAM
-                        targetCust.stickyMeters = bucketedMeters; 
-                    }
-                }
-            }
             
             // Prevent showing "0 m" if they are right on it
             if (bucketedMeters === 0) return "Here"; 
@@ -781,8 +759,7 @@
             if (window.isGpsSearching) {
                 distStr = `<span style="opacity: 0.7;">Locating GPS...</span>`;
             } else {
-                // UPDATE: Feeding the customer ID into the RAM engine
-                distStr = formatDistance(nearest.distance, nearest.id);
+                distStr = formatDistance(nearest.distance);
             }
             
             const mapLink = `https://maps.google.com/?daddr=${nearest.lat},${nearest.lon}`;
@@ -826,8 +803,7 @@
             if (window.isGpsSearching) {
                 distStr = "Locating GPS...";
             } else {
-                // UPDATE: Feeding the customer ID into the RAM engine
-                distStr = formatDistance(c.distance, c.id);
+                distStr = formatDistance(c.distance);
             }
             
             const stopNum = i + 1; // Dynamic Queue Math
