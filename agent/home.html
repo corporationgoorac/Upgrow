@@ -38,14 +38,22 @@
         --shadow: 0 8px 30px -5px rgba(0, 0, 0, 0.6);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
-        /* Advanced CSS Filter: Turns bright white Google map into sleek dark dashboard while preserving clarity */
-        --map-filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%);
+        /* Advanced CSS Filter: Upgraded to look muted, stealthy, and professional */
+        --map-filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(105%) grayscale(25%);
+      }
+      
+      /* Feed a white background to Leaflet so the invert filter turns it black to fix the splash */
+      .leaflet-container {
+          background-color: #ffffff !important; 
       }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
     ::-webkit-scrollbar { display: none !important; }
     body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; }
+
+    /* Fixes the white splash in Light Mode by matching Google Maps empty gray */
+    .leaflet-container { background-color: #e5e3df !important; }
 
     /* --- Screen Management --- */
     .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; background: var(--bg-color); }
@@ -307,13 +315,24 @@
     // Haptic Feedback Engine
     const vibrate = (ms = 30) => { if(navigator.vibrate) navigator.vibrate(ms); };
 
-    // --- Smart Distance Formatter ---
+    // --- Smart Distance Formatter (Upgraded Anti-Jitter) ---
     function formatDistance(distKm) {
         if (!distKm || distKm >= 9999) return "Unknown";
+        
         if (distKm < 1) {
-            return Math.round(distKm * 1000) + " m"; // Shows as 350 m
+            // Convert to raw meters
+            let rawMeters = Math.round(distKm * 1000);
+            
+            // Advanced Trick: Round to the nearest 10 to hide GPS drift
+            let bucketedMeters = Math.round(rawMeters / 10) * 10;
+            
+            // Prevent showing "0 m" if they are standing right on it
+            if (bucketedMeters === 0) return "Here"; 
+            
+            return bucketedMeters + " m"; 
         }
-        return distKm.toFixed(1) + " km"; // Shows as 2.4 km
+        
+        return distKm.toFixed(1) + " km"; 
     }
 
     // --- 1. Initialization & Auth ---
@@ -1032,7 +1051,8 @@
     function initLeafletMap() {
         if(map) return; 
         
-        map = L.map('map-container', { zoomControl: false }).setView([agentLocation.lat, agentLocation.lon], 15);
+        // Advanced Trick: keepBuffer added to pre-load tiles off screen to fix splash
+        map = L.map('map-container', { zoomControl: false, keepBuffer: 3 }).setView([agentLocation.lat, agentLocation.lon], 15);
         
         // STANDARD GOOGLE ROAD TILES 
         // Note: The CSS `--map-filter` handles turning this into Dark Mode for night view
