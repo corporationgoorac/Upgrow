@@ -4,9 +4,7 @@
   "description": "Agent Field Portal for Route and Collection Management",
   "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#121212",
-  "theme_color": "#121212",
+  "orientation": "portrait-primary", 
   "categories": [
     "business",
     "productivity"
