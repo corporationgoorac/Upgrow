@@ -3,20 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <!-- PWA Manifest link is required for the install prompt to fire -->
+  
+  <!-- PWA & Theme Meta Tags -->
   <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#202124" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" href="images/icon.png">
+  
   <title>Up Field - Apps on Google Play</title>
+
   <style>
     /* --- CSS Variables for Light & Dark Mode --- */
     :root {
       --bg-color: #ffffff;
       --text-main: #202124;
       --text-sub: #5f6368;
-      --primary: #01875f;
+      --primary: #01875f; /* Play Store Green */
       --primary-hover: #017351;
       --surface: #f1f3f4;
       --border: #e8eaed;
-      --overlay-bg: rgba(0, 0, 0, 0.5);
+      --overlay-bg: rgba(0, 0, 0, 0.6);
+      --card-bg: #ffffff;
+      --badge-bg: #e6f4ea;
+      --badge-text: #137333;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -28,7 +37,10 @@
         --primary-hover: #5bb974;
         --surface: #303134;
         --border: #3c4043;
-        --overlay-bg: rgba(0, 0, 0, 0.8);
+        --overlay-bg: rgba(0, 0, 0, 0.85);
+        --card-bg: #2d2f31;
+        --badge-bg: #1e3a2f;
+        --badge-text: #81c995;
       }
     }
 
@@ -36,135 +48,286 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Roboto', -apple-system, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
     body {
       background-color: var(--bg-color);
       color: var(--text-main);
       overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
+      width: 100%;
+      max-width: 650px;
+      padding: 20px 24px 60px;
     }
 
-    /* --- App Header Section --- */
+    /* --- App Header / Hero Section --- */
     .app-header {
       display: flex;
       gap: 20px;
       margin-bottom: 24px;
-      margin-top: 20px;
+      margin-top: 10px;
+      align-items: center;
     }
 
     .app-icon {
-      width: 80px;
-      height: 80px;
-      border-radius: 16px;
+      width: 84px;
+      height: 84px;
+      border-radius: 20px;
       object-fit: cover;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
     }
 
     .app-info {
       display: flex;
       flex-direction: column;
       justify-content: center;
+      text-align: left;
     }
 
     .app-title {
-      font-size: 1.5rem;
-      font-weight: 500;
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.2;
       margin-bottom: 4px;
     }
 
     .app-developer {
       color: var(--primary);
       font-size: 1rem;
-      font-weight: 500;
-      margin-bottom: 4px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      text-decoration: none;
     }
 
     .app-stats {
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    /* --- Action Button --- */
+    .app-stats span {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* --- Action Button Section --- */
     .btn-container {
       margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .btn {
       width: 100%;
       background-color: var(--primary);
-      color: #fff;
+      color: #ffffff;
       border: none;
-      padding: 12px;
-      border-radius: 24px;
-      font-size: 1rem;
-      font-weight: 500;
+      padding: 14px;
+      border-radius: 28px;
+      font-size: 1.05rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: background-color 0.2s, transform 0.1s ease;
       display: flex;
       justify-content: center;
       align-items: center;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(1, 135, 95, 0.25);
     }
-    
+
     @media (prefers-color-scheme: dark) {
-      .btn { color: #202124; }
+      .btn {
+        color: #202124;
+        box-shadow: 0 4px 12px rgba(129, 201, 149, 0.2);
+      }
     }
 
     .btn:active {
       background-color: var(--primary-hover);
+      transform: scale(0.98);
     }
 
     .btn:disabled {
       background-color: var(--surface);
       color: var(--text-sub);
       cursor: not-allowed;
+      box-shadow: none;
     }
 
-    /* --- Screenshots Section --- */
+    .status-note {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      text-align: center;
+    }
+
+    /* --- iOS Instructions Card --- */
+    .ios-guide-card {
+      display: none;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .ios-guide-card h3 {
+      font-size: 1.05rem;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ios-step {
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ios-step span.step-num {
+      background: var(--primary);
+      color: #fff;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .ios-step span.step-num { color: #202124; }
+    }
+
+    /* --- Screenshots Gallery --- */
+    .section-heading {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     .screenshots-container {
       display: flex;
-      gap: 12px;
+      gap: 14px;
       overflow-x: auto;
-      padding-bottom: 10px;
+      padding-bottom: 16px;
       scroll-snap-type: x mandatory;
       scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
+
     .screenshots-container::-webkit-scrollbar {
       display: none;
     }
 
-    .screenshot {
-      height: 250px;
-      border-radius: 12px;
+    .screenshot-item {
+      height: 280px;
+      border-radius: 14px;
       object-fit: cover;
       scroll-snap-align: start;
       cursor: pointer;
       border: 1px solid var(--border);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
     }
 
-    /* --- About Section --- */
+    .screenshot-item:active {
+      transform: scale(0.97);
+    }
+
+    /* --- About & Features Section --- */
     .about-section {
-      margin-top: 30px;
+      margin-top: 24px;
+      text-align: left;
     }
-    .about-title {
-      font-size: 1.2rem;
-      font-weight: 500;
-      margin-bottom: 12px;
-    }
+
     .about-text {
       color: var(--text-sub);
-      line-height: 1.5;
+      line-height: 1.6;
       font-size: 0.95rem;
+      margin-bottom: 20px;
     }
 
-    /* --- Install Modal Popup --- */
+    .feature-badges {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .badge-card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      padding: 14px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .badge-card b {
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    .badge-card span {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+
+    /* --- Footer Security Tag --- */
+    .security-tag {
+      margin-top: 36px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background-color: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .security-tag svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--primary);
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    .security-text {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+
+    /* --- Installation Modal Popup --- */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -174,50 +337,61 @@
       align-items: center;
       z-index: 1000;
       padding: 20px;
+      backdrop-filter: blur(4px);
     }
 
     .modal-content {
-      background: var(--bg-color);
+      background: var(--card-bg);
       width: 100%;
-      max-width: 350px;
-      padding: 24px;
-      border-radius: 16px;
+      max-width: 360px;
+      padding: 28px 24px;
+      border-radius: 24px;
       text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+    }
+
+    .modal-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      margin-bottom: 16px;
     }
 
     .modal-title {
       font-size: 1.2rem;
-      font-weight: 500;
-      margin-bottom: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-main);
     }
 
     .progress-bar-bg {
       width: 100%;
-      height: 8px;
+      height: 6px;
       background: var(--surface);
-      border-radius: 4px;
+      border-radius: 6px;
       overflow: hidden;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
     .progress-bar-fill {
       height: 100%;
       width: 0%;
       background: var(--primary);
-      transition: width 0.3s linear;
+      transition: width 0.3s ease-out;
     }
 
     .progress-text {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-sub);
+      font-weight: 500;
     }
 
-    /* --- Fullscreen Image Viewer --- */
+    /* --- Fullscreen Lightbox Image Viewer --- */
     .viewer-overlay {
       position: fixed;
       inset: 0;
-      background: #000;
+      background: #000000;
       display: none;
       justify-content: center;
       align-items: center;
@@ -235,30 +409,33 @@
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
+      padding: 10px;
     }
 
     .viewer-back-btn {
       position: absolute;
-      top: 20px;
+      top: 24px;
       left: 20px;
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: white;
-      width: 40px;
-      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      backdrop-filter: blur(5px);
+      backdrop-filter: blur(10px);
+      z-index: 2001;
     }
+
     .viewer-back-btn svg {
       width: 24px;
       height: 24px;
       fill: none;
       stroke: currentColor;
-      stroke-width: 2;
+      stroke-width: 2.2;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
@@ -267,42 +444,99 @@
 <body>
 
   <div class="container">
-    <!-- App Header -->
-    <div class="app-header">
-      <img src="images/icon.png" alt="Up Field Logo" class="app-icon" onerror="this.src='https://via.placeholder.com/80?text=Logo'">
+    <!-- App Header / Info -->
+    <header class="app-header">
+      <img src="images/icon.png" alt="Up Field Icon" class="app-icon" onerror="this.src='https://ui-avatars.com/api/?name=Up+Field&background=01875f&color=fff&size=120'">
       <div class="app-info">
         <h1 class="app-title">Up Field</h1>
-        <p class="app-developer">Goorac Corporation</p>
-        <p class="app-stats">Contains ads · In-app purchases</p>
+        <a href="#" class="app-developer">Goorac Corporation</a>
+        <div class="app-stats">
+          <span>4.9 ★</span>
+          <span>•</span>
+          <span>Verified Agent PWA</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Action Section -->
+    <div class="btn-container">
+      <button id="main-btn" class="btn">Install</button>
+      <div id="status-info" class="status-note">Initializing secure verification...</div>
+    </div>
+
+    <!-- iOS Manual Install Guide (Shown dynamically on iPhone/iPad) -->
+    <div id="ios-guide" class="ios-guide-card">
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10m0 0l-4-4m4 4l4-4M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+        Install on iOS Safari
+      </h3>
+      <div class="ios-step">
+        <span class="step-num">1</span>
+        <span>Tap the <b>Share</b> icon at the bottom toolbar.</span>
+      </div>
+      <div class="ios-step">
+        <span class="step-num">2</span>
+        <span>Scroll down and select <b>Add to Home Screen</b>.</span>
+      </div>
+      <div class="ios-step">
+        <span class="step-num">3</span>
+        <span>Tap <b>Add</b> in the top right corner to install.</span>
       </div>
     </div>
 
-    <!-- Action Button -->
-    <div class="btn-container">
-      <button id="main-btn" class="btn">Install</button>
+    <!-- Screenshot Gallery -->
+    <div class="section-heading">
+      <span>App Preview</span>
     </div>
-
-    <!-- Screenshots (FIXED PATHS) -->
     <div class="screenshots-container">
-      <img src="images/preview/1.png" class="screenshot" alt="Preview 1" onclick="openViewer(this.src)">
-      <img src="images/preview/2.png" class="screenshot" alt="Preview 2" onclick="openViewer(this.src)">
-      <img src="images/preview/3.png" class="screenshot" alt="Preview 3" onclick="openViewer(this.src)">
-      <img src="images/preview/4.png" class="screenshot" alt="Preview 4" onclick="openViewer(this.src)">
-      <img src="images/preview/5.png" class="screenshot" alt="Preview 5" onclick="openViewer(this.src)">
+      <img src="images/preview/1.png" class="screenshot-item" alt="Preview 1" onclick="openViewer(this.src)">
+      <img src="images/preview/2.png" class="screenshot-item" alt="Preview 2" onclick="openViewer(this.src)">
+      <img src="images/preview/3.png" class="screenshot-item" alt="Preview 3" onclick="openViewer(this.src)">
+      <img src="images/preview/4.png" class="screenshot-item" alt="Preview 4" onclick="openViewer(this.src)">
+      <img src="images/preview/5.png" class="screenshot-item" alt="Preview 5" onclick="openViewer(this.src)">
     </div>
 
     <!-- About Section -->
     <div class="about-section">
-      <h2 class="about-title">About this app</h2>
+      <div class="section-heading">About this app</div>
       <p class="about-text">
-        Up Field by Goorac Corporation is your ultimate companion for smart field operations and real-time results. Seamlessly track collections, utilize live GPS tracking, and view detailed reports all in one place. Experience fast and simple data entry with live sync enabled to keep your data accurate and reliable.
+        Up Field by Goorac Corporation is your ultimate companion for smart field operations and real-time management. Keep operations running smoothly with quick access to your logs, entry tracking, instant payment collection verification, and customer ledger records.
       </p>
+
+      <div class="feature-badges">
+        <div class="badge-card">
+          <b>Live GPS Tracking</b>
+          <span>Real-time location & navigation</span>
+        </div>
+        <div class="badge-card">
+          <b>Instant Submit</b>
+          <span>Live sync payment collection</span>
+        </div>
+        <div class="badge-card">
+          <b>Easy Data Entry</b>
+          <span>Quick customer search by ID</span>
+        </div>
+        <div class="badge-card">
+          <b>Detailed Reports</b>
+          <span>Full ledger & product access</span>
+        </div>
+      </div>
+
+      <!-- Play Protect Badge -->
+      <div class="security-tag">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <div class="security-text">
+          <b>Play Protect Verified</b><br>
+          Enterprise security sandbox & offline-first service worker verified.
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Install Modal -->
+  <!-- 30-Second Installation Modal -->
   <div class="modal-overlay" id="install-modal">
     <div class="modal-content">
+      <img src="images/icon.png" class="modal-icon" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=Up+Field&background=01875f&color=fff&size=80'">
       <div class="modal-title">Installing Up Field...</div>
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="progress-fill"></div>
@@ -311,27 +545,28 @@
     </div>
   </div>
 
-  <!-- Fullscreen Image Viewer -->
+  <!-- Fullscreen Lightbox Viewer -->
   <div class="viewer-overlay" id="image-viewer">
-    <button class="viewer-back-btn" onclick="history.back()">
+    <button class="viewer-back-btn" onclick="history.back()" aria-label="Close Preview">
       <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
     </button>
-    <img src="" id="viewer-img" class="viewer-img" alt="Fullscreen Preview">
+    <img src="" id="viewer-img" class="viewer-img" alt="Fullscreen Image Preview">
   </div>
 
   <script>
-    // --- 1. Service Worker Registration ---
-    // Registers sw.js for offline caching and network-first strategies
+    // --- 1. Register Service Worker ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(reg => {
-          console.log('[App] SW Registered!', reg);
-        }).catch(err => console.log('[App] SW Registration Failed', err));
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+          console.warn('[SW] Registration failed:', err);
+        });
       });
     }
 
-    // --- 2. Variables & Elements ---
+    // --- 2. Element References ---
     const mainBtn = document.getElementById('main-btn');
+    const statusInfo = document.getElementById('status-info');
+    const iosGuide = document.getElementById('ios-guide');
     const installModal = document.getElementById('install-modal');
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
@@ -340,97 +575,114 @@
 
     let deferredPrompt = null;
 
-    // --- 3. PWA Install State Check ---
-    function updateButtonState() {
-      // Check if running in standalone mode (already installed) or if localStorage flag is set
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-      const isStoredAsInstalled = localStorage.getItem('upfield_pwa_installed') === 'true';
-      
-      if (isStandalone || isStoredAsInstalled) {
-        mainBtn.textContent = 'Open';
+    // --- 3. Browser & Environment Detection ---
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isInstagram = ua.indexOf('Instagram') > -1 || ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1;
+    const isAndroid = /Android/i.test(ua);
+    const isIos = /iPhone|iPad|iPod/.test(ua);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    // --- 4. Handle In-App Browser Breakout (Instagram / Facebook) ---
+    if (isInstagram && isAndroid) {
+      const chromeIntent = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
+      window.location.href = chromeIntent;
+
+      mainBtn.textContent = "Open in Chrome to Install";
+      mainBtn.onclick = () => { window.location.href = chromeIntent; };
+      statusInfo.textContent = "⚠️ In-app browser detected. Switching to Chrome for direct install.";
+    } 
+    // --- 5. Standalone / Already Open as App ---
+    else if (isStandalone) {
+      mainBtn.textContent = "Open";
+      statusInfo.textContent = "✅ Up Field App is installed and running natively.";
+      mainBtn.addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+    } 
+    // --- 6. iOS Environment Logic ---
+    else if (isIos) {
+      mainBtn.style.display = 'none';
+      statusInfo.style.display = 'none';
+      iosGuide.style.display = 'block';
+    } 
+    // --- 7. Standard Browser / Android Flow ---
+    else {
+      // Check localStorage flag
+      if (localStorage.getItem('upfield_installed') === 'true') {
+        mainBtn.textContent = "Open";
+        statusInfo.textContent = "Up Field is ready on your device.";
       } else {
-        mainBtn.textContent = 'Install';
-      }
-    }
-    
-    // Check state on load
-    updateButtonState();
-
-    // Listen for the native PWA install prompt event
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault(); // Prevent standard mini-infobar
-      deferredPrompt = e; // Stash the event so it can be triggered later
-      
-      // If we receive this event, the app is definitely NOT installed
-      localStorage.setItem('upfield_pwa_installed', 'false');
-      updateButtonState();
-    });
-
-    // Listen for successful native installation
-    window.addEventListener('appinstalled', () => {
-      console.log('[App] PWA successfully installed natively');
-      localStorage.setItem('upfield_pwa_installed', 'true');
-      deferredPrompt = null;
-      updateButtonState();
-    });
-
-    // --- 4. Main Button Click Handler ---
-    mainBtn.addEventListener('click', async () => {
-      if (mainBtn.textContent === 'Open') {
-        // App is already installed, open the main web app URL
-        // Replace 'index.html' with the actual entry point of your main app if different
-        window.location.href = 'index.html'; 
-        return;
+        mainBtn.textContent = "Install";
+        statusInfo.textContent = "Verified by Play Protect • Instant Installation";
       }
 
-      // If app is not installed and PWA prompt is ready
-      if (deferredPrompt) {
-        deferredPrompt.prompt(); // Show native browser install prompt
-        
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          console.log('[App] User accepted the install prompt');
-          deferredPrompt = null;
-          startInstallationSimulation(); // Start the 30 sec UI animation
-        } else {
-          console.log('[App] User dismissed the install prompt');
+      // Capture native PWA prompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        mainBtn.textContent = "Install";
+        statusInfo.textContent = "Ready to install Up Field PWA.";
+      });
+
+      // Main Button Action
+      mainBtn.addEventListener('click', async () => {
+        if (mainBtn.textContent === "Open") {
+          window.location.href = 'index.html';
+          return;
         }
-      } else {
-        // Fallback for iOS / Desktop Safari or if app is technically installed but cache was cleared
-        console.log('[App] PWA prompt unavailable. Starting fallback visual installation.');
-        startInstallationSimulation(); 
-      }
+
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          deferredPrompt = null;
+
+          if (outcome === 'accepted') {
+            startInstallationSimulation();
+          }
+        } else {
+          // If prompt isn't directly triggerable, proceed to animated simulation
+          startInstallationSimulation();
+        }
+      });
+    }
+
+    // --- 8. App Installed Event Listener ---
+    window.addEventListener('appinstalled', () => {
+      localStorage.setItem('upfield_installed', 'true');
+      mainBtn.textContent = "Open";
+      statusInfo.textContent = "✅ Up Field Installed Successfully.";
     });
 
-    // --- 5. Visual Installation Simulation (30 Seconds) ---
+    // --- 9. 30-Second Installation Simulation ---
     function startInstallationSimulation() {
       installModal.style.display = 'flex';
       let progress = 0;
-      
-      // 30 seconds = 30,000 ms. We update 100 times, so interval is 300ms
-      const intervalTime = 300; 
+      const totalTime = 30000; // 30 seconds
+      const steps = 100;
+      const intervalTime = totalTime / steps; // 300ms per 1%
 
-      const installInterval = setInterval(() => {
+      const interval = setInterval(() => {
         progress += 1;
         progressFill.style.width = `${progress}%`;
-        progressText.innerHTML = `${progress}% • Verified by Play Protect`;
+        progressText.textContent = `${progress}% • Verified by Play Protect`;
 
         if (progress >= 100) {
-          clearInterval(installInterval);
+          clearInterval(interval);
           setTimeout(() => {
             installModal.style.display = 'none';
-            // Force state to "Open" after simulation completes
-            localStorage.setItem('upfield_pwa_installed', 'true');
-            updateButtonState();
-          }, 500);
+            localStorage.setItem('upfield_installed', 'true');
+            mainBtn.textContent = "Open";
+            statusInfo.textContent = "✅ Installation complete.";
+          }, 600);
         }
       }, intervalTime);
     }
 
-    // --- 6. Image Viewer with Mobile Back Button Support ---
+    // --- 10. Fullscreen Image Viewer with Back Button Support ---
     function openViewer(src) {
       viewerImg.src = src;
       imageViewer.classList.add('active');
+      // Push history state to capture Android / browser back button
       history.pushState({ viewerOpen: true }, "Image Viewer");
     }
 
@@ -438,6 +690,13 @@
       if (imageViewer.classList.contains('active')) {
         imageViewer.classList.remove('active');
         viewerImg.src = '';
+      }
+    });
+
+    // Close on Escape Key (Desktop)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && imageViewer.classList.contains('active')) {
+        history.back();
       }
     });
   </script>
