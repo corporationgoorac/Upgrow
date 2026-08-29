@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#202124" media="(prefers-color-scheme: dark)">
   <link rel="apple-touch-icon" href="images/icon.png">
   
-  <title>Up Field Admin - Control Center</title>
+  <title>Up grow - Control Center</title>
 
   <style>
     /* --- CSS Variables for Light & Dark Mode --- */
@@ -351,9 +351,9 @@
   <div class="container">
     <!-- App Header / Info -->
     <header class="app-header">
-      <img src="images/icon.png" alt="Up Field Admin Icon" class="app-icon" onerror="this.src='https://ui-avatars.com/api/?name=Admin&background=2563eb&color=fff&size=120'">
+      <img src="images/icon.png" alt="Up grow Icon" class="app-icon" onerror="this.src='https://ui-avatars.com/api/?name=Up+grow&background=2563eb&color=fff&size=120'">
       <div class="app-info">
-        <h1 class="app-title">Up Field Admin</h1>
+        <h1 class="app-title">Up grow</h1>
         <a href="#" class="app-developer">Goorac Corporation</a>
         <div class="app-stats">
           <span>Enterprise Portal</span>
@@ -393,7 +393,7 @@
     <div class="about-section">
       <div class="section-heading">Control Center Overview</div>
       <p class="about-text">
-        Up Field Admin is the centralized management hub for overseeing all field operations. Securely manage agent access, review comprehensive customer ledgers, and monitor real-time payment collections from a single, optimized dashboard.
+        Up grow is the centralized management hub for overseeing all field operations. Securely manage agent access, review comprehensive customer ledgers, and monitor real-time payment collections from a single, optimized dashboard.
       </p>
 
       <div class="feature-badges">
@@ -429,7 +429,7 @@
   <!-- 30-Second Installation Modal -->
   <div class="modal-overlay" id="install-modal">
     <div class="modal-content">
-      <img src="images/icon.png" class="modal-icon" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=Admin&background=2563eb&color=fff&size=80'">
+      <img src="images/icon.png" class="modal-icon" alt="App Icon" onerror="this.src='https://ui-avatars.com/api/?name=Up+grow&background=2563eb&color=fff&size=80'">
       <div class="modal-title">Installing Admin Portal...</div>
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="progress-fill"></div>
@@ -443,8 +443,8 @@
     <div class="modal-content">
       <div class="modal-title">App Already Installed</div>
       <p class="about-text" style="margin-bottom: 24px;">
-        The Up Field Admin app is already installed on your device.<br><br>
-        For security and full functionality, please close this browser tab and tap the <b>Admin icon</b> on your home screen or desktop to launch the app.
+        The Up grow app is already installed on your device.<br><br>
+        For security and full functionality, please close this browser tab and tap the <b>Up grow icon</b> on your home screen or desktop to launch the app.
       </p>
       <button class="btn" onclick="history.back()">Got it</button>
     </div>
@@ -455,7 +455,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(err => {
-          console.warn('[Admin SW] Registration failed:', err);
+          console.warn('[Up grow SW] Registration failed:', err);
         });
       });
     }
@@ -504,8 +504,8 @@
     } 
     // --- 7. Standard Browser / Android Flow ---
     else {
-      // Check localStorage flag (Using a unique key for Admin)
-      if (localStorage.getItem('upfield_admin_installed') === 'true') {
+      // Check localStorage flag (Using a unique key for Up grow Admin)
+      if (localStorage.getItem('upgrow_installed') === 'true') {
         mainBtn.textContent = "Open Portal";
         statusInfo.textContent = "Admin Portal is ready on your device.";
       } else {
@@ -518,7 +518,7 @@
         e.preventDefault();
         deferredPrompt = e;
         mainBtn.textContent = "Install App";
-        statusInfo.textContent = "Ready to install Admin PWA.";
+        statusInfo.textContent = "Ready to install Up grow PWA.";
       });
 
       // Main Button Action
@@ -546,7 +546,7 @@
 
     // --- 8. App Installed Event Listener ---
     window.addEventListener('appinstalled', () => {
-      localStorage.setItem('upfield_admin_installed', 'true');
+      localStorage.setItem('upgrow_installed', 'true');
       mainBtn.textContent = "Open Portal";
       statusInfo.textContent = "✅ Admin Portal Installed Successfully.";
     });
@@ -568,7 +568,7 @@
           clearInterval(interval);
           setTimeout(() => {
             installModal.style.display = 'none';
-            localStorage.setItem('upfield_admin_installed', 'true');
+            localStorage.setItem('upgrow_installed', 'true');
             mainBtn.textContent = "Open Portal";
             statusInfo.textContent = "✅ Installation complete.";
           }, 600);
