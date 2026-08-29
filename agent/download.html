@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- PWA Manifest link is required for the install prompt to fire -->
+  <link rel="manifest" href="manifest.json">
   <title>Up Field - Apps on Google Play</title>
   <style>
     /* --- CSS Variables for Light & Dark Mode --- */
@@ -10,7 +12,7 @@
       --bg-color: #ffffff;
       --text-main: #202124;
       --text-sub: #5f6368;
-      --primary: #01875f; /* Play Store Green */
+      --primary: #01875f;
       --primary-hover: #017351;
       --surface: #f1f3f4;
       --border: #e8eaed;
@@ -132,10 +134,10 @@
       overflow-x: auto;
       padding-bottom: 10px;
       scroll-snap-type: x mandatory;
-      scrollbar-width: none; /* Firefox */
+      scrollbar-width: none;
     }
     .screenshots-container::-webkit-scrollbar {
-      display: none; /* Chrome/Safari */
+      display: none;
     }
 
     .screenshot {
@@ -203,7 +205,7 @@
       height: 100%;
       width: 0%;
       background: var(--primary);
-      transition: width 0.5s linear;
+      transition: width 0.3s linear;
     }
 
     .progress-text {
@@ -280,13 +282,13 @@
       <button id="main-btn" class="btn">Install</button>
     </div>
 
-    <!-- Screenshots -->
+    <!-- Screenshots (FIXED PATHS) -->
     <div class="screenshots-container">
-      <img src="1.png" class="screenshot" alt="Preview 1" onclick="openViewer(this.src)">
-      <img src="2.png" class="screenshot" alt="Preview 2" onclick="openViewer(this.src)">
-      <img src="3.png" class="screenshot" alt="Preview 3" onclick="openViewer(this.src)">
-      <img src="4.png" class="screenshot" alt="Preview 4" onclick="openViewer(this.src)">
-      <img src="5.png" class="screenshot" alt="Preview 5" onclick="openViewer(this.src)">
+      <img src="images/preview/1.png" class="screenshot" alt="Preview 1" onclick="openViewer(this.src)">
+      <img src="images/preview/2.png" class="screenshot" alt="Preview 2" onclick="openViewer(this.src)">
+      <img src="images/preview/3.png" class="screenshot" alt="Preview 3" onclick="openViewer(this.src)">
+      <img src="images/preview/4.png" class="screenshot" alt="Preview 4" onclick="openViewer(this.src)">
+      <img src="images/preview/5.png" class="screenshot" alt="Preview 5" onclick="openViewer(this.src)">
     </div>
 
     <!-- About Section -->
@@ -318,6 +320,17 @@
   </div>
 
   <script>
+    // --- 1. Service Worker Registration ---
+    // Registers sw.js for offline caching and network-first strategies
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('[App] SW Registered!', reg);
+        }).catch(err => console.log('[App] SW Registration Failed', err));
+      });
+    }
+
+    // --- 2. Variables & Elements ---
     const mainBtn = document.getElementById('main-btn');
     const installModal = document.getElementById('install-modal');
     const progressFill = document.getElementById('progress-fill');
@@ -325,32 +338,77 @@
     const imageViewer = document.getElementById('image-viewer');
     const viewerImg = document.getElementById('viewer-img');
 
-    // 1. Check if app is already installed
-    const isInstalled = localStorage.getItem('upfield_installed') === 'true';
+    let deferredPrompt = null;
 
-    if (isInstalled) {
-      mainBtn.textContent = 'Open';
-    } else {
-      mainBtn.textContent = 'Install';
-    }
-
-    // 2. Handle Button Click
-    mainBtn.addEventListener('click', () => {
-      if (localStorage.getItem('upfield_installed') === 'true') {
-        alert("Opening Up Field...");
-        // Redirect to your app logic here
+    // --- 3. PWA Install State Check ---
+    function updateButtonState() {
+      // Check if running in standalone mode (already installed) or if localStorage flag is set
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+      const isStoredAsInstalled = localStorage.getItem('upfield_pwa_installed') === 'true';
+      
+      if (isStandalone || isStoredAsInstalled) {
+        mainBtn.textContent = 'Open';
       } else {
-        startInstallation();
+        mainBtn.textContent = 'Install';
+      }
+    }
+    
+    // Check state on load
+    updateButtonState();
+
+    // Listen for the native PWA install prompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault(); // Prevent standard mini-infobar
+      deferredPrompt = e; // Stash the event so it can be triggered later
+      
+      // If we receive this event, the app is definitely NOT installed
+      localStorage.setItem('upfield_pwa_installed', 'false');
+      updateButtonState();
+    });
+
+    // Listen for successful native installation
+    window.addEventListener('appinstalled', () => {
+      console.log('[App] PWA successfully installed natively');
+      localStorage.setItem('upfield_pwa_installed', 'true');
+      deferredPrompt = null;
+      updateButtonState();
+    });
+
+    // --- 4. Main Button Click Handler ---
+    mainBtn.addEventListener('click', async () => {
+      if (mainBtn.textContent === 'Open') {
+        // App is already installed, open the main web app URL
+        // Replace 'index.html' with the actual entry point of your main app if different
+        window.location.href = 'index.html'; 
+        return;
+      }
+
+      // If app is not installed and PWA prompt is ready
+      if (deferredPrompt) {
+        deferredPrompt.prompt(); // Show native browser install prompt
+        
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('[App] User accepted the install prompt');
+          deferredPrompt = null;
+          startInstallationSimulation(); // Start the 30 sec UI animation
+        } else {
+          console.log('[App] User dismissed the install prompt');
+        }
+      } else {
+        // Fallback for iOS / Desktop Safari or if app is technically installed but cache was cleared
+        console.log('[App] PWA prompt unavailable. Starting fallback visual installation.');
+        startInstallationSimulation(); 
       }
     });
 
-    // 3. Fake Installation Logic (30 seconds)
-    function startInstallation() {
+    // --- 5. Visual Installation Simulation (30 Seconds) ---
+    function startInstallationSimulation() {
       installModal.style.display = 'flex';
       let progress = 0;
       
-      // 30 seconds = 30000 ms. We update every 300ms (100 steps of 1%)
-      const intervalTime = 30000 / 100; 
+      // 30 seconds = 30,000 ms. We update 100 times, so interval is 300ms
+      const intervalTime = 300; 
 
       const installInterval = setInterval(() => {
         progress += 1;
@@ -361,24 +419,22 @@
           clearInterval(installInterval);
           setTimeout(() => {
             installModal.style.display = 'none';
-            mainBtn.textContent = 'Open';
-            localStorage.setItem('upfield_installed', 'true');
-          }, 500); // small delay before closing modal
+            // Force state to "Open" after simulation completes
+            localStorage.setItem('upfield_pwa_installed', 'true');
+            updateButtonState();
+          }, 500);
         }
       }, intervalTime);
     }
 
-    // 4. Image Viewer with Mobile Back Button Support
+    // --- 6. Image Viewer with Mobile Back Button Support ---
     function openViewer(src) {
       viewerImg.src = src;
       imageViewer.classList.add('active');
-      // Push state to history to capture back button
       history.pushState({ viewerOpen: true }, "Image Viewer");
     }
 
-    // Listen for the back button (popstate)
     window.addEventListener('popstate', (e) => {
-      // If we go back, hide the viewer
       if (imageViewer.classList.contains('active')) {
         imageViewer.classList.remove('active');
         viewerImg.src = '';
