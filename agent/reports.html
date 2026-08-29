@@ -81,24 +81,12 @@
     .btn-circle { width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: white; transition: transform 0.2s; }
     .btn-circle:active { transform: scale(0.9); }
     .btn-csv { background: #8b5cf6; }
-    .btn-add { background: var(--primary); }
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
 
     /* --- Modals & Overlays --- */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     
-    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 10px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
-    .bottom-sheet.active { transform: translateY(0); }
-    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; }
-
-    .input-group { margin-bottom: 20px; }
-    .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
-    .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
-    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
-    .btn-full:active { transform: scale(0.97); }
-
     .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .dash-card { background: var(--bg-color); padding: 12px; border-radius: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
     .dash-title { font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; }
@@ -165,7 +153,6 @@
         </button>
         <h2 style="font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0;" id="detail-cust-name">Customer</h2>
       </div>
-      <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); font-size: 0.85rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; flex-shrink: 0;" onclick="openEditCustomerModal()">Edit Info</button>
     </div>
     
     <div class="screen-content" style="padding-top: 0 !important;">
@@ -201,89 +188,16 @@
   <!-- ================= MODALS & OVERLAYS ================= -->
   <div class="modal-overlay" id="modal-overlay"></div>
 
-  <!-- Payment Modal (Add & Edit) -->
-  <div class="bottom-sheet" id="payment-sheet">
-    <div class="sheet-handle"></div>
-    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-title">Record Payment</h3>
-    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700;" id="sheet-sub">Product Name</p>
-    
-    <div class="dashboard">
-        <div class="dash-card">
-            <div class="dash-title">Total Pending</div>
-            <div class="dash-value pending" id="sheet-pending">₹0</div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-title">Total Paid</div>
-            <div class="dash-value paid" id="sheet-paid">₹0</div>
-        </div>
-    </div>
-
-    <div class="input-group">
-      <label>Amount Collected (₹)</label>
-      <input type="number" id="pay-amount" inputmode="numeric" placeholder="Enter amount">
-    </div>
-
-    <div class="input-group">
-      <label>Date</label>
-      <input type="date" id="pay-date">
-    </div>
-
-    <div class="input-group">
-      <label>Payment Method</label>
-      <select id="pay-method">
-        <option value="cash">Cash</option>
-        <option value="online">Online / UPI</option>
-      </select>
-    </div>
-
-    <!-- NATIVE HTML ONCLICK -->
-    <button class="btn-full" id="btn-save-payment" onclick="savePayment()">Save Payment</button>
-  </div>
-
-  <!-- UPGRADED: Edit Info Modal with GPS Auto-Fetch -->
-  <div class="bottom-sheet" id="edit-customer-sheet">
-    <div class="sheet-handle"></div>
-    <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Edit Info</h3>
-    
-    <div class="input-group">
-      <label>Customer ID (Read-only)</label>
-      <input type="text" id="edit-cust-id" readonly style="opacity: 0.7; background: var(--skeleton-base);">
-    </div>
-    
-    <div class="input-group">
-      <label>Customer Name</label>
-      <input type="text" id="edit-cust-name">
-    </div>
-    
-    <div class="input-group">
-      <label>Phone Number</label>
-      <input type="tel" id="edit-cust-phone">
-    </div>
-    
-    <div class="input-group">
-      <label>GPS Location</label>
-      <div style="display:flex; gap:10px;">
-        <input type="text" id="edit-cust-loc">
-        <button id="btn-fetch-edit-gps" class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); border-radius: 14px; padding: 0 16px; flex-shrink: 0;" onclick="fetchEditGps()">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-        </button>
-      </div>
-    </div>
-    
-    <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
-  </div>
-
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter, where } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { collection, query, getDocs, doc, getDoc, limit, startAfter } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // --- Global State ---
     let currentUser = null;
     let localSearchCache = []; 
     let activeCustomer = null;
     let activeProductIndex = null;
-    let activePaymentIndex = null; 
     let isSearchMode = false;
     let searchTimeout = null;
     let isOpeningCustomer = false; 
@@ -314,40 +228,20 @@
     
     const screenDetail = document.getElementById('screen-detail');
     const productListEl = document.getElementById('product-list');
-    const paymentSheet = document.getElementById('payment-sheet');
     const modalOverlay = document.getElementById('modal-overlay');
-
-    const payAmount = document.getElementById('pay-amount');
-    const payDate = document.getElementById('pay-date');
-    const payMethod = document.getElementById('pay-method');
-    const btnSavePayment = document.getElementById('btn-save-payment');
 
     // ============================================================================
     // CLEANED UP: Top-Down UI Closing Engine (No Ghost History)
     // ============================================================================
     function closeTopUI() {
-        // 1. Modals (Highest Layer)
-        // UPGRADED: Also close edit-customer-sheet seamlessly
-        const editSheet = document.getElementById('edit-customer-sheet');
-        if (editSheet && editSheet.classList.contains('active')) {
-            editSheet.classList.remove('active');
-            modalOverlay.classList.remove('active');
-            return;
-        }
-        if (paymentSheet && paymentSheet.classList.contains('active')) {
-            paymentSheet.classList.remove('active');
-            modalOverlay.classList.remove('active');
-            return;
-        }
-
-        // 2. Slide Panels (Middle Layer covering Main Screen)
+        // 1. Slide Panels (Middle Layer covering Main Screen)
         if (screenDetail && !screenDetail.classList.contains('hidden-right')) {
             screenDetail.classList.add('hidden-right');
             activeCustomer = null;
             return;
         }
 
-        // 3. Search Bar (Base Layer Overlay)
+        // 2. Search Bar (Base Layer Overlay)
         if (searchBar && searchBar.classList.contains('active')) {
             searchBar.classList.remove('active');
             searchInput.value = '';
@@ -636,18 +530,16 @@
                     pay.displayPending = dynamicPending; 
                 });
 
-                sortedPayments.reverse().forEach(pay => {
+                sortedPayments.reverse().forEach((pay, idx) => {
                     const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+                    const sNo = sortedPayments.length - idx;
+                    
                     payHtml += `
                     <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 12px 10px;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
-                        <td style="padding: 12px 10px; color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
-                        <td style="padding: 12px 10px; color:var(--danger); font-weight:700;">${fmt(pay.displayPending)}</td>
-                        <td style="padding: 12px 10px; text-align:center;">
-                            <button class="icon-btn edit" style="background:transparent; padding:4px; box-shadow:none; display:inline-block;" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            </button>
-                        </td>
+                        <td style="padding: 12px 10px; text-align:left;">${sNo}</td>
+                        <td style="padding: 12px 10px; text-align:left;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
+                        <td style="padding: 12px 10px; color:var(--primary); font-weight:700; text-align:left;">${fmt(pay.amount)}</td>
+                        <td style="padding: 12px 10px; color:var(--danger); font-weight:700; text-align:left;">${fmt(pay.displayPending)}</td>
                     </tr>`;
                 });
             } else {
@@ -662,9 +554,6 @@
                     <div class="prod-actions" style="display:flex; gap:10px;">
                         <button class="btn-circle btn-csv" onclick="window.downloadCSV(${pIndex})">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        </button>
-                        <button class="btn-circle btn-add" onclick="window.openAddPayment(${pIndex})">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
                 </div>
@@ -683,10 +572,10 @@
                       <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.85rem;">
                         <thead style="background: rgba(107, 114, 128, 0.1);">
                           <tr>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">S.No</th>
                             <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Date</th>
                             <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Paid</th>
                             <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Remaining</th>
-                            <th style="padding: 10px; text-align: center; border-bottom:1px solid var(--border);">Action</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -701,202 +590,6 @@
 
         document.getElementById('ledger-total-pending').innerText = fmt(grandTotalPending);
     }
-
-    // --- 5. Ledger Editing ---
-    window.openAddPayment = (pIndex) => {
-        if (paymentSheet.classList.contains('active')) return;
-        vibrate();
-        activeProductIndex = pIndex;
-        activePaymentIndex = null; 
-        const prod = activeCustomer.data.products[pIndex];
-        
-        document.getElementById('sheet-title').innerText = "Record Payment";
-        document.getElementById('sheet-sub').innerText = prod.name;
-        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
-        
-        payAmount.value = '';
-        payDate.value = new Date().toISOString().split('T')[0]; 
-        payMethod.value = 'cash';
-
-        window.history.pushState({ modal: 'payment' }, ''); 
-        modalOverlay.classList.add('active');
-        paymentSheet.classList.add('active');
-    };
-
-    window.openEditPayment = (pIndex, payIndex) => {
-        if (paymentSheet.classList.contains('active')) return;
-        vibrate();
-        activeProductIndex = pIndex;
-        activePaymentIndex = payIndex; 
-        const prod = activeCustomer.data.products[pIndex];
-        const pay = prod.payments[payIndex];
-        
-        document.getElementById('sheet-title').innerText = "Edit Payment";
-        document.getElementById('sheet-sub').innerText = prod.name;
-        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
-        
-        payAmount.value = pay.amount;
-        payDate.value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
-        payMethod.value = pay.method || 'cash';
-
-        window.history.pushState({ modal: 'payment' }, '');
-        modalOverlay.classList.add('active');
-        paymentSheet.classList.add('active');
-    };
-
-    window.savePayment = async () => {
-        vibrate();
-        const amt = parseInt(payAmount.value);
-        if (isNaN(amt) || amt < 0) return alert("Enter a valid amount.");
-
-        btnSavePayment.innerText = "Saving...";
-        btnSavePayment.disabled = true;
-
-        try {
-            let safeProducts = JSON.parse(JSON.stringify(activeCustomer.data.products));
-            let targetProd = safeProducts[activeProductIndex];
-            if(!targetProd.payments) targetProd.payments = [];
-
-            if (activePaymentIndex === null) {
-                targetProd.payments.push({
-                    id: 'MANUAL_' + Date.now(),
-                    amount: amt,
-                    date: new Date(payDate.value).toISOString(),
-                    type: 'collection',
-                    method: payMethod.value,
-                    agent_uid: currentUser.uid,
-                    pendingAfter: 0 
-                });
-            } else {
-                targetProd.payments[activePaymentIndex].amount = amt;
-                targetProd.payments[activePaymentIndex].date = new Date(payDate.value).toISOString();
-                targetProd.payments[activePaymentIndex].method = payMethod.value;
-            }
-
-            let totalPaidCalculated = 0;
-            targetProd.payments.sort((a,b) => new Date(a.date) - new Date(b.date));
-
-            targetProd.payments.forEach(p => {
-                totalPaidCalculated += (parseInt(p.amount) || 0);
-            });
-
-            targetProd.paid = totalPaidCalculated;
-            const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
-            targetProd.pending = Math.max(0, safeTotal - totalPaidCalculated);
-
-            let runningPending = safeTotal;
-            targetProd.payments.forEach(p => {
-                runningPending -= (parseInt(p.amount) || 0);
-                p.pendingAfter = Math.max(0, runningPending);
-            });
-
-            await updateDoc(activeCustomer.ref, { products: safeProducts });
-            
-            activeCustomer.data.products = safeProducts;
-            
-            vibrate([30, 50]);
-            renderProducts(); 
-            buildSearchDictionaryBackground(); // Update RAM cache quietly
-            window.history.back(); 
-
-        } catch (e) {
-            alert("Failed to save: " + e.message);
-        }
-        btnSavePayment.innerText = "Save Payment";
-        btnSavePayment.disabled = false;
-    };
-
-    // --- UPGRADED: Edit Info Modal Engine ---
-    window.openEditCustomerModal = () => {
-        if (!activeCustomer) return;
-        vibrate();
-        const c = activeCustomer.data;
-        
-        document.getElementById('edit-cust-id').value = activeCustomer.id;
-        document.getElementById('edit-cust-name').value = c.name || '';
-        document.getElementById('edit-cust-phone').value = c.phone || '';
-        document.getElementById('edit-cust-loc').value = c.location || '';
-        
-        window.history.pushState({ modal: 'edit-customer' }, '');
-        modalOverlay.classList.add('active');
-        document.getElementById('edit-customer-sheet').classList.add('active');
-    };
-
-    window.saveCustomerEdit = async () => {
-        vibrate();
-        const btn = document.getElementById('btn-save-cust');
-        const newName = document.getElementById('edit-cust-name').value.trim();
-        const newPhone = document.getElementById('edit-cust-phone').value.trim();
-        const newLoc = document.getElementById('edit-cust-loc').value.trim();
-
-        if (!newName) return alert("Name is required");
-
-        btn.innerText = "Saving...";
-        btn.disabled = true;
-
-        try {
-            await updateDoc(activeCustomer.ref, {
-                name: newName,
-                phone: newPhone,
-                location: newLoc
-            });
-
-            // Update Local State synchronously for instantly smooth UX
-            activeCustomer.data.name = newName;
-            activeCustomer.data.phone = newPhone;
-            activeCustomer.data.location = newLoc;
-
-            // Update UI
-            document.getElementById('detail-cust-name').innerText = newName;
-            document.getElementById('ledger-cust-name-inner').innerText = newName;
-            
-            document.getElementById('ledger-cust-phone').innerText = newPhone || 'No Phone';
-            document.getElementById('ledger-cust-phone').href = newPhone ? 'tel:' + newPhone : '#';
-            
-            document.getElementById('ledger-cust-loc').innerText = newLoc || 'No Location';
-            
-            const mapParent = document.getElementById('ledger-map-container');
-            if (newLoc && newLoc.includes(',')) {
-                const parts = newLoc.split(',');
-                const lat = parseFloat(parts[0].trim());
-                const lon = parseFloat(parts[1].trim());
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
-                }
-            } else {
-                mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
-            }
-
-            // Trigger quiet sync of search list cache in the background
-            buildSearchDictionaryBackground(); 
-            
-            vibrate([30, 50]);
-            window.history.back(); // Invokes popstate securely
-        } catch(e) {
-            alert("Failed to save: " + e.message);
-        }
-        
-        btn.innerText = "Save Changes";
-        btn.disabled = false;
-    };
-
-    // --- GPS Fetch for Edit Modal ---
-    window.fetchEditGps = () => {
-        vibrate();
-        const locIn = document.getElementById('edit-cust-loc');
-        const originalVal = locIn.value;
-        locIn.value = "Fetching...";
-        if(navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                p => locIn.value = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)}`,
-                e => { locIn.value = originalVal; alert("GPS Denied/Error"); }
-            );
-        } else {
-            locIn.value = originalVal; alert("GPS Not Supported");
-        }
-    };
 
     // --- 6. Native CSV Exporter ---
     window.downloadCSV = (pIndex) => {
