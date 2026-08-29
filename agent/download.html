@@ -327,7 +327,7 @@
       line-height: 1.4;
     }
 
-    /* --- Installation Modal Popup --- */
+    /* --- Modals (Install & Info) --- */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -545,6 +545,18 @@
     </div>
   </div>
 
+  <!-- App Already Installed Instruction Modal -->
+  <div class="modal-overlay" id="open-instruction-modal">
+    <div class="modal-content">
+      <div class="modal-title">App Already Installed</div>
+      <p class="about-text" style="margin-bottom: 24px;">
+        Up Field is already installed on your device!<br><br>
+        Please close your browser and tap the <b>Up Field icon</b> on your home screen to launch the app safely.
+      </p>
+      <button class="btn" onclick="history.back()">Got it</button>
+    </div>
+  </div>
+
   <!-- Fullscreen Lightbox Viewer -->
   <div class="viewer-overlay" id="image-viewer">
     <button class="viewer-back-btn" onclick="history.back()" aria-label="Close Preview">
@@ -568,6 +580,7 @@
     const statusInfo = document.getElementById('status-info');
     const iosGuide = document.getElementById('ios-guide');
     const installModal = document.getElementById('install-modal');
+    const openInstructionModal = document.getElementById('open-instruction-modal');
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
     const imageViewer = document.getElementById('image-viewer');
@@ -596,6 +609,7 @@
       mainBtn.textContent = "Open";
       statusInfo.textContent = "✅ Up Field App is installed and running natively.";
       mainBtn.addEventListener('click', () => {
+        // Since they are ALREADY in the standalone app, it is safe to redirect here
         window.location.href = 'index.html';
       });
     } 
@@ -626,8 +640,10 @@
 
       // Main Button Action
       mainBtn.addEventListener('click', async () => {
+        // If they click open from a standard browser tab, display the custom instructional modal
         if (mainBtn.textContent === "Open") {
-          window.location.href = 'index.html';
+          openInstructionModal.style.display = 'flex';
+          history.pushState({ modalOpen: true }, "Open Instruction");
           return;
         }
 
@@ -686,17 +702,26 @@
       history.pushState({ viewerOpen: true }, "Image Viewer");
     }
 
+    // Handle Mobile Hardware Back Button for BOTH the image viewer and the instruction modal
     window.addEventListener('popstate', (e) => {
       if (imageViewer.classList.contains('active')) {
         imageViewer.classList.remove('active');
         viewerImg.src = '';
       }
+      
+      if (openInstructionModal.style.display === 'flex') {
+        openInstructionModal.style.display = 'none';
+      }
     });
 
     // Close on Escape Key (Desktop)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && imageViewer.classList.contains('active')) {
-        history.back();
+      if (e.key === 'Escape') {
+        if (imageViewer.classList.contains('active')) {
+          history.back();
+        } else if (openInstructionModal.style.display === 'flex') {
+          history.back();
+        }
       }
     });
   </script>
