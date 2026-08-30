@@ -51,7 +51,8 @@
     /* --- Top Header & Search --- */
     .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: none; margin-bottom: 0 !important; }
     .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-    .icon-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; }
+    .icon-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; transition: transform 0.2s; }
+    .icon-btn:active { transform: scale(0.9); }
     
     .search-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--surface-color); display: flex; align-items: center; padding: 0 15px; transform: translateY(-100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 11; }
     .search-bar-container.active { transform: translateY(0); }
@@ -70,11 +71,16 @@
     .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 0px !important; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
     .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
-    .detail-row svg { width: 18px; height: 18px; stroke: currentColor; }
+    .detail-row svg { width: 18px; height: 18px; stroke: currentColor; flex-shrink: 0; }
 
     /* --- Product & Ledger UI (Level 2) --- */
     .product-item { background: var(--surface-card); padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: var(--shadow); }
-    .product-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main); }
+    
+    /* UPGRADED: Flex column header to prevent name crunching */
+    .product-header-new { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .product-name-wrap { font-size: 1.15rem; font-weight: 800; color: var(--text-main); line-height: 1.3; }
+    .product-actions-row { display: flex; justify-content: flex-end; gap: 10px; width: 100%; border-bottom: 1px dashed var(--border); padding-bottom: 12px; }
+
     .product-math { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-sub); font-weight: 700; }
     .val-pending { color: var(--danger); font-weight: 800; }
 
@@ -82,20 +88,29 @@
     .btn-circle:active { transform: scale(0.9); }
     .btn-csv { background: #8b5cf6; }
     .btn-add { background: var(--primary); }
+    .btn-delete { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
 
     /* --- Modals & Overlays --- */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     
-    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 10px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); }
+    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 10px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; display: flex; flex-direction: column; }
     .bottom-sheet.active { transform: translateY(0); }
-    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; }
+    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; flex-shrink: 0; }
+    
+    /* UPGRADED: Line Picker Internal Scrolling */
+    #picker-list { overflow-y: auto; flex: 1; padding-bottom: 20px; margin-top: 10px; }
+    .picker-line { padding: 16px; border-radius: 14px; margin-bottom: 10px; cursor: pointer; transition: transform 0.2s; border: 1px solid var(--border); background: var(--bg-color); }
+    .picker-line:active { transform: scale(0.98); }
+    .picker-line h4 { margin-bottom: 3px; font-size: 1.1rem; }
+    .picker-line p { font-size: 0.85rem; font-family: monospace; color: var(--text-sub); }
 
     .input-group { margin-bottom: 20px; }
     .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
     .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
     .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
+    
     .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
     .btn-full:active { transform: scale(0.97); }
 
@@ -106,12 +121,27 @@
     .dash-value.pending { color: var(--danger); }
     .dash-value.paid { color: var(--primary); }
 
-    /* Loading & Pagination */
+    /* Loading & Skeletons */
     .loader-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
     .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 16px; height: 90px; margin-bottom: 15px; }
     @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); display: none; }
+    .loading-trigger { text-align: center; padding: 15px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
+
+    /* UPGRADED: Custom Confirm & Alert Overlays */
+    .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
+    .confirm-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .confirm-modal, .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
+    .confirm-modal.active, .alert-modal.active { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+    .alert-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; }
+    .alert-actions { display: flex; gap: 10px; margin-top: 25px; }
+    .btn-alert { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; font-size: 1rem; transition: transform 0.2s; }
+    .btn-alert:active { transform: scale(0.95); }
+    .btn-cancel { background: var(--bg-color); color: var(--text-main); border: 2px solid var(--border); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-primary { background: var(--primary); color: #fff; }
   </style>
 </head>
 <body>
@@ -165,7 +195,14 @@
         </button>
         <h2 style="font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0;" id="detail-cust-name">Customer</h2>
       </div>
-      <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); font-size: 0.85rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; flex-shrink: 0;" onclick="openEditCustomerModal()">Edit Info</button>
+      
+      <!-- UPGRADED: Flex Container for 2 Actions -->
+      <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="icon-btn" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 6px 10px; border-radius: 8px; flex-shrink: 0;" onclick="openLinePickerModal()" title="Change Line">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); font-size: 0.85rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; flex-shrink: 0;" onclick="openEditCustomerModal()">Edit Info</button>
+      </div>
     </div>
     
     <div class="screen-content" style="padding-top: 0 !important;">
@@ -181,19 +218,29 @@
             <h3 id="ledger-cust-name-inner">Customer Name</h3>
             <div class="detail-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                <!-- UPGRADED: Anchor tag to launch phone dialer natively -->
+                <!-- Anchor tag to launch phone dialer natively -->
                 <a href="#" id="ledger-cust-phone" style="color: inherit; text-decoration: none;">Loading...</a>
             </div>
             <div class="detail-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                <span id="ledger-cust-loc">Loading...</span>
+                <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+                    <span id="ledger-cust-loc">Loading...</span>
+                    <!-- UPGRADED: Dedicated native Locate button -->
+                    <button id="btn-locate-map" style="display: none; background: rgba(59,130,246,0.25); color: #60a5fa; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="locateCustomer()">Locate on Map</button>
+                </div>
             </div>
             <div class="detail-row" style="margin-top: 15px;">
                 <span style="font-weight: 700; color: #f9fafb; font-size: 1.1rem;">Total Pending: <span id="ledger-total-pending" style="color: #f87171;">₹0</span></span>
             </div>
         </div>
 
-        <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; margin-bottom: 10px;">Active Products</div>
+        <!-- UPGRADED: Flex Header for Active Products -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;">Active Products</div>
+            <button class="btn-circle btn-add" style="width: 32px; height: 32px; font-size: 1rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);" onclick="openAddProductModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+        </div>
         <div id="product-list"></div>
     </div>
   </div>
@@ -201,11 +248,34 @@
   <!-- ================= MODALS & OVERLAYS ================= -->
   <div class="modal-overlay" id="modal-overlay"></div>
 
+  <!-- UPGRADED: Add Product Sheet (Native History Binding) -->
+  <div class="bottom-sheet" id="add-product-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Add New Product</h3>
+    
+    <div class="input-group">
+      <label>Product Name</label>
+      <input type="text" id="add-prod-name" placeholder="e.g. Samsung 32-inch TV">
+    </div>
+    
+    <div class="input-group">
+      <label>Total Amount (₹)</label>
+      <input type="number" id="add-prod-total" inputmode="numeric">
+    </div>
+    
+    <div class="input-group">
+      <label>Amount Paid (Advance) (₹)</label>
+      <input type="number" id="add-prod-paid" inputmode="numeric">
+    </div>
+    
+    <button class="btn-full" id="btn-save-new-product" onclick="saveNewProduct()">Add Product</button>
+  </div>
+
   <!-- Payment Modal (Add & Edit) -->
   <div class="bottom-sheet" id="payment-sheet">
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-title">Record Payment</h3>
-    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700;" id="sheet-sub">Product Name</p>
+    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="sheet-sub">Product Name</p>
     
     <div class="dashboard">
         <div class="dash-card">
@@ -236,11 +306,10 @@
       </select>
     </div>
 
-    <!-- NATIVE HTML ONCLICK -->
     <button class="btn-full" id="btn-save-payment" onclick="savePayment()">Save Payment</button>
   </div>
 
-  <!-- UPGRADED: Edit Info Modal with GPS Auto-Fetch -->
+  <!-- Edit Info Modal -->
   <div class="bottom-sheet" id="edit-customer-sheet">
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Edit Info</h3>
@@ -273,10 +342,51 @@
     <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
   </div>
 
+  <!-- UPGRADED: Change Line Bottom Sheet (Smart Parallel Search) -->
+  <div class="bottom-sheet" id="line-picker-sheet" style="height: 85vh;">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;">Change Line</h3>
+    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 15px; font-weight: 700;" id="picker-current-line">Current Line: Loading...</p>
+
+    <div class="search-bar-container" style="position: relative; transform: none; padding: 0; background: transparent; z-index: 1; flex-shrink: 0;">
+      <svg style="position: absolute; left: 15px; width: 20px; height: 20px; stroke: var(--text-sub); fill: none; stroke-width: 2.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" id="picker-search-input" class="search-input" style="width: 100%; margin: 0; padding-left: 45px; border: 2px solid var(--border);" placeholder="Search line name or ID...">
+    </div>
+
+    <div id="picker-list"></div>
+    <div id="picker-loader" class="loading-trigger">Loading...</div>
+  </div>
+
+  <!-- UPGRADED: Custom Alert & Confirm Modals -->
+  <div class="confirm-overlay" id="custom-overlay"></div>
+  
+  <div class="alert-modal" id="custom-alert">
+    <div class="alert-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+    <h3 id="alert-title">Notice</h3>
+    <p id="alert-msg" style="margin-bottom: 25px; color: var(--text-sub);"></p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-primary" onclick="window.history.back()">OK</button>
+    </div>
+  </div>
+
+  <div class="confirm-modal" id="custom-confirm">
+    <div class="alert-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger);">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    </div>
+    <h3>Are you sure?</h3>
+    <p id="confirm-msg" style="margin-bottom: 25px; color: var(--text-sub);"></p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-cancel" id="btn-confirm-cancel">Cancel</button>
+      <button class="btn-alert btn-danger" id="btn-confirm-ok">Confirm</button>
+    </div>
+  </div>
+
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter, where } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter, where, orderBy, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // --- Global State ---
     let currentUser = null;
@@ -287,6 +397,12 @@
     let isSearchMode = false;
     let searchTimeout = null;
     let isOpeningCustomer = false; 
+
+    // Line Picker State (Smart Cache)
+    let linesCache = {};
+    let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
+    let linesNameLastVisible = null, linesNameHasMore = true;
+    let linesIdLastVisible = null, linesIdHasMore = true;
 
     // Pagination State
     let lastVisibleDoc = null;
@@ -302,6 +418,34 @@
 
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
     const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // --- Native Modal Overrides ---
+    let alertResolve = null;
+    window.customAlert = function(msg, title="Notice") {
+      return new Promise(resolve => {
+        vibrate(50);
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-msg').innerText = msg;
+        document.getElementById('custom-overlay').classList.add('active');
+        document.getElementById('custom-alert').classList.add('active');
+        window.history.pushState({ customAlert: true }, '');
+        alertResolve = resolve;
+      });
+    }
+
+    let confirmResolve = null;
+    window.customConfirm = function(msg) {
+      return new Promise(resolve => {
+        vibrate([50,50]);
+        document.getElementById('confirm-msg').innerText = msg;
+        document.getElementById('custom-overlay').classList.add('active');
+        document.getElementById('custom-confirm').classList.add('active');
+        window.history.pushState({ customConfirm: true }, '');
+        confirmResolve = resolve;
+      });
+    }
+    document.getElementById('btn-confirm-cancel').onclick = () => window.history.back();
+    document.getElementById('btn-confirm-ok').onclick = () => { if(confirmResolve) { confirmResolve(true); confirmResolve = null; } window.history.back(); };
 
     // --- DOM Elements ---
     const customerListEl = document.getElementById('customer-list');
@@ -326,6 +470,16 @@
     // CLEANED UP: Top-Down UI Closing Engine (No Ghost History)
     // ============================================================================
     function closeTopUI() {
+        // 0. Custom Alerts/Confirms
+        const activeAlert = document.querySelector('.alert-modal.active, .confirm-modal.active');
+        if(activeAlert) {
+            activeAlert.classList.remove('active');
+            document.getElementById('custom-overlay').classList.remove('active');
+            if(alertResolve) { alertResolve(true); alertResolve = null; }
+            if(confirmResolve) { confirmResolve(false); confirmResolve = null; }
+            return;
+        }
+
         // 1. Modals (Highest Layer)
         const editSheet = document.getElementById('edit-customer-sheet');
         if (editSheet && editSheet.classList.contains('active')) {
@@ -335,6 +489,18 @@
         }
         if (paymentSheet && paymentSheet.classList.contains('active')) {
             paymentSheet.classList.remove('active');
+            modalOverlay.classList.remove('active');
+            return;
+        }
+        const addProductSheet = document.getElementById('add-product-sheet');
+        if (addProductSheet && addProductSheet.classList.contains('active')) {
+            addProductSheet.classList.remove('active');
+            modalOverlay.classList.remove('active');
+            return;
+        }
+        const linePickerSheet = document.getElementById('line-picker-sheet');
+        if (linePickerSheet && linePickerSheet.classList.contains('active')) {
+            linePickerSheet.classList.remove('active');
             modalOverlay.classList.remove('active');
             return;
         }
@@ -368,6 +534,7 @@
     
     // Close overlay triggers native back
     modalOverlay.addEventListener('click', () => window.history.back());
+    document.getElementById('custom-overlay').addEventListener('click', () => window.history.back());
 
     // --- Initialize ---
     onAuthStateChanged(auth, (user) => { 
@@ -563,7 +730,9 @@
             document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
 
             const mapParent = document.getElementById('ledger-map-container');
+            const locateBtn = document.getElementById('btn-locate-map');
             if (c.location && c.location.includes(',')) {
+                locateBtn.style.display = 'inline-block';
                 const parts = c.location.split(',');
                 const lat = parseFloat(parts[0].trim());
                 const lon = parseFloat(parts[1].trim());
@@ -572,6 +741,7 @@
                     mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
                 }
             } else {
+                locateBtn.style.display = 'none';
                 mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
             }
             
@@ -582,6 +752,15 @@
             isOpeningCustomer = false; 
         }
     }
+
+    // Dynamic Maps Location Trigger
+    window.locateCustomer = () => {
+        vibrate();
+        const loc = activeCustomer?.data?.location;
+        if(!loc || !loc.includes(',')) return customAlert("No valid GPS coordinates found for this customer.");
+        const [lat, lng] = loc.split(',').map(s => s.trim());
+        window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank');
+    };
 
     // Dropdown UI Toggle
     window.toggleLedger = (index) => {
@@ -633,7 +812,7 @@
                 });
 
                 sortedPayments.reverse().forEach(pay => {
-                    // UPGRADED: Added Year and forcing nowrap below
+                    // Added Year and forcing nowrap below
                     const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year: 'numeric' });
                     payHtml += `
                     <tr style="border-bottom: 1px solid var(--border);">
@@ -654,15 +833,20 @@
 
             const card = document.createElement('div');
             card.className = 'product-item';
+            
+            // UPGRADED: Flex Column Header formatting ensuring product name wraps gracefully
             card.innerHTML = `
-                <div class="product-header">
-                    <span>${p.name || 'Product'}</span>
-                    <div class="prod-actions" style="display:flex; gap:10px;">
+                <div class="product-header-new">
+                    <div class="product-name-wrap">${p.name || 'Product'}</div>
+                    <div class="product-actions-row">
                         <button class="btn-circle btn-csv" onclick="window.downloadCSV(${pIndex})">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         </button>
                         <button class="btn-circle btn-add" onclick="window.openAddPayment(${pIndex})">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                        <button class="btn-circle btn-delete" onclick="window.deleteProduct(${pIndex})">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </div>
                 </div>
@@ -702,6 +886,79 @@
     }
 
     // --- 5. Ledger Editing ---
+    window.openAddProductModal = () => {
+        vibrate();
+        document.getElementById('add-prod-name').value = '';
+        document.getElementById('add-prod-total').value = '';
+        document.getElementById('add-prod-paid').value = '';
+        window.history.pushState({ modal: 'add-product' }, '');
+        modalOverlay.classList.add('active');
+        document.getElementById('add-product-sheet').classList.add('active');
+    };
+
+    window.saveNewProduct = async () => {
+        vibrate();
+        const pName = document.getElementById('add-prod-name').value.trim();
+        const pTotal = Number(document.getElementById('add-prod-total').value);
+        const pPaid = Number(document.getElementById('add-prod-paid').value);
+
+        if(!pName || !pTotal) return customAlert("Please enter a valid product name and total amount.");
+
+        const btn = document.getElementById('btn-save-new-product');
+        btn.innerText = "Adding..."; btn.disabled = true;
+
+        try {
+            const newP = {
+                id: 'P_'+Date.now(),
+                name: pName,
+                total: pTotal,
+                paid: pPaid,
+                pending: pTotal-pPaid,
+                addedAt: new Date().toISOString(),
+                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', pendingAfter: pTotal-pPaid }] : []
+            };
+
+            await runTransaction(db, async (transaction) => {
+                const cSnap = await transaction.get(activeCustomer.ref);
+                if (!cSnap.exists()) throw new Error("Customer not found.");
+                const cData = cSnap.data();
+                const updatedProds = cData.products ? [...cData.products, newP] : [newP];
+                transaction.update(activeCustomer.ref, { products: updatedProds });
+                activeCustomer.data.products = updatedProds; // Sync local
+            });
+
+            vibrate([30, 50]);
+            renderProducts();
+            window.history.back(); // safely close modal
+        } catch(e) {
+            customAlert("Failed to add product: " + e.message);
+        }
+        btn.innerText = "Add Product"; btn.disabled = false;
+    };
+
+    window.deleteProduct = async (pIndex) => {
+        vibrate([50, 100]);
+        const prod = activeCustomer.data.products[pIndex];
+        const confirmed = await customConfirm(`Are you sure you want to completely delete "${prod.name}" and ALL its payment history? This cannot be undone.`);
+        if(!confirmed) return;
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const cSnap = await transaction.get(activeCustomer.ref);
+                if (!cSnap.exists()) throw new Error("Customer not found.");
+                const cData = cSnap.data();
+                let updatedProds = cData.products || [];
+                updatedProds.splice(pIndex, 1); // Remove product safely
+                transaction.update(activeCustomer.ref, { products: updatedProds });
+                activeCustomer.data.products = updatedProds; // Sync Local
+            });
+            vibrate([50, 50, 50]);
+            renderProducts();
+        } catch(e) {
+            customAlert("Failed to delete: " + e.message);
+        }
+    };
+
     window.openAddPayment = (pIndex) => {
         if (paymentSheet.classList.contains('active')) return;
         vibrate();
@@ -750,9 +1007,8 @@
         const amt = parseInt(payAmount.value);
         const selectedDate = payDate.value;
         
-        // UPGRADED: Enhanced strict validation
-        if (isNaN(amt) || amt < 0) return alert("Enter a valid positive amount.");
-        if (!selectedDate) return alert("Please select a valid date.");
+        if (isNaN(amt) || amt < 0) return customAlert("Enter a valid positive amount.");
+        if (!selectedDate) return customAlert("Please select a valid date.");
 
         btnSavePayment.innerText = "Saving...";
         btnSavePayment.disabled = true;
@@ -779,15 +1035,13 @@
                 targetProd.payments[activePaymentIndex].method = payMethod.value;
             }
 
-            // UPGRADED: Robust mathematical recalibration locking logic
+            // Robust mathematical recalibration locking logic
             let totalPaidCalculated = 0;
-            // Force strict timestamp comparison instead of raw strings
             targetProd.payments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
             const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
             let runningPending = safeTotal;
 
-            // Sequential lock-in fixes any drift when middle dates are edited
             targetProd.payments.forEach(p => {
                 let pAmt = parseInt(p.amount) || 0;
                 totalPaidCalculated += pAmt;
@@ -808,13 +1062,13 @@
             window.history.back(); 
 
         } catch (e) {
-            alert("Failed to save: " + e.message);
+            customAlert("Failed to save: " + e.message);
         }
         btnSavePayment.innerText = "Save Payment";
         btnSavePayment.disabled = false;
     };
 
-    // --- UPGRADED: Edit Info Modal Engine ---
+    // --- Edit Info Modal Engine ---
     window.openEditCustomerModal = () => {
         if (!activeCustomer) return;
         vibrate();
@@ -837,7 +1091,7 @@
         const newPhone = document.getElementById('edit-cust-phone').value.trim();
         const newLoc = document.getElementById('edit-cust-loc').value.trim();
 
-        if (!newName) return alert("Name is required");
+        if (!newName) return customAlert("Name is required");
 
         btn.innerText = "Saving...";
         btn.disabled = true;
@@ -864,7 +1118,9 @@
             document.getElementById('ledger-cust-loc').innerText = newLoc || 'No Location';
             
             const mapParent = document.getElementById('ledger-map-container');
+            const locateBtn = document.getElementById('btn-locate-map');
             if (newLoc && newLoc.includes(',')) {
+                locateBtn.style.display = 'inline-block';
                 const parts = newLoc.split(',');
                 const lat = parseFloat(parts[0].trim());
                 const lon = parseFloat(parts[1].trim());
@@ -873,16 +1129,16 @@
                     mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
                 }
             } else {
+                locateBtn.style.display = 'none';
                 mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
             }
 
-            // Trigger quiet sync of search list cache in the background
             buildSearchDictionaryBackground(); 
             
             vibrate([30, 50]);
             window.history.back(); // Invokes popstate securely
         } catch(e) {
-            alert("Failed to save: " + e.message);
+            customAlert("Failed to save: " + e.message);
         }
         
         btn.innerText = "Save Changes";
@@ -898,22 +1154,210 @@
         if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 p => locIn.value = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)}`,
-                e => { locIn.value = originalVal; alert("GPS Denied/Error"); }
+                e => { locIn.value = originalVal; customAlert("GPS Denied/Error"); }
             );
         } else {
-            locIn.value = originalVal; alert("GPS Not Supported");
+            locIn.value = originalVal; customAlert("GPS Not Supported");
         }
     };
 
-    // --- 6. Native CSV Exporter ---
+
+    // ==========================================
+    // UPGRADED: LINE PICKER (SMART CACHE + PARALLEL DB SEARCH)
+    // ==========================================
+    let debounceLineSearchTimer;
+    const debounceLine = (f, d=400) => (...args) => { clearTimeout(debounceLineSearchTimer); debounceLineSearchTimer = setTimeout(() => f(...args), d); };
+
+    async function getLineData(lineId) {
+      if(!lineId) return null;
+      if(linesCache[lineId]) return linesCache[lineId]; 
+      try {
+        const d = await getDoc(doc(db, "lines", lineId));
+        if(d.exists()) {
+          linesCache[lineId] = d.data();
+          return linesCache[lineId];
+        }
+      } catch(e) { console.error(e); }
+      return null;
+    }
+
+    window.openLinePickerModal = async () => {
+        if (!activeCustomer) return;
+        vibrate();
+        
+        const currentLineId = activeCustomer.data.lineId;
+        const lineDisplayLabel = document.getElementById('picker-current-line');
+        lineDisplayLabel.innerText = "Current Line: Loading...";
+
+        // Resolves zero-read if cached, otherwise 1 read
+        if(currentLineId) {
+            const lData = await getLineData(currentLineId);
+            if(lData) lineDisplayLabel.innerText = `Current Line: ${lData.name} (${lData.id})`;
+            else lineDisplayLabel.innerText = `Current Line: Unknown (${currentLineId})`;
+        } else {
+            lineDisplayLabel.innerText = `Current Line: Unassigned`;
+        }
+
+        linesSearch = ""; document.getElementById('picker-search-input').value = '';
+        linesLastVisible = null; linesHasMore = true;
+        linesNameLastVisible = null; linesNameHasMore = true;
+        linesIdLastVisible = null; linesIdHasMore = true;
+        
+        window.history.pushState({ modal: 'line-picker' }, '');
+        modalOverlay.classList.add('active');
+        document.getElementById('line-picker-sheet').classList.add('active');
+
+        loadPickerLines();
+    };
+
+    async function loadPickerLines(isMore = false) {
+      if(linesLoading) return;
+      
+      const isSearch = linesSearch.trim() !== "";
+      if (isSearch && isMore && !linesNameHasMore && !linesIdHasMore) return;
+      if (!isSearch && isMore && !linesHasMore) return;
+
+      linesLoading = true;
+      const list = document.getElementById('picker-list');
+      const loader = document.getElementById('picker-loader');
+      
+      if(!isMore) { 
+        let h=''; for(let i=0;i<3;i++) h+=`<div class="picker-line"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:5px;"></div><div class="skeleton-box" style="height:15px;width:40%;"></div></div>`;
+        list.innerHTML = h; loader.style.display = 'none'; 
+      } else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+
+      try {
+        let results = [];
+        const linesRef = collection(db, "lines");
+
+        if(isSearch) {
+          let nameTerm = linesSearch.charAt(0).toUpperCase() + linesSearch.slice(1);
+          let idTerm = linesSearch.toUpperCase();
+          
+          let nameSnap = null; let idSnap = null; const promises = [];
+          
+          // PARALLEL QUERY A
+          if (linesNameHasMore) {
+            let qName = query(linesRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(3));
+            if (isMore && linesNameLastVisible) qName = query(qName, startAfter(linesNameLastVisible));
+            promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
+          }
+          
+          // PARALLEL QUERY B
+          if (linesIdHasMore) {
+            let qId = query(linesRef, where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(3));
+            if (isMore && linesIdLastVisible) qId = query(qId, startAfter(linesIdLastVisible));
+            promises.push(getDocs(qId).then(snap => { idSnap = snap; }));
+          }
+          
+          await Promise.all(promises);
+          
+          if (nameSnap) {
+            linesNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
+            linesNameHasMore = nameSnap.docs.length === 3;
+            nameSnap.forEach(d => results.push(d.data()));
+          }
+          
+          if (idSnap) {
+            linesIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
+            linesIdHasMore = idSnap.docs.length === 3;
+            idSnap.forEach(d => results.push(d.data()));
+          }
+          
+        } else {
+          // Standard Load
+          let q = query(linesRef, orderBy("createdAt", "desc"), limit(6));
+          if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
+
+          const snap = await getDocs(q);
+          linesLastVisible = snap.docs[snap.docs.length-1];
+          linesHasMore = snap.docs.length === 6;
+          snap.forEach(d => results.push(d.data()));
+        }
+
+        // De-duplication
+        const uniqueMap = {};
+        const finalResults = [];
+        results.forEach(data => {
+            if(!uniqueMap[data.id]) {
+                uniqueMap[data.id] = true;
+                finalResults.push(data);
+                linesCache[data.id] = data; // Cache it!
+            }
+        });
+
+        if(!isMore) list.innerHTML = '';
+        if(finalResults.length === 0 && !isMore) { 
+          list.innerHTML = '<p style="text-align:center;color:var(--text-sub);">No lines found.</p>'; 
+          loader.style.display = 'none';
+          linesLoading=false; return; 
+        }
+
+        let html = '';
+        finalResults.forEach(data => {
+          // Disable clicking the exact line the user is already in
+          const isCurrent = data.id === activeCustomer.data.lineId;
+          const style = isCurrent ? `opacity: 0.5; cursor: not-allowed; border-color: var(--primary); background: rgba(16, 185, 129, 0.05);` : ``;
+          const text = isCurrent ? ` (Current Line)` : ``;
+          
+          html += `
+            <div class="picker-line" style="${style}" onclick="${isCurrent ? '' : `assignLineToCustomer('${data.id}')`}">
+              <h4>${data.name}${text}</h4>
+              <p>${data.id} • ${data.scheduleType || 'Daily'}</p>
+            </div>`;
+        });
+        list.insertAdjacentHTML('beforeend', html);
+        
+        const anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
+        loader.style.display = anyMore ? 'block' : 'none';
+        loader.innerText = anyMore ? 'Scroll for more' : '';
+        
+      } catch(e) { customAlert(e.message); }
+      linesLoading = false;
+    }
+
+    document.getElementById('picker-search-input').addEventListener('input', debounceLine(e => {
+      let val = e.target.value.trim();
+      linesSearch = val;
+      
+      linesLastVisible = null; linesHasMore = true;
+      linesNameLastVisible = null; linesNameHasMore = true;
+      linesIdLastVisible = null; linesIdHasMore = true;
+      
+      loadPickerLines();
+    }));
+
+    document.getElementById('picker-list').addEventListener('scroll', function() {
+      if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 50) {
+        let isSearch = linesSearch.trim() !== "";
+        let anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
+        if(anyMore && !linesLoading) { vibrate(10); loadPickerLines(true); }
+      }
+    });
+
+    window.assignLineToCustomer = async (newLineId) => {
+        vibrate([30, 50]);
+        if(!activeCustomer || !newLineId) return;
+
+        try {
+            await updateDoc(activeCustomer.ref, { lineId: newLineId });
+            activeCustomer.data.lineId = newLineId; // Sync locally instantly
+            window.history.back(); // Dismiss Modal
+            customAlert("Customer successfully moved to new line.", "Success");
+        } catch(e) {
+            customAlert("Failed to change line: " + e.message, "Error");
+        }
+    };
+
+    // --- Native CSV Exporter ---
     window.downloadCSV = (pIndex) => {
         vibrate();
         const prod = activeCustomer.data.products[pIndex];
-        if(!prod.payments || prod.payments.length === 0) return alert("No payments to export.");
+        if(!prod.payments || prod.payments.length === 0) return customAlert("No payments to export.");
 
         let csvContent = "Date,Receipt ID,Method,Amount,Remaining Balance After\n";
         
-        const sorted = [...prod.payments].sort((a,b) => new Date(a.date) - new Date(b.date));
+        const sorted = [...prod.payments].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         
         sorted.forEach(p => {
             const d = new Date(p.date).toLocaleDateString('en-IN');
