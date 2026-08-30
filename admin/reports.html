@@ -108,12 +108,13 @@
     .bottom-sheet.active { transform: translateY(0); }
     .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; flex-shrink: 0; }
     
-    /* Line Picker Internal Scrolling with Anti-Jitter Min-Height */
-    #picker-list { overflow-y: auto; max-height: 60vh; min-height: 300px; padding-bottom: 20px; margin-top: 10px; }
-    .picker-line { padding: 16px; border-radius: 14px; margin-bottom: 10px; cursor: pointer; transition: transform 0.2s; border: 1px solid var(--border); background: var(--bg-color); }
-    .picker-line:active { transform: scale(0.98); }
-    .picker-line h4 { margin-bottom: 3px; font-size: 1.1rem; }
-    .picker-line p { font-size: 0.85rem; font-family: monospace; color: var(--text-sub); }
+    /* --- REDESIGNED LINE PICKER --- */
+    #line-picker-sheet { padding-bottom: 25px; } /* Removed excessive padding to fix bottom gap */
+    #picker-list { overflow-y: auto; max-height: 55vh; padding-bottom: 10px; margin-top: 15px; display: flex; flex-direction: column; gap: 12px; }
+    .picker-line { padding: 18px; border-radius: 16px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.2); border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .picker-line:active { transform: scale(0.96); }
+    .picker-line h4 { margin-bottom: 4px; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .picker-line p { font-size: 0.85rem; font-family: monospace; font-weight: 700; opacity: 0.9; }
 
     .input-group { margin-bottom: 20px; }
     .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -350,16 +351,18 @@
     <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
   </div>
 
-  <!-- Change Line Bottom Sheet -->
+  <!-- Change Line Bottom Sheet (Redesigned) -->
   <div class="bottom-sheet" id="line-picker-sheet">
     <div class="sheet-handle"></div>
-    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;">Change Line</h3>
-    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 15px; font-weight: 700;" id="picker-current-line">Current Line: Loading...</p>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;">Change Area / Line</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <p style="color: var(--text-sub); font-size: 0.85rem; font-weight: 700; margin: 0;" id="picker-current-line">Current Line: Loading...</p>
+    </div>
 
-    <!-- Isolated inline flex rules -->
-    <div style="position: relative; width: 100%; flex-shrink: 0; margin-bottom: 5px;">
+    <!-- Redesigned Search Input -->
+    <div style="position: relative; width: 100%; flex-shrink: 0;">
       <svg style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--text-sub); fill: none; stroke-width: 2.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="text" id="picker-search-input" style="width: 100%; margin: 0; padding: 14px 14px 14px 45px; border: 2px solid var(--border); border-radius: 12px; background: var(--bg-color); font-size: 1rem; color: var(--text-main); font-weight: 600; outline: none;" placeholder="Search line name or ID...">
+      <input type="text" id="picker-search-input" style="width: 100%; padding: 14px 14px 14px 45px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface-color); font-size: 1rem; color: var(--text-main); font-weight: 600; outline: none; transition: border-color 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);" placeholder="Search line name or ID...">
     </div>
 
     <div id="picker-list"></div>
@@ -407,10 +410,7 @@
     let searchTimeout = null;
     let isOpeningCustomer = false; 
 
-    // Line Picker State (Smart Cache)
-    let linesCache = {};
-    let defaultLinesArray = [];
-    let hasFetchedDefaultLines = false;
+    // Line Picker State (Fully Real-Time)
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let linesNameLastVisible = null, linesNameHasMore = true;
     let linesIdLastVisible = null, linesIdHasMore = true;
@@ -623,11 +623,12 @@
             const data = d.data();
             const card = document.createElement('div');
             card.className = 'card';
+            card.id = `main-card-${d.id}`; // ADDED DOM ID
             card.innerHTML = `
                 <div class="card-top">
                     <div>
-                        <div class="card-title">${data.name || 'Unknown'}</div>
-                        <div class="card-sub">ID: ${d.id} | 📞 ${data.phone || 'N/A'}</div>
+                        <div class="card-title" id="main-card-name-${d.id}">${data.name || 'Unknown'}</div> <!-- ADDED DOM ID -->
+                        <div class="card-sub" id="main-card-phone-${d.id}">ID: ${d.id} | 📞 ${data.phone || 'N/A'}</div> <!-- ADDED DOM ID -->
                     </div>
                     <span class="badge">${data.products ? data.products.length : 0} Products</span>
                 </div>
@@ -693,11 +694,12 @@
                 combined.forEach(c => {
                     const card = document.createElement('div');
                     card.className = 'card';
+                    card.id = `search-card-${c.rawId}`; // ADDED DOM ID
                     card.innerHTML = `
                         <div class="card-top">
                             <div>
-                                <div class="card-title">${c.rawName}</div>
-                                <div class="card-sub">ID: ${c.rawId} | 📞 ${c.phone}</div>
+                                <div class="card-title" id="search-card-name-${c.rawId}">${c.rawName}</div> <!-- ADDED DOM ID -->
+                                <div class="card-sub" id="search-card-phone-${c.rawId}">ID: ${c.rawId} | 📞 ${c.phone}</div> <!-- ADDED DOM ID -->
                             </div>
                         </div>
                     `;
@@ -1091,7 +1093,7 @@
 
             vibrate([30, 50]);
             renderProducts(); 
-            buildSearchDictionaryBackground(); // Update RAM cache quietly
+            // buildSearchDictionaryBackground(); // Removed to save reads
             window.history.back(); 
 
         } catch (e) {
@@ -1166,7 +1168,37 @@
                 mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
             }
 
-            buildSearchDictionaryBackground(); 
+            // --- ZERO-READ OPTIMIZATION START ---
+            // 1. Update UI (Level 1 main list) directly
+            const mainNameEl = document.getElementById(`main-card-name-${activeCustomer.id}`);
+            const mainPhoneEl = document.getElementById(`main-card-phone-${activeCustomer.id}`);
+            if (mainNameEl) mainNameEl.innerText = newName;
+            if (mainPhoneEl) mainPhoneEl.innerText = `ID: ${activeCustomer.id} | 📞 ${newPhone || 'N/A'}`;
+
+            // 2. Update UI (Level 1 search list) directly
+            const searchNameEl = document.getElementById(`search-card-name-${activeCustomer.id}`);
+            const searchPhoneEl = document.getElementById(`search-card-phone-${activeCustomer.id}`);
+            if (searchNameEl) searchNameEl.innerText = newName;
+            if (searchPhoneEl) searchPhoneEl.innerText = `ID: ${activeCustomer.id} | 📞 ${newPhone || 'N/A'}`;
+
+            // 3. Update RAM Cache Manually
+            const cacheIndex = localSearchCache.findIndex(c => c.rawId === activeCustomer.id);
+            if (cacheIndex !== -1) {
+                localSearchCache[cacheIndex].name = newName.toLowerCase();
+                localSearchCache[cacheIndex].rawName = newName;
+                localSearchCache[cacheIndex].phone = newPhone;
+            } else {
+                localSearchCache.push({
+                    id: activeCustomer.id.toLowerCase(),
+                    name: newName.toLowerCase(),
+                    rawName: newName,
+                    rawId: activeCustomer.id,
+                    phone: newPhone
+                });
+            }
+
+            // buildSearchDictionaryBackground(); // Commented out to save DB reads!
+            // --- ZERO-READ OPTIMIZATION END ---
             
             vibrate([30, 50]);
             window.history.back(); // Invokes popstate securely
@@ -1196,19 +1228,17 @@
 
 
     // ==========================================
-    // UPGRADED: LINE PICKER (SMART CACHE + PARALLEL DB SEARCH)
+    // UPGRADED: LINE PICKER (FULLY REAL-TIME)
     // ==========================================
     let debounceLineSearchTimer;
     const debounceLine = (f, d=400) => (...args) => { clearTimeout(debounceLineSearchTimer); debounceLineSearchTimer = setTimeout(() => f(...args), d); };
 
     async function getLineData(lineId) {
       if(!lineId) return null;
-      if(linesCache[lineId]) return linesCache[lineId]; 
       try {
         const d = await getDoc(doc(db, "lines", lineId));
         if(d.exists()) {
-          linesCache[lineId] = d.data();
-          return linesCache[lineId];
+          return d.data();
         }
       } catch(e) { console.error(e); }
       return null;
@@ -1232,7 +1262,7 @@
         modalOverlay.classList.add('active');
         document.getElementById('line-picker-sheet').classList.add('active');
 
-        // Resolves zero-read if cached, otherwise 1 read
+        // Fresh read for current line info
         if(currentLineId) {
             getLineData(currentLineId).then(lData => {
                 if(lData) lineDisplayLabel.innerText = `Current Line: ${lData.name} (${lData.id})`;
@@ -1255,34 +1285,11 @@
       const list = document.getElementById('picker-list');
       const loader = document.getElementById('picker-loader');
 
-      // Smart Cache Check for Jitter-Free Load
-      if (!isSearch && !isMore && hasFetchedDefaultLines) {
-          linesLoading = true;
-          let html = '';
-          const cachedLines = defaultLinesArray; 
-          cachedLines.forEach(data => {
-              const isCurrent = activeCustomer && data.id === activeCustomer.data.lineId;
-              const style = isCurrent ? `opacity: 0.5; cursor: not-allowed; border-color: var(--primary); background: rgba(16, 185, 129, 0.05);` : ``;
-              const text = isCurrent ? ` (Current Line)` : ``;
-
-              html += `
-                <div class="picker-line ${data.color || 'grad-6'}" style="${style}" onclick="${isCurrent ? '' : `assignLineToCustomer('${data.id}')`}">
-                  <h4>${data.name}${text}</h4>
-                  <p>${data.id} • ${data.scheduleType || 'Daily'}</p>
-                </div>`;
-          });
-          list.innerHTML = html;
-          loader.style.display = linesHasMore ? 'block' : 'none';
-          loader.innerText = linesHasMore ? 'Scroll for more' : '';
-          linesLoading = false;
-          return;
-      }
-
       linesLoading = true;
       
       if(!isMore) { 
         // UPGRADED: 6 Skeletons prevents height jitter
-        let h=''; for(let i=0;i<6;i++) h+=`<div class="picker-line"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:5px;"></div><div class="skeleton-box" style="height:15px;width:40%;"></div></div>`;
+        let h=''; for(let i=0;i<6;i++) h+=`<div class="picker-line" style="background: var(--surface-card); border: 1px solid var(--border);"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:8px; border-radius:4px;"></div><div class="skeleton-box" style="height:15px;width:40%; border-radius:4px; margin-bottom:0;"></div></div>`;
         list.innerHTML = h; loader.style.display = 'none'; 
       } else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
 
@@ -1325,7 +1332,7 @@
           }
           
         } else {
-          // Standard Load
+          // Standard Real-Time Paginated Load
           let q = query(linesRef, orderBy("createdAt", "desc"), limit(6));
           if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
 
@@ -1333,13 +1340,9 @@
           linesLastVisible = snap.docs[snap.docs.length-1];
           linesHasMore = snap.docs.length === 6;
           
-          if (!isMore) defaultLinesArray = []; 
-          
           snap.forEach(d => {
              results.push(d.data());
-             defaultLinesArray.push(d.data()); 
           });
-          if (!isMore) hasFetchedDefaultLines = true;
         }
 
         // De-duplication
@@ -1349,7 +1352,6 @@
             if(!uniqueMap[data.id]) {
                 uniqueMap[data.id] = true;
                 finalResults.push(data);
-                linesCache[data.id] = data; // Cache it!
             }
         });
 
@@ -1364,13 +1366,16 @@
         finalResults.forEach(data => {
           // Disable clicking the exact line the user is already in
           const isCurrent = data.id === activeCustomer.data.lineId;
-          const style = isCurrent ? `opacity: 0.5; cursor: not-allowed; border-color: var(--primary); background: rgba(16, 185, 129, 0.05);` : ``;
-          const text = isCurrent ? ` (Current Line)` : ``;
+          const style = isCurrent ? `opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; border: 2px solid var(--primary);` : ``;
+          const text = isCurrent ? ` <span style="font-size:0.75rem; color:var(--primary); font-weight:800; background:rgba(255,255,255,0.9); padding:2px 8px; border-radius:6px; letter-spacing:0.5px;">ACTIVE</span>` : ``;
           
           html += `
             <div class="picker-line ${data.color || 'grad-6'}" style="${style}" onclick="${isCurrent ? '' : `assignLineToCustomer('${data.id}')`}">
-              <h4>${data.name}${text}</h4>
-              <p>${data.id} • ${data.scheduleType || 'Daily'}</p>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <h4>${data.name}${text}</h4>
+                  ${isCurrent ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="background:rgba(255,255,255,0.9); border-radius:50%; padding:2px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>` : ''}
+              </div>
+              <p style="${isCurrent ? '' : 'color: rgba(255,255,255,0.85); border: none; font-family: monospace;'}">${data.id} • ${data.scheduleType || 'Daily'}</p>
             </div>`;
         });
         list.insertAdjacentHTML('beforeend', html);
@@ -1409,8 +1414,17 @@
         try {
             await updateDoc(activeCustomer.ref, { lineId: newLineId });
             activeCustomer.data.lineId = newLineId; // Sync locally instantly
-            window.history.back(); // Dismiss Modal
-            customAlert("Customer successfully moved to new line.", "Success");
+            
+            // Fix History API race condition by removing classes manually before back()
+            document.getElementById('line-picker-sheet').classList.remove('active');
+            modalOverlay.classList.remove('active');
+            
+            window.history.back(); // Dismiss Modal cleanly
+            
+            // Delay toast slightly to let history finish popping and keep user in ledger
+            setTimeout(() => {
+                customAlert("Customer successfully moved to new line.", "Success");
+            }, 300);
         } catch(e) {
             customAlert("Failed to change line: " + e.message, "Error");
         }
