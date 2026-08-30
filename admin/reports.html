@@ -76,7 +76,7 @@
     /* --- Product & Ledger UI (Level 2) --- */
     .product-item { background: var(--surface-card); padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: var(--shadow); }
     
-    /* UPGRADED: Flex column header to prevent name crunching */
+    /* Flex column header to prevent name crunching */
     .product-header-new { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
     .product-name-wrap { font-size: 1.15rem; font-weight: 800; color: var(--text-main); line-height: 1.3; }
     .product-actions-row { display: flex; justify-content: flex-end; gap: 10px; width: 100%; border-bottom: 1px dashed var(--border); padding-bottom: 12px; }
@@ -91,16 +91,25 @@
     .btn-delete { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
 
+    /* --- Line Gradients (Restored) --- */
+    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; border:none!important; }
+    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; border:none!important;}
+    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; border:none!important;}
+    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; border:none!important;}
+    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; border:none!important;}
+    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; border:none!important;}
+    .grad-none { background: var(--surface-card); color: var(--text-main); border: 2px dashed var(--border); }
+
     /* --- Modals & Overlays --- */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     
-    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 10px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; display: flex; flex-direction: column; }
+    .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 10px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
     .bottom-sheet.active { transform: translateY(0); }
     .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; flex-shrink: 0; }
     
-    /* UPGRADED: Line Picker Internal Scrolling */
-    #picker-list { overflow-y: auto; flex: 1; padding-bottom: 20px; margin-top: 10px; }
+    /* Line Picker Internal Scrolling */
+    #picker-list { overflow-y: auto; max-height: 60vh; padding-bottom: 20px; margin-top: 10px; }
     .picker-line { padding: 16px; border-radius: 14px; margin-bottom: 10px; cursor: pointer; transition: transform 0.2s; border: 1px solid var(--border); background: var(--bg-color); }
     .picker-line:active { transform: scale(0.98); }
     .picker-line h4 { margin-bottom: 3px; font-size: 1.1rem; }
@@ -129,7 +138,7 @@
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); display: none; }
     .loading-trigger { text-align: center; padding: 15px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
 
-    /* UPGRADED: Custom Confirm & Alert Overlays */
+    /* Custom Confirm & Alert Overlays */
     .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .confirm-overlay.active { opacity: 1; pointer-events: auto; }
 
@@ -172,7 +181,7 @@
         <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:80%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:30%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
       </div>
       
-      <!-- UPGRADED: DEDICATED SEARCH CONTAINER FOR 0-READ TOGGLING -->
+      <!-- DEDICATED SEARCH CONTAINER FOR 0-READ TOGGLING -->
       <div id="search-results-list" style="display: none;"></div>
 
       <div id="load-more-trigger" style="height: 20px; width: 100%;"></div>
@@ -188,7 +197,6 @@
   <!-- ================= LEVEL 2: CUSTOMER DETAIL ================= -->
   <div id="screen-detail" class="screen hidden-right">
     <div class="header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 10px;">
-      <!-- UPGRADED HEADER LAYOUT -->
       <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
         <button class="back-btn icon-btn" onclick="window.history.back()" style="padding-left: 0; flex-shrink: 0; margin-right: 5px;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -196,19 +204,20 @@
         <h2 style="font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0;" id="detail-cust-name">Customer</h2>
       </div>
       
-      <!-- UPGRADED: Flex Container for 2 Actions -->
+      <!-- Flex Container for 2 Actions (Now fully optimized with distinct, native icons) -->
       <div style="display: flex; gap: 8px; align-items: center;">
           <button class="icon-btn" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 6px 10px; border-radius: 8px; flex-shrink: 0;" onclick="openLinePickerModal()" title="Change Line">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path><circle cx="18" cy="5" r="3"></circle></svg>
           </button>
-          <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); font-size: 0.85rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; flex-shrink: 0;" onclick="openEditCustomerModal()">Edit Info</button>
+          <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); padding: 6px 10px; border-radius: 8px; flex-shrink: 0;" onclick="openEditCustomerModal()" title="Edit Info">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </button>
       </div>
     </div>
     
     <div class="screen-content" style="padding-top: 0 !important;">
         <div class="ledger-summary" id="ledger-header" style="border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: var(--map-filter, none); opacity: 0.85; pointer-events: none;">
-                <!-- Frame holder for dynamic injection -->
                 <div id="ledger-map-container" style="width: 100%; height: 100%;">
                     <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
                 </div>
@@ -218,14 +227,13 @@
             <h3 id="ledger-cust-name-inner">Customer Name</h3>
             <div class="detail-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                <!-- Anchor tag to launch phone dialer natively -->
                 <a href="#" id="ledger-cust-phone" style="color: inherit; text-decoration: none;">Loading...</a>
             </div>
             <div class="detail-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
                     <span id="ledger-cust-loc">Loading...</span>
-                    <!-- UPGRADED: Dedicated native Locate button -->
+                    <!-- Dedicated native Locate button -->
                     <button id="btn-locate-map" style="display: none; background: rgba(59,130,246,0.25); color: #60a5fa; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="locateCustomer()">Locate on Map</button>
                 </div>
             </div>
@@ -234,7 +242,7 @@
             </div>
         </div>
 
-        <!-- UPGRADED: Flex Header for Active Products -->
+        <!-- Flex Header for Active Products -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;">Active Products</div>
             <button class="btn-circle btn-add" style="width: 32px; height: 32px; font-size: 1rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);" onclick="openAddProductModal()">
@@ -248,7 +256,7 @@
   <!-- ================= MODALS & OVERLAYS ================= -->
   <div class="modal-overlay" id="modal-overlay"></div>
 
-  <!-- UPGRADED: Add Product Sheet (Native History Binding) -->
+  <!-- Add Product Sheet -->
   <div class="bottom-sheet" id="add-product-sheet">
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Add New Product</h3>
@@ -342,22 +350,23 @@
     <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
   </div>
 
-  <!-- UPGRADED: Change Line Bottom Sheet (Smart Parallel Search) -->
-  <div class="bottom-sheet" id="line-picker-sheet" style="height: 85vh;">
+  <!-- Change Line Bottom Sheet -->
+  <div class="bottom-sheet" id="line-picker-sheet">
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;">Change Line</h3>
     <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 15px; font-weight: 700;" id="picker-current-line">Current Line: Loading...</p>
 
-    <div class="search-bar-container" style="position: relative; transform: none; padding: 0; background: transparent; z-index: 1; flex-shrink: 0;">
-      <svg style="position: absolute; left: 15px; width: 20px; height: 20px; stroke: var(--text-sub); fill: none; stroke-width: 2.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="text" id="picker-search-input" class="search-input" style="width: 100%; margin: 0; padding-left: 45px; border: 2px solid var(--border);" placeholder="Search line name or ID...">
+    <!-- Isolated inline flex rules -->
+    <div style="position: relative; width: 100%; flex-shrink: 0; margin-bottom: 5px;">
+      <svg style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--text-sub); fill: none; stroke-width: 2.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" id="picker-search-input" style="width: 100%; margin: 0; padding: 14px 14px 14px 45px; border: 2px solid var(--border); border-radius: 12px; background: var(--bg-color); font-size: 1rem; color: var(--text-main); font-weight: 600; outline: none;" placeholder="Search line name or ID...">
     </div>
 
     <div id="picker-list"></div>
     <div id="picker-loader" class="loading-trigger">Loading...</div>
   </div>
 
-  <!-- UPGRADED: Custom Alert & Confirm Modals -->
+  <!-- Custom Alert & Confirm Modals -->
   <div class="confirm-overlay" id="custom-overlay"></div>
   
   <div class="alert-modal" id="custom-alert">
@@ -467,7 +476,7 @@
     const btnSavePayment = document.getElementById('btn-save-payment');
 
     // ============================================================================
-    // CLEANED UP: Top-Down UI Closing Engine (No Ghost History)
+    // CLEANED UP: Top-Down UI Closing Engine
     // ============================================================================
     function closeTopUI() {
         // 0. Custom Alerts/Confirms
@@ -505,14 +514,14 @@
             return;
         }
 
-        // 2. Slide Panels (Middle Layer covering Main Screen)
+        // 2. Slide Panels
         if (screenDetail && !screenDetail.classList.contains('hidden-right')) {
             screenDetail.classList.add('hidden-right');
             activeCustomer = null;
             return;
         }
 
-        // 3. Search Bar (Base Layer Overlay)
+        // 3. Search Bar
         if (searchBar && searchBar.classList.contains('active')) {
             searchBar.classList.remove('active');
             searchInput.value = '';
@@ -527,12 +536,10 @@
         }
     }
 
-    // Single flawless event listener catches BOTH physical back buttons AND UI back arrows natively.
     window.addEventListener('popstate', (e) => {
         closeTopUI();
     });
     
-    // Close overlay triggers native back
     modalOverlay.addEventListener('click', () => window.history.back());
     document.getElementById('custom-overlay').addEventListener('click', () => window.history.back());
 
@@ -635,7 +642,7 @@
         observer.observe(loadMoreTrigger);
     }
 
-    // --- 3. Instant Live Search Engine (UPGRADED TO RAM CACHE + 0-READ CLOSING) ---
+    // --- 3. Instant Live Search Engine ---
     window.openSearch = () => {
         vibrate();
         window.history.pushState({ panel: 'search' }, ''); 
@@ -762,7 +769,6 @@
         window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank');
     };
 
-    // Dropdown UI Toggle
     window.toggleLedger = (index) => {
         vibrate(15);
         const collapse = document.getElementById(`ledger-collapse-${index}`);
@@ -799,7 +805,6 @@
             
             let payHtml = '';
             if(p.payments && p.payments.length > 0) {
-                // Live Dynamic Math
                 const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
                                       .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                 
@@ -808,11 +813,10 @@
                     let amt = parseInt(pay.amount) || 0;
                     dynamicPending = Math.max(0, dynamicPending - amt);
                     pay.displayPending = dynamicPending; 
-                    pay.sno = idx + 1; // Assign Chronological Serial Number
+                    pay.sno = idx + 1;
                 });
 
                 sortedPayments.reverse().forEach(pay => {
-                    // Added Year and forcing nowrap below
                     const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year: 'numeric' });
                     payHtml += `
                     <tr style="border-bottom: 1px solid var(--border);">
@@ -834,7 +838,6 @@
             const card = document.createElement('div');
             card.className = 'product-item';
             
-            // UPGRADED: Flex Column Header formatting ensuring product name wraps gracefully
             card.innerHTML = `
                 <div class="product-header-new">
                     <div class="product-name-wrap">${p.name || 'Product'}</div>
@@ -948,9 +951,14 @@
                 if (!cSnap.exists()) throw new Error("Customer not found.");
                 const cData = cSnap.data();
                 let updatedProds = cData.products || [];
-                updatedProds.splice(pIndex, 1); // Remove product safely
-                transaction.update(activeCustomer.ref, { products: updatedProds });
-                activeCustomer.data.products = updatedProds; // Sync Local
+                
+                // Extremely safe ID-based splicing prevents data-shift collisions
+                const realIndex = updatedProds.findIndex(p => p.id === prod.id || p.name === prod.name);
+                if (realIndex !== -1) {
+                    updatedProds.splice(realIndex, 1); 
+                    transaction.update(activeCustomer.ref, { products: updatedProds });
+                    activeCustomer.data.products = updatedProds; // Sync Local
+                }
             });
             vibrate([50, 50, 50]);
             renderProducts();
@@ -1006,6 +1014,7 @@
         vibrate();
         const amt = parseInt(payAmount.value);
         const selectedDate = payDate.value;
+        const selectedMethod = payMethod.value;
         
         if (isNaN(amt) || amt < 0) return customAlert("Enter a valid positive amount.");
         if (!selectedDate) return customAlert("Please select a valid date.");
@@ -1014,48 +1023,61 @@
         btnSavePayment.disabled = true;
 
         try {
-            // Safe deep clone to prevent accidental reference state leaks
-            let safeProducts = JSON.parse(JSON.stringify(activeCustomer.data.products));
-            let targetProd = safeProducts[activeProductIndex];
-            if(!targetProd.payments) targetProd.payments = [];
+            await runTransaction(db, async (transaction) => {
+                const cSnap = await transaction.get(activeCustomer.ref);
+                if (!cSnap.exists()) throw new Error("Customer not found.");
+                
+                let safeProducts = cSnap.data().products || [];
+                const localProd = activeCustomer.data.products[activeProductIndex];
+                
+                // Find matching product securely
+                const targetProdIndex = safeProducts.findIndex(p => p.id === localProd.id || p.name === localProd.name);
+                if(targetProdIndex === -1) throw new Error("Product data sync error.");
+                
+                let targetProd = safeProducts[targetProdIndex];
+                if(!targetProd.payments) targetProd.payments = [];
 
-            if (activePaymentIndex === null) {
-                targetProd.payments.push({
-                    id: 'MANUAL_' + Date.now(),
-                    amount: amt,
-                    date: new Date(selectedDate).toISOString(),
-                    type: 'collection',
-                    method: payMethod.value,
-                    agent_uid: currentUser.uid,
-                    pendingAfter: 0 
+                if (activePaymentIndex === null) {
+                    targetProd.payments.push({
+                        id: 'MANUAL_' + Date.now(),
+                        amount: amt,
+                        date: new Date(selectedDate).toISOString(),
+                        type: 'collection',
+                        method: selectedMethod,
+                        agent_uid: currentUser.uid,
+                        pendingAfter: 0 
+                    });
+                } else {
+                    const localPay = localProd.payments[activePaymentIndex];
+                    const targetPayIndex = targetProd.payments.findIndex(pay => pay.id === localPay.id || pay.date === localPay.date);
+                    if(targetPayIndex !== -1) {
+                        targetProd.payments[targetPayIndex].amount = amt;
+                        targetProd.payments[targetPayIndex].date = new Date(selectedDate).toISOString();
+                        targetProd.payments[targetPayIndex].method = selectedMethod;
+                    }
+                }
+
+                // Robust mathematical recalibration locking logic
+                let totalPaidCalculated = 0;
+                targetProd.payments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
+                let runningPending = safeTotal;
+
+                targetProd.payments.forEach(p => {
+                    let pAmt = parseInt(p.amount) || 0;
+                    totalPaidCalculated += pAmt;
+                    runningPending = Math.max(0, runningPending - pAmt);
+                    p.pendingAfter = runningPending; 
                 });
-            } else {
-                targetProd.payments[activePaymentIndex].amount = amt;
-                targetProd.payments[activePaymentIndex].date = new Date(selectedDate).toISOString();
-                targetProd.payments[activePaymentIndex].method = payMethod.value;
-            }
 
-            // Robust mathematical recalibration locking logic
-            let totalPaidCalculated = 0;
-            targetProd.payments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                targetProd.paid = totalPaidCalculated;
+                targetProd.pending = runningPending;
 
-            const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
-            let runningPending = safeTotal;
-
-            targetProd.payments.forEach(p => {
-                let pAmt = parseInt(p.amount) || 0;
-                totalPaidCalculated += pAmt;
-                runningPending = Math.max(0, runningPending - pAmt);
-                p.pendingAfter = runningPending; 
+                transaction.update(activeCustomer.ref, { products: safeProducts });
+                activeCustomer.data.products = safeProducts; // Sync Local
             });
 
-            targetProd.paid = totalPaidCalculated;
-            targetProd.pending = runningPending;
-
-            await updateDoc(activeCustomer.ref, { products: safeProducts });
-            
-            activeCustomer.data.products = safeProducts;
-            
             vibrate([30, 50]);
             renderProducts(); 
             buildSearchDictionaryBackground(); // Update RAM cache quietly
@@ -1301,7 +1323,7 @@
           const text = isCurrent ? ` (Current Line)` : ``;
           
           html += `
-            <div class="picker-line" style="${style}" onclick="${isCurrent ? '' : `assignLineToCustomer('${data.id}')`}">
+            <div class="picker-line ${data.color || 'grad-6'}" style="${style}" onclick="${isCurrent ? '' : `assignLineToCustomer('${data.id}')`}">
               <h4>${data.name}${text}</h4>
               <p>${data.id} • ${data.scheduleType || 'Daily'}</p>
             </div>`;
