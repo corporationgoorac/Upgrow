@@ -129,10 +129,9 @@
     .icon-btn:active { transform: scale(0.9); }
     .actions-wrap { display: flex; gap: 8px; }
 
-    /* --- Modals & Overlays --- */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
-    .modal-overlay.active { opacity: 1; pointer-events: auto; }
-    
+    /* --- Modals --- */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(3px); }
+    .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
     .modal { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
     .modal.active { transform: translateY(0); }
     .modal-handle { width: 45px; height: 6px; background-color: var(--border); border-radius: 10px; margin: 0 auto 25px auto; flex-shrink: 0; }
@@ -177,7 +176,7 @@
     
     .loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
 
-    /* Custom Confirm & Alert Overlays */
+    /* Custom Confirm Modal */
     .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .confirm-overlay.active { opacity: 1; pointer-events: auto; }
     .confirm-modal, .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
@@ -544,25 +543,7 @@
     import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     let currentUser = null;
-    onAuthStateChanged(auth, (user) => { if(user) currentUser = user; });
-
-    // Format Currency
-    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
-    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
-
-    // UPGRADED: Custom Ordinal Date Formatter
-    const formatOrdDate = (dateStr) => {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      if (isNaN(d)) return "";
-      const day = d.getDate();
-      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
-      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      const month = monthNames[d.getMonth()];
-      const year = d.getFullYear();
-      return `${day}${suffix} ${month} ${year}`;
-    };
-
+    
     // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
     window.handleFirebaseError = function(e, fallbackToAlert = false) {
       if (!e || !e.message) return;
@@ -591,6 +572,23 @@
       }
     };
 
+    // Format Currency
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // UPGRADED: Custom Ordinal Date Formatter
+    const formatOrdDate = (dateStr) => {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d)) return "";
+      const day = d.getDate();
+      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const month = monthNames[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day}${suffix} ${month} ${year}`;
+    };
+
     // State
     let activeLineId = null;
     let activeCustId = null;
@@ -604,6 +602,7 @@
     let defaultLinesArray = [];
     let hasFetchedDefaultLines = false;
     let defaultLinesHasMore = true; // UPGRADED: Cache memory for scroll text
+    let defaultLinesLastVisible = null; // UPGRADED: Cache anchor memory
     
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let linesNameLastVisible = null, linesNameHasMore = true;
@@ -966,6 +965,16 @@
       openPanel('view-customers', { lineId });
       loadCustomers();
     };
+
+    // UPGRADED: Background Math Sync for Level 2 Badges
+    function updateLevel2ProductCount() {
+        if (!activeCustomer || !activeCustomer.data.products) return;
+        const count = activeCustomer.data.products.length;
+        const statBadge = document.querySelector(`#cust-card-${activeCustomer.id} .cust-stats`);
+        if (statBadge) {
+            statBadge.innerText = `${count} Active Product${count !== 1 ? 's' : ''}`;
+        }
+    }
 
     async function loadCustomers(isMore = false) {
       if(custLoading || (!custHasMore && isMore)) return;
@@ -1346,6 +1355,7 @@
 
             vibrate([30, 50]);
             renderProducts();
+            updateLevel2ProductCount(); // UPGRADED: Syncs math to Level 2 card instantly
             window.history.back(); 
         } catch(e) {
             customAlert("Failed to add product: " + e.message);
@@ -1377,6 +1387,7 @@
             if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds; 
             vibrate([50, 50, 50]);
             renderProducts();
+            updateLevel2ProductCount(); // UPGRADED: Syncs math to Level 2 card instantly
         } catch(e) {
             customAlert("Failed to delete: " + e.message);
         }
@@ -1574,6 +1585,11 @@
             }
 
             vibrate([30, 50]);
+            
+            // Re-render Level 2 info if possible to keep names matching
+            const lvl2Title = document.querySelector(`#cust-card-${activeCustomer.id} h3`);
+            if(lvl2Title) lvl2Title.innerText = newName;
+
             window.history.back(); 
         } catch(e) {
             customAlert("Failed to save: " + e.message);
@@ -1624,11 +1640,13 @@
         lineDisplayLabel.innerText = "Current Line: Loading...";
 
         linesSearch = ""; document.getElementById('picker-search-input').value = '';
-        linesLastVisible = null; linesHasMore = true;
+        
+        // UPGRADED: Restore cache anchors when opening cleanly
+        linesLastVisible = defaultLinesLastVisible; 
+        linesHasMore = defaultLinesHasMore;
         linesNameLastVisible = null; linesNameHasMore = true;
         linesIdLastVisible = null; linesIdHasMore = true;
         
-        // OPENS INSTANTLY - No blocking lag
         window.history.pushState({ modal: 'line-picker' }, '');
         document.getElementById('modal-overlay').classList.add('active');
         document.getElementById('line-picker-sheet').classList.add('active');
@@ -1655,7 +1673,6 @@
       const list = document.getElementById('picker-list');
       const loader = document.getElementById('picker-loader');
 
-      // Smart Cache Check for Jitter-Free Load
       if (!isSearch && !isMore && hasFetchedDefaultLines) {
           linesLoading = true;
           let html = '';
@@ -1672,7 +1689,6 @@
                 </div>`;
           });
           list.innerHTML = html;
-          // UPGRADED: Uses cache logic to hide "Scroll to see more" if lines < 6
           loader.style.display = defaultLinesHasMore ? 'block' : 'none';
           loader.innerText = defaultLinesHasMore ? 'Scroll for more' : '';
           linesLoading = false;
@@ -1682,7 +1698,6 @@
       linesLoading = true;
       
       if(!isMore) { 
-        // UPGRADED: 3 Skeletons prevents height jitter within 300px min-height
         let h=''; for(let i=0;i<3;i++) h+=`<div class="picker-line"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:5px;"></div><div class="skeleton-box" style="height:15px;width:40%;"></div></div>`;
         list.innerHTML = h; loader.style.display = 'none'; 
       } else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
@@ -1733,12 +1748,14 @@
           
           if (!isMore) {
               defaultLinesArray = []; 
-              defaultLinesHasMore = linesHasMore; // UPGRADED: Save for cache retrieval
+              defaultLinesHasMore = linesHasMore; 
+              defaultLinesLastVisible = linesLastVisible; // UPGRADED: Save anchor memory
           }
           
           snap.forEach(d => {
              results.push(d.data());
-             defaultLinesArray.push(d.data()); 
+             // Only append to default array if it's not a search
+             if(!isSearch) defaultLinesArray.push(d.data()); 
           });
           if (!isMore) hasFetchedDefaultLines = true;
         }
@@ -1809,7 +1826,6 @@
             await updateDoc(activeCustomer.ref, { lineId: newLineId });
             activeCustomer.data.lineId = newLineId; 
             
-            // UPGRADED: Safely resolve history stack to prevent collision crash
             document.getElementById('line-picker-sheet').classList.remove('active');
             document.getElementById('modal-overlay').classList.remove('active');
             window.history.back(); 
