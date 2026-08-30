@@ -543,25 +543,7 @@
     import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     let currentUser = null;
-    onAuthStateChanged(auth, (user) => { if(user) currentUser = user; });
-
-    // Format Currency
-    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
-    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
-
-    // UPGRADED: Custom Ordinal Date Formatter
-    const formatOrdDate = (dateStr) => {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      if (isNaN(d)) return "";
-      const day = d.getDate();
-      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
-      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      const month = monthNames[d.getMonth()];
-      const year = d.getFullYear();
-      return `${day}${suffix} ${month} ${year}`;
-    };
-
+    
     // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
     window.handleFirebaseError = function(e, fallbackToAlert = false) {
       if (!e || !e.message) return;
@@ -590,6 +572,23 @@
       }
     };
 
+    // Format Currency
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // UPGRADED: Custom Ordinal Date Formatter
+    const formatOrdDate = (dateStr) => {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d)) return "";
+      const day = d.getDate();
+      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const month = monthNames[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day}${suffix} ${month} ${year}`;
+    };
+
     // State
     let activeLineId = null;
     let activeCustId = null;
@@ -599,13 +598,11 @@
     let activeCustomer = null; 
     let activeProductIndex = null;
     let activePaymentIndex = null; 
-    let isAssigningLine = false; // Multi-click lock
-    
     let linesCache = {};
     let defaultLinesArray = [];
     let hasFetchedDefaultLines = false;
-    let defaultLinesHasMore = true; 
-    let defaultLinesLastVisible = null; 
+    let defaultLinesHasMore = true; // UPGRADED: Cache memory for scroll text
+    let defaultLinesLastVisible = null; // UPGRADED: Cache anchor memory
     
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let linesNameLastVisible = null, linesNameHasMore = true;
@@ -887,9 +884,6 @@
       const btn = document.getElementById('btn-save-line'); btn.disabled = true; btn.innerText = "Saving...";
       try {
         await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
-        
-        linesCache = {}; defaultLinesArray = []; hasFetchedDefaultLines = false; defaultLinesHasMore = true; defaultLinesLastVisible = null;
-
         window.history.back(); 
         linesLastVisible = null; loadLines(); 
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
@@ -937,8 +931,6 @@
         const card = document.getElementById('line-card-'+editingLineId);
         if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
 
-        linesCache = {}; defaultLinesArray = []; hasFetchedDefaultLines = false; defaultLinesHasMore = true; defaultLinesLastVisible = null;
-
         window.history.back(); 
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Update Line";
@@ -959,9 +951,6 @@
         }
         await deleteDoc(doc(db, "lines", id));
         vibrate([50,50,50]);
-
-        linesCache = {}; defaultLinesArray = []; hasFetchedDefaultLines = false; defaultLinesHasMore = true; defaultLinesLastVisible = null;
-
         linesLastVisible = null; loadLines();
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert("Error: " + e.message, "Deletion Failed"); }
     };
@@ -977,6 +966,7 @@
       loadCustomers();
     };
 
+    // UPGRADED: Background Math Sync for Level 2 Badges
     function updateLevel2ProductCount() {
         if (!activeCustomer || !activeCustomer.data.products) return;
         const count = activeCustomer.data.products.length;
@@ -1079,9 +1069,9 @@
             name: pName, 
             total: pTotal, 
             paid: pPaid, 
-            pending: Math.max(0, pTotal-pPaid), 
+            pending: pTotal-pPaid, 
             addedAt: new Date().toISOString(),
-            payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: Math.max(0, pTotal-pPaid) }] : []
+            payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
         };
         await setDoc(doc(db, "customers", id), { id, lineId: activeLineId, name, phone, location: loc, products: [initProduct], createdAt: serverTimestamp() });
         
@@ -1125,9 +1115,9 @@
                 name: pName, 
                 total: pTotal, 
                 paid: pPaid, 
-                pending: Math.max(0, pTotal-pPaid), 
+                pending: pTotal-pPaid, 
                 addedAt: new Date().toISOString(),
-                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: Math.max(0, pTotal-pPaid) }] : []
+                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
             };
             const updatedProds = cData.products ? [...cData.products, newP] : [newP];
             transaction.update(custRef, { products: updatedProds });
@@ -1345,9 +1335,9 @@
                 name: pName,
                 total: pTotal,
                 paid: pPaid,
-                pending: Math.max(0, pTotal-pPaid),
+                pending: pTotal-pPaid,
                 addedAt: new Date().toISOString(),
-                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: Math.max(0, pTotal-pPaid) }] : []
+                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
             };
             
             let finalUpdatedProds = null;
@@ -1365,7 +1355,7 @@
 
             vibrate([30, 50]);
             renderProducts();
-            updateLevel2ProductCount(); 
+            updateLevel2ProductCount(); // UPGRADED: Syncs math to Level 2 card instantly
             window.history.back(); 
         } catch(e) {
             customAlert("Failed to add product: " + e.message);
@@ -1397,7 +1387,7 @@
             if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds; 
             vibrate([50, 50, 50]);
             renderProducts();
-            updateLevel2ProductCount(); 
+            updateLevel2ProductCount(); // UPGRADED: Syncs math to Level 2 card instantly
         } catch(e) {
             customAlert("Failed to delete: " + e.message);
         }
@@ -1596,11 +1586,9 @@
 
             vibrate([30, 50]);
             
+            // Re-render Level 2 info if possible to keep names matching
             const lvl2Title = document.querySelector(`#cust-card-${activeCustomer.id} h3`);
             if(lvl2Title) lvl2Title.innerText = newName;
-            
-            const lvl2Phone = document.querySelector(`#cust-card-${activeCustomer.id} .cust-info p`);
-            if(lvl2Phone) lvl2Phone.innerText = `${activeCustomer.id} • ${newPhone || 'No Phone'}`;
 
             window.history.back(); 
         } catch(e) {
@@ -1632,10 +1620,12 @@
 
     async function getLineData(lineId) {
       if(!lineId) return null;
+      if(linesCache[lineId]) return linesCache[lineId]; 
       try {
         const d = await getDoc(doc(db, "lines", lineId));
         if(d.exists()) {
-          return d.data();
+          linesCache[lineId] = d.data();
+          return linesCache[lineId];
         }
       } catch(e) { console.error(e); }
       return null;
@@ -1651,7 +1641,9 @@
 
         linesSearch = ""; document.getElementById('picker-search-input').value = '';
         
-        linesLastVisible = null; linesHasMore = true;
+        // UPGRADED: Restore cache anchors when opening cleanly
+        linesLastVisible = defaultLinesLastVisible; 
+        linesHasMore = defaultLinesHasMore;
         linesNameLastVisible = null; linesNameHasMore = true;
         linesIdLastVisible = null; linesIdHasMore = true;
         
@@ -1680,6 +1672,28 @@
 
       const list = document.getElementById('picker-list');
       const loader = document.getElementById('picker-loader');
+
+      if (!isSearch && !isMore && hasFetchedDefaultLines) {
+          linesLoading = true;
+          let html = '';
+          const cachedLines = defaultLinesArray; 
+          cachedLines.forEach(data => {
+              const isCurrent = activeCustomer && data.id === activeCustomer.data.lineId;
+              const style = isCurrent ? `opacity: 0.5; cursor: not-allowed; border-color: var(--primary); background: rgba(16, 185, 129, 0.05);` : ``;
+              const text = isCurrent ? ` (Current Line)` : ``;
+
+              html += `
+                <div class="picker-line ${data.color || 'grad-6'}" style="${style}" onclick="${isCurrent ? '' : `assignLineToCustomer('${data.id}')`}">
+                  <h4>${data.name}${text}</h4>
+                  <p>${data.id} • ${data.scheduleType || 'Daily'}</p>
+                </div>`;
+          });
+          list.innerHTML = html;
+          loader.style.display = defaultLinesHasMore ? 'block' : 'none';
+          loader.innerText = defaultLinesHasMore ? 'Scroll for more' : '';
+          linesLoading = false;
+          return;
+      }
 
       linesLoading = true;
       
@@ -1732,9 +1746,18 @@
           linesLastVisible = snap.docs[snap.docs.length-1];
           linesHasMore = snap.docs.length === 6;
           
+          if (!isMore) {
+              defaultLinesArray = []; 
+              defaultLinesHasMore = linesHasMore; 
+              defaultLinesLastVisible = linesLastVisible; // UPGRADED: Save anchor memory
+          }
+          
           snap.forEach(d => {
              results.push(d.data());
+             // Only append to default array if it's not a search
+             if(!isSearch) defaultLinesArray.push(d.data()); 
           });
+          if (!isMore) hasFetchedDefaultLines = true;
         }
 
         const uniqueMap = {};
@@ -1743,6 +1766,7 @@
             if(!uniqueMap[data.id]) {
                 uniqueMap[data.id] = true;
                 finalResults.push(data);
+                linesCache[data.id] = data; 
             }
         });
 
@@ -1795,10 +1819,8 @@
     });
 
     window.assignLineToCustomer = async (newLineId) => {
-        if(isAssigningLine) return; 
-        isAssigningLine = true;
         vibrate([30, 50]);
-        if(!activeCustomer || !newLineId) { isAssigningLine = false; return; }
+        if(!activeCustomer || !newLineId) return;
 
         try {
             await updateDoc(activeCustomer.ref, { lineId: newLineId });
@@ -1823,7 +1845,6 @@
         } catch(e) {
             customAlert("Failed to change line: " + e.message, "Error");
         }
-        isAssigningLine = false;
     };
 
     window.downloadCSV = (pIndex) => {
