@@ -518,8 +518,10 @@
       <input type="text" id="picker-search-input" style="width: 100%; padding: 14px 14px 14px 45px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface-color); font-size: 1rem; color: var(--text-main); font-weight: 600; outline: none; transition: border-color 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);" placeholder="Search line name or ID...">
     </div>
 
-    <div id="picker-list"></div>
-    <div id="picker-loader" class="loading-trigger">Loading...</div>
+    <div id="picker-list">
+      <!-- MIGRATED LOADER: Now perfectly nested inside the scroll container -->
+      <div id="picker-loader" class="loading-trigger">Loading...</div>
+    </div>
   </div>
 
   <!-- Custom Confirm Modal -->
@@ -1670,15 +1672,17 @@
       if (!isSearch && isMore && !linesHasMore) return;
 
       const list = document.getElementById('picker-list');
-      const loader = document.getElementById('picker-loader');
-
+      
       linesLoading = true;
       
       if(!isMore) { 
-        // UPGRADED: 6 Skeletons prevents height jitter
+        // UPGRADED: 6 Skeletons prevents height jitter, PLUS preserving the loader element
         let h=''; for(let i=0;i<6;i++) h+=`<div class="picker-line" style="background: var(--surface-card); border: 1px solid var(--border);"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:8px; border-radius:4px;"></div><div class="skeleton-box" style="height:15px;width:40%; border-radius:4px; margin-bottom:0;"></div></div>`;
-        list.innerHTML = h; loader.style.display = 'none'; 
-      } else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+        list.innerHTML = h + '<div id="picker-loader" class="loading-trigger" style="display: none;">Loading...</div>';
+      } else { 
+        const loader = document.getElementById('picker-loader');
+        if(loader) { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+      }
 
       try {
         let results = [];
@@ -1747,10 +1751,12 @@
             }
         });
 
-        if(!isMore) list.innerHTML = '';
+        if(!isMore) {
+            list.innerHTML = '<div id="picker-loader" class="loading-trigger" style="display: none;">Loading...</div>';
+        }
+        
         if(finalResults.length === 0 && !isMore) { 
           list.innerHTML = '<p style="text-align:center;color:var(--text-sub);">No lines found.</p>'; 
-          loader.style.display = 'none';
           linesLoading=false; return; 
         }
 
@@ -1770,11 +1776,16 @@
               <p style="${isCurrent ? '' : 'color: rgba(255,255,255,0.85); border: none; font-family: monospace;'}">${data.id} • ${data.scheduleType || 'Daily'}</p>
             </div>`;
         });
-        list.insertAdjacentHTML('beforeend', html);
         
-        const anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
-        loader.style.display = 'none';
-        loader.innerText = '';
+        const currentLoader = document.getElementById('picker-loader');
+        if (currentLoader) {
+            currentLoader.insertAdjacentHTML('beforebegin', html);
+            // UPGRADED: No jumping. Loader hides instantly when content renders.
+            currentLoader.style.display = 'none';
+            currentLoader.innerText = '';
+        } else {
+            list.insertAdjacentHTML('beforeend', html);
+        }
         
       } catch(e) { customAlert(e.message); }
       linesLoading = false;
