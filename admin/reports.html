@@ -109,8 +109,8 @@
     .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; flex-shrink: 0; }
     
     /* --- REDESIGNED LINE PICKER --- */
-    #line-picker-sheet { padding-bottom: 25px; } /* Removed excessive padding to fix bottom gap */
-    #picker-list { overflow-y: auto; max-height: 55vh; padding-bottom: 10px; margin-top: 15px; display: flex; flex-direction: column; gap: 12px; }
+    #line-picker-sheet { padding-bottom: 15px; } /* REMOVED EXCESSIVE PADDING */
+    #picker-list { overflow-y: auto; max-height: 55vh; padding-bottom: 5px; margin-top: 15px; display: flex; flex-direction: column; gap: 12px; }
     .picker-line { padding: 18px; border-radius: 16px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.2); border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     .picker-line:active { transform: scale(0.96); }
     .picker-line h4 { margin-bottom: 4px; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -1093,7 +1093,6 @@
 
             vibrate([30, 50]);
             renderProducts(); 
-            // buildSearchDictionaryBackground(); // Removed to save reads
             window.history.back(); 
 
         } catch (e) {
@@ -1196,9 +1195,6 @@
                     phone: newPhone
                 });
             }
-
-            // buildSearchDictionaryBackground(); // Commented out to save DB reads!
-            // --- ZERO-READ OPTIMIZATION END ---
             
             vibrate([30, 50]);
             window.history.back(); // Invokes popstate securely
@@ -1385,9 +1381,9 @@
         });
         list.insertAdjacentHTML('beforeend', html);
         
-        const anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
-        loader.style.display = anyMore ? 'block' : 'none';
-        loader.innerText = anyMore ? 'Scroll for more' : '';
+        // UPGRADED: No jumping. Loader hides instantly when content renders.
+        loader.style.display = 'none';
+        loader.innerText = '';
         
       } catch(e) { customAlert(e.message); }
       linesLoading = false;
