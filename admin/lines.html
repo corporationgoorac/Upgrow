@@ -147,7 +147,7 @@
 
     .input-group { margin-bottom: 20px; position: relative; }
     .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
+    .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
     .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
     
     .id-check-icon { position: absolute; right: 15px; top: 40px; width: 22px; height: 22px; display: none; }
@@ -158,7 +158,7 @@
     .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform 0.2s; }
     .color-option.selected { transform: scale(1.15); border-color: var(--text-main); }
 
-    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; transition: transform 0.2s; }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; transition: all 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
     .btn-full:active { transform: scale(0.96); }
 
     .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
@@ -613,6 +613,7 @@
     window.customConfirm = function(msg) {
       return new Promise(resolve => {
         document.getElementById('confirm-msg').innerText = msg;
+        // UPGRADED: Safety check prevents history duplicates on double-tap
         if (!document.getElementById('confirm-overlay').classList.contains('active')) {
           document.getElementById('confirm-overlay').classList.add('active');
           document.getElementById('confirm-modal').classList.add('active');
@@ -627,13 +628,14 @@
       window.history.back(); 
     };
 
-    // Custom Alert Logic
+    // Custom Alert Logic (Replaces System Alert)
     let alertResolve = null;
     window.customAlert = function(msg, title="Notice") {
       return new Promise(resolve => {
         vibrate(50);
         document.getElementById('alert-title').innerText = title;
         document.getElementById('alert-msg').innerText = msg;
+        // UPGRADED: Safety check prevents history duplicates on double-tap
         if (!document.getElementById('alert-overlay').classList.contains('active')) {
           document.getElementById('alert-overlay').classList.add('active');
           document.getElementById('alert-modal').classList.add('active');
@@ -646,6 +648,7 @@
 
     // History API & Panel Navigation
     function openPanel(id, stateData) {
+      // UPGRADED: Safety check prevents history duplicates on double-tap
       if (!document.getElementById(id).classList.contains('active')) {
         document.getElementById(id).classList.add('active');
         window.history.pushState({ panel: id, ...stateData }, '');
@@ -654,6 +657,7 @@
     
     window.openModal = (id) => {
       vibrate();
+      // UPGRADED: Safety check prevents history duplicates on double-tap
       if (!document.getElementById(id).classList.contains('active')) {
         document.getElementById('modal-overlay').classList.add('active');
         document.getElementById(id).classList.add('active');
@@ -671,16 +675,15 @@
           return;
       }
       
-      const activeModal = document.querySelector('.modal.active, .confirm-modal.active');
-      if (activeModal) {
-        activeModal.classList.remove('active');
-        document.getElementById('modal-overlay').classList.remove('active');
+      const confirmModal = document.getElementById('confirm-modal');
+      if (confirmModal && confirmModal.classList.contains('active')) {
+        confirmModal.classList.remove('active');
         document.getElementById('confirm-overlay').classList.remove('active');
         if(confirmResolve) { confirmResolve(false); confirmResolve = null; } 
         return;
       }
 
-      // Level 3 Advanced Bottom Sheets
+      // 1. Level 3 Advanced Bottom Sheets
       const editSheetL3 = document.getElementById('edit-customer-sheet');
       if (editSheetL3 && editSheetL3.classList.contains('active')) {
           editSheetL3.classList.remove('active');
@@ -706,7 +709,15 @@
           return;
       }
 
-      // Slide Panels
+      // 2. Old Level 1/2 Modals
+      const activeModal = document.querySelector('.modal.active');
+      if (activeModal) {
+        activeModal.classList.remove('active');
+        document.getElementById('modal-overlay').classList.remove('active');
+        return;
+      }
+
+      // 3. Slide Panels
       if (document.getElementById('view-ledger').classList.contains('active')) {
         document.getElementById('view-ledger').classList.remove('active');
         activeCustId = null;
@@ -744,6 +755,7 @@
     
     // Cust ID Check
     document.getElementById('cust-id').addEventListener('input', debounce(async (e) => {
+      // Only check if creating new
       if(!document.getElementById('cust-id').readOnly) {
         await checkIdAvailability('customers', e.target.value.toUpperCase().trim(), document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross'));
       }
@@ -777,6 +789,7 @@
     // LEVEL 1: LINES
     // ==========================================
     function createLineCardHTML(data) {
+      // Show Mon, Tue instead of Weekly
       const schedText = data.scheduleType === 'weekly' && data.scheduleDay ? data.scheduleDay.substring(0,3) : 'Daily';
       return `
         <div class="line-card ${data.color || 'grad-6'}" id="line-card-${data.id}" onclick="openCustomersView('${data.id}', '${data.name.replace(/'/g,"\\'")}')">
@@ -822,7 +835,7 @@
         let html = '';
         snap.forEach(d => {
           const data = d.data();
-          linesDataMap[data.id] = data; 
+          linesDataMap[data.id] = data; // Save to map for 0-read edits
           html += createLineCardHTML(data);
         });
         list.insertAdjacentHTML('beforeend', html);
@@ -841,8 +854,10 @@
       linesLastVisible = null; linesHasMore = true; loadLines();
     }));
 
+    // Color picker
     document.querySelectorAll('.color-option').forEach(el => {
       el.onclick = () => { 
+        // Need to target siblings in the specific picker container
         el.parentElement.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); 
         el.classList.add('selected'); 
       };
@@ -871,12 +886,13 @@
       const btn = document.getElementById('btn-save-line'); btn.disabled = true; btn.innerText = "Saving...";
       try {
         await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
-        window.history.back(); 
-        linesLastVisible = null; loadLines(); 
+        window.history.back(); // close modal
+        linesLastVisible = null; loadLines(); // reload
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Create Line";
     };
 
+    // Edit Line Logic
     window.openEditLineModal = (id) => {
       vibrate();
       const line = linesDataMap[id];
@@ -910,6 +926,7 @@
       try {
         await updateDoc(doc(db, "lines", editingLineId), { name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color });
         
+        // update local map and DOM directly (0 reads)
         linesDataMap[editingLineId].name = name;
         linesDataMap[editingLineId].scheduleType = stype;
         linesDataMap[editingLineId].scheduleDay = stype==='weekly'?sday:null;
@@ -918,11 +935,12 @@
         const card = document.getElementById('line-card-'+editingLineId);
         if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
 
-        window.history.back(); 
+        window.history.back(); // close modal
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Update Line";
     };
 
+    // Safe 480 Batch Delete
     window.deleteLine = async (id) => {
       vibrate([50,100]);
       if(!(await customConfirm(`Delete Line ${id} and ALL its customers permanently?`))) return;
@@ -987,7 +1005,7 @@
           const c = d.data();
           const pCount = c.products ? c.products.length : 0;
           
-          // Added unique ID for ghost card deletion
+          // UPGRADED: Added unique ID for ghost card animated deletion
           html += `
             <div class="customer-card" id="cust-card-${c.id}" onclick="openLedgerView('${c.id}')">
               <div class="cust-top">
@@ -1023,7 +1041,7 @@
       document.getElementById('cust-name').value = ''; document.getElementById('cust-phone').value = ''; document.getElementById('cust-loc').value = '';
       document.getElementById('initial-product-section').style.display = 'block';
       document.getElementById('btn-save-cust').onclick = saveNewCustomer;
-      document.getElementById('btn-fetch-gps').click(); 
+      document.getElementById('btn-fetch-gps').click(); // Auto-fetch
       openModal('modal-customer');
     };
 
@@ -1620,6 +1638,7 @@
         linesNameLastVisible = null; linesNameHasMore = true;
         linesIdLastVisible = null; linesIdHasMore = true;
         
+        // OPENS INSTANTLY - No blocking lag
         window.history.pushState({ modal: 'line-picker' }, '');
         document.getElementById('modal-overlay').classList.add('active');
         document.getElementById('line-picker-sheet').classList.add('active');
@@ -1646,6 +1665,7 @@
       const list = document.getElementById('picker-list');
       const loader = document.getElementById('picker-loader');
 
+      // Smart Cache Check for Jitter-Free Load
       if (!isSearch && !isMore && hasFetchedDefaultLines) {
           linesLoading = true;
           let html = '';
