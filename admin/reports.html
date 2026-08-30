@@ -305,7 +305,7 @@
 
     // --- DOM Elements ---
     const customerListEl = document.getElementById('customer-list');
-    const searchResultsListEl = document.getElementById('search-results-list'); // UPGRADED CONTAINER
+    const searchResultsListEl = document.getElementById('search-results-list'); 
     const loadMoreTrigger = document.getElementById('load-more-trigger');
     const paginationLoader = document.getElementById('pagination-loader');
     const searchBar = document.getElementById('search-bar');
@@ -327,7 +327,6 @@
     // ============================================================================
     function closeTopUI() {
         // 1. Modals (Highest Layer)
-        // UPGRADED: Also close edit-customer-sheet seamlessly
         const editSheet = document.getElementById('edit-customer-sheet');
         if (editSheet && editSheet.classList.contains('active')) {
             editSheet.classList.remove('active');
@@ -354,7 +353,6 @@
             isSearchMode = false;
             emptyState.style.display = 'none';
             
-            // UPGRADED 0-READ CLOSING: Hide search container, restore existing home DOM instantly
             searchResultsListEl.style.display = 'none';
             searchResultsListEl.innerHTML = '';
             customerListEl.style.display = 'block';
@@ -380,7 +378,6 @@
       }
     });
 
-    // UPGRADED: RAM Cache Restored. Fetches once in background.
     async function buildSearchDictionaryBackground() {
         try {
             const snap = await getDocs(collection(db, "customers"));
@@ -496,7 +493,6 @@
             return;
         }
 
-        // Hide main list, show search container immediately
         customerListEl.style.display = 'none';
         loadMoreTrigger.style.display = 'none';
         searchResultsListEl.style.display = 'block';
@@ -506,7 +502,6 @@
             let matchedNames = [];
             let matchedIDs = [];
 
-            // UPGRADED: 0-Read instant filtering from background memory
             for(let c of localSearchCache) {
                 if(matchedNames.length < 10 && c.name.includes(term)) matchedNames.push(c);
                 else if(matchedIDs.length < 10 && c.id.includes(term)) matchedIDs.push(c);
@@ -562,7 +557,6 @@
             document.getElementById('detail-cust-name').innerText = c.name;
             document.getElementById('ledger-cust-name-inner').innerText = c.name;
             
-            // UPGRADED: Set the dialer link instead of just static text
             document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
             document.getElementById('ledger-cust-phone').href = c.phone ? 'tel:' + c.phone : '#';
             
@@ -628,20 +622,23 @@
             if(p.payments && p.payments.length > 0) {
                 // Live Dynamic Math
                 const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
-                                      .sort((a,b) => new Date(a.date) - new Date(b.date));
+                                      .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                 
                 let dynamicPending = total;
-                sortedPayments.forEach(pay => {
+                sortedPayments.forEach((pay, idx) => {
                     let amt = parseInt(pay.amount) || 0;
                     dynamicPending = Math.max(0, dynamicPending - amt);
                     pay.displayPending = dynamicPending; 
+                    pay.sno = idx + 1; // Assign Chronological Serial Number
                 });
 
                 sortedPayments.reverse().forEach(pay => {
-                    const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+                    // UPGRADED: Added Year and forcing nowrap below
+                    const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year: 'numeric' });
                     payHtml += `
                     <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 12px 10px;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
+                        <td style="padding: 12px 10px;">${pay.sno}</td>
+                        <td style="padding: 12px 10px; white-space: nowrap;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
                         <td style="padding: 12px 10px; color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
                         <td style="padding: 12px 10px; color:var(--danger); font-weight:700;">${fmt(pay.displayPending)}</td>
                         <td style="padding: 12px 10px; text-align:center;">
@@ -652,7 +649,7 @@
                     </tr>`;
                 });
             } else {
-                payHtml = `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-sub);">No payments recorded yet.</td></tr>`;
+                payHtml = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-sub);">No payments recorded yet.</td></tr>`;
             }
 
             const card = document.createElement('div');
@@ -684,10 +681,11 @@
                       <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.85rem;">
                         <thead style="background: rgba(107, 114, 128, 0.1);">
                           <tr>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">S.No</th>
                             <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Date</th>
                             <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Paid</th>
                             <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Remaining</th>
-                            <th style="padding: 10px; text-align: center; border-bottom:1px solid var(--border);">Action</th>
+                            <th style="padding: 10px; text-align: center; border-bottom:1px solid var(--border);">Edit</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -750,12 +748,17 @@
     window.savePayment = async () => {
         vibrate();
         const amt = parseInt(payAmount.value);
-        if (isNaN(amt) || amt < 0) return alert("Enter a valid amount.");
+        const selectedDate = payDate.value;
+        
+        // UPGRADED: Enhanced strict validation
+        if (isNaN(amt) || amt < 0) return alert("Enter a valid positive amount.");
+        if (!selectedDate) return alert("Please select a valid date.");
 
         btnSavePayment.innerText = "Saving...";
         btnSavePayment.disabled = true;
 
         try {
+            // Safe deep clone to prevent accidental reference state leaks
             let safeProducts = JSON.parse(JSON.stringify(activeCustomer.data.products));
             let targetProd = safeProducts[activeProductIndex];
             if(!targetProd.payments) targetProd.payments = [];
@@ -764,7 +767,7 @@
                 targetProd.payments.push({
                     id: 'MANUAL_' + Date.now(),
                     amount: amt,
-                    date: new Date(payDate.value).toISOString(),
+                    date: new Date(selectedDate).toISOString(),
                     type: 'collection',
                     method: payMethod.value,
                     agent_uid: currentUser.uid,
@@ -772,26 +775,28 @@
                 });
             } else {
                 targetProd.payments[activePaymentIndex].amount = amt;
-                targetProd.payments[activePaymentIndex].date = new Date(payDate.value).toISOString();
+                targetProd.payments[activePaymentIndex].date = new Date(selectedDate).toISOString();
                 targetProd.payments[activePaymentIndex].method = payMethod.value;
             }
 
+            // UPGRADED: Robust mathematical recalibration locking logic
             let totalPaidCalculated = 0;
-            targetProd.payments.sort((a,b) => new Date(a.date) - new Date(b.date));
+            // Force strict timestamp comparison instead of raw strings
+            targetProd.payments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+            const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
+            let runningPending = safeTotal;
+
+            // Sequential lock-in fixes any drift when middle dates are edited
             targetProd.payments.forEach(p => {
-                totalPaidCalculated += (parseInt(p.amount) || 0);
+                let pAmt = parseInt(p.amount) || 0;
+                totalPaidCalculated += pAmt;
+                runningPending = Math.max(0, runningPending - pAmt);
+                p.pendingAfter = runningPending; 
             });
 
             targetProd.paid = totalPaidCalculated;
-            const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
-            targetProd.pending = Math.max(0, safeTotal - totalPaidCalculated);
-
-            let runningPending = safeTotal;
-            targetProd.payments.forEach(p => {
-                runningPending -= (parseInt(p.amount) || 0);
-                p.pendingAfter = Math.max(0, runningPending);
-            });
+            targetProd.pending = runningPending;
 
             await updateDoc(activeCustomer.ref, { products: safeProducts });
             
