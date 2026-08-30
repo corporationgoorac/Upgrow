@@ -192,7 +192,8 @@
     <div class="modal-handle"></div>
     <h3 style="margin-bottom: 10px;">Select Line for <span id="picker-day-title" style="color:var(--primary);">Day</span></h3>
     
-    <button class="btn-alert btn-cancel" style="width: 100%; border-color: var(--danger); color: var(--danger); margin-bottom: 15px; flex-shrink: 0;" onclick="assignRouteToDay(null)">
+    <!-- UPGRADED BUTTON: Slimmer, tighter padding for a cleaner UI -->
+    <button class="btn-alert btn-cancel" style="width: 100%; border-color: var(--danger); color: var(--danger); margin-bottom: 15px; flex-shrink: 0; padding: 10px; font-size: 0.95rem;" onclick="assignRouteToDay(null)">
       Clear / Mark Day Off
     </button>
 
@@ -201,8 +202,10 @@
       <input type="text" id="search-lines" placeholder="Search line name or ID...">
     </div>
 
-    <div id="picker-list"></div>
-    <div id="loading-lines" class="loading-trigger">Loading...</div>
+    <!-- UPGRADED CONTAINER: Loader safely nested to prevent layout bounce -->
+    <div id="picker-list">
+      <div id="loading-lines" class="loading-trigger">Loading...</div>
+    </div>
   </div>
 
   <!-- ALERT & CONFIRM MODALS -->
@@ -544,10 +547,14 @@
 
       linesLoading = true;
       const list = document.getElementById('picker-list');
-      const loader = document.getElementById('loading-lines');
       
-      if(!isMore) { list.innerHTML = getSkeletons('picker'); loader.style.display = 'none'; }
-      else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+      if(!isMore) { 
+        // UPGRADED: Protect loader by including it with skeletons
+        list.innerHTML = getSkeletons('picker') + '<div id="loading-lines" class="loading-trigger" style="display: none;">Loading...</div>'; 
+      } else { 
+        const loader = document.getElementById('loading-lines');
+        if(loader) { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+      }
 
       try {
         let results = [];
@@ -611,10 +618,13 @@
             }
         });
 
-        if(!isMore) list.innerHTML = '';
+        if(!isMore) {
+          // UPGRADED: Re-inject safe loader container before appending
+          list.innerHTML = '<div id="loading-lines" class="loading-trigger" style="display: none;">Loading...</div>';
+        }
+        
         if(finalResults.length === 0 && !isMore) { 
           list.innerHTML = '<p style="text-align:center;color:var(--text-sub);">No lines found.</p>'; 
-          loader.style.display = 'none';
           linesLoading=false; return; 
         }
 
@@ -626,11 +636,17 @@
               <p>${data.id} • ${data.scheduleType}</p>
             </div>`;
         });
-        list.insertAdjacentHTML('beforeend', html);
         
-        const anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
-        loader.style.display = anyMore ? 'block' : 'none';
-        loader.innerText = anyMore ? 'Scroll for more' : '';
+        // UPGRADED: Seamless insertion above the hidden loader
+        const currentLoader = document.getElementById('loading-lines');
+        if (currentLoader) {
+            currentLoader.insertAdjacentHTML('beforebegin', html);
+            const anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
+            currentLoader.style.display = anyMore ? 'block' : 'none';
+            currentLoader.innerText = anyMore ? 'Scroll for more' : '';
+        } else {
+            list.insertAdjacentHTML('beforeend', html);
+        }
         
       } catch(e) { handleFirebaseError(e); }
       linesLoading = false;
