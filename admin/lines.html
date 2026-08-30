@@ -176,7 +176,7 @@
     
     .loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
 
-    /* Custom Confirm & Alert Overlays */
+    /* Custom Confirm Modal */
     .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .confirm-overlay.active { opacity: 1; pointer-events: auto; }
     .confirm-modal, .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
@@ -503,7 +503,7 @@
     <button class="btn-full" id="btn-save-cust-l3" onclick="saveCustomerEditLevel3()">Save Changes</button>
   </div>
 
-  <!-- Change Line Bottom Sheet (Realtime Real-time Search) -->
+  <!-- Change Line Bottom Sheet (Smart Parallel Search) -->
   <div class="bottom-sheet" id="line-picker-sheet">
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;">Change Line</h3>
@@ -543,7 +543,25 @@
     import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     let currentUser = null;
-    
+    onAuthStateChanged(auth, (user) => { if(user) currentUser = user; });
+
+    // Format Currency
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // UPGRADED: Custom Ordinal Date Formatter
+    const formatOrdDate = (dateStr) => {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d)) return "";
+      const day = d.getDate();
+      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const month = monthNames[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day}${suffix} ${month} ${year}`;
+    };
+
     // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
     window.handleFirebaseError = function(e, fallbackToAlert = false) {
       if (!e || !e.message) return;
@@ -572,23 +590,6 @@
       }
     };
 
-    // Format Currency
-    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
-    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
-
-    // UPGRADED: Custom Ordinal Date Formatter
-    const formatOrdDate = (dateStr) => {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      if (isNaN(d)) return "";
-      const day = d.getDate();
-      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
-      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      const month = monthNames[d.getMonth()];
-      const year = d.getFullYear();
-      return `${day}${suffix} ${month} ${year}`;
-    };
-
     // State
     let activeLineId = null;
     let activeCustId = null;
@@ -599,6 +600,12 @@
     let activeProductIndex = null;
     let activePaymentIndex = null; 
     let isAssigningLine = false; // Multi-click lock
+    
+    let linesCache = {};
+    let defaultLinesArray = [];
+    let hasFetchedDefaultLines = false;
+    let defaultLinesHasMore = true; 
+    let defaultLinesLastVisible = null; 
     
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let linesNameLastVisible = null, linesNameHasMore = true;
@@ -881,6 +888,8 @@
       try {
         await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
         
+        linesCache = {}; defaultLinesArray = []; hasFetchedDefaultLines = false; defaultLinesHasMore = true; defaultLinesLastVisible = null;
+
         window.history.back(); 
         linesLastVisible = null; loadLines(); 
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
@@ -928,6 +937,8 @@
         const card = document.getElementById('line-card-'+editingLineId);
         if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
 
+        linesCache = {}; defaultLinesArray = []; hasFetchedDefaultLines = false; defaultLinesHasMore = true; defaultLinesLastVisible = null;
+
         window.history.back(); 
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Update Line";
@@ -949,6 +960,8 @@
         await deleteDoc(doc(db, "lines", id));
         vibrate([50,50,50]);
 
+        linesCache = {}; defaultLinesArray = []; hasFetchedDefaultLines = false; defaultLinesHasMore = true; defaultLinesLastVisible = null;
+
         linesLastVisible = null; loadLines();
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert("Error: " + e.message, "Deletion Failed"); }
     };
@@ -964,7 +977,6 @@
       loadCustomers();
     };
 
-    // UPGRADED: Background Math Sync for Level 2 Badges
     function updateLevel2ProductCount() {
         if (!activeCustomer || !activeCustomer.data.products) return;
         const count = activeCustomer.data.products.length;
