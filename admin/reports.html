@@ -108,8 +108,8 @@
     .bottom-sheet.active { transform: translateY(0); }
     .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; flex-shrink: 0; }
     
-    /* Line Picker Internal Scrolling */
-    #picker-list { overflow-y: auto; max-height: 60vh; padding-bottom: 20px; margin-top: 10px; }
+    /* Line Picker Internal Scrolling with Anti-Jitter Min-Height */
+    #picker-list { overflow-y: auto; max-height: 60vh; min-height: 300px; padding-bottom: 20px; margin-top: 10px; }
     .picker-line { padding: 16px; border-radius: 14px; margin-bottom: 10px; cursor: pointer; transition: transform 0.2s; border: 1px solid var(--border); background: var(--bg-color); }
     .picker-line:active { transform: scale(0.98); }
     .picker-line h4 { margin-bottom: 3px; font-size: 1.1rem; }
@@ -1214,7 +1214,7 @@
       return null;
     }
 
-    window.openLinePickerModal = async () => {
+    window.openLinePickerModal = () => {
         if (!activeCustomer) return;
         vibrate();
         
@@ -1222,23 +1222,25 @@
         const lineDisplayLabel = document.getElementById('picker-current-line');
         lineDisplayLabel.innerText = "Current Line: Loading...";
 
-        // Resolves zero-read if cached, otherwise 1 read
-        if(currentLineId) {
-            const lData = await getLineData(currentLineId);
-            if(lData) lineDisplayLabel.innerText = `Current Line: ${lData.name} (${lData.id})`;
-            else lineDisplayLabel.innerText = `Current Line: Unknown (${currentLineId})`;
-        } else {
-            lineDisplayLabel.innerText = `Current Line: Unassigned`;
-        }
-
         linesSearch = ""; document.getElementById('picker-search-input').value = '';
         linesLastVisible = null; linesHasMore = true;
         linesNameLastVisible = null; linesNameHasMore = true;
         linesIdLastVisible = null; linesIdHasMore = true;
         
+        // OPENS INSTANTLY - No blocking lag
         window.history.pushState({ modal: 'line-picker' }, '');
         modalOverlay.classList.add('active');
         document.getElementById('line-picker-sheet').classList.add('active');
+
+        // Resolves zero-read if cached, otherwise 1 read
+        if(currentLineId) {
+            getLineData(currentLineId).then(lData => {
+                if(lData) lineDisplayLabel.innerText = `Current Line: ${lData.name} (${lData.id})`;
+                else lineDisplayLabel.innerText = `Current Line: Unknown (${currentLineId})`;
+            });
+        } else {
+            lineDisplayLabel.innerText = `Current Line: Unassigned`;
+        }
 
         loadPickerLines();
     };
@@ -1279,7 +1281,8 @@
       linesLoading = true;
       
       if(!isMore) { 
-        let h=''; for(let i=0;i<3;i++) h+=`<div class="picker-line"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:5px;"></div><div class="skeleton-box" style="height:15px;width:40%;"></div></div>`;
+        // UPGRADED: 6 Skeletons prevents height jitter
+        let h=''; for(let i=0;i<6;i++) h+=`<div class="picker-line"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:5px;"></div><div class="skeleton-box" style="height:15px;width:40%;"></div></div>`;
         list.innerHTML = h; loader.style.display = 'none'; 
       } else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
 
