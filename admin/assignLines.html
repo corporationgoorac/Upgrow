@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- UPGRADED: Explicit PWA Toolbar Theme Colors for Light and Dark Modes -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f7f6">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121212">
+  
   <title>Assign Routes - Up Grow</title>
   
   <style>
@@ -105,8 +110,8 @@
     .modal.active { transform: translateY(0); }
     .modal-handle { width: 45px; height: 6px; background-color: var(--border); border-radius: 10px; margin: 0 auto 20px auto; flex-shrink: 0; }
     
-    /* Picker Modal specific */
-    #picker-list { overflow-y: auto; flex: 1; padding-bottom: 20px; margin-top: 10px; }
+    /* Picker Modal specific - UPGRADED SCROLL PADDING */
+    #picker-list { overflow-y: auto; flex: 1; padding-bottom: 40px; margin-top: 10px; }
     .picker-line { padding: 16px; border-radius: 14px; margin-bottom: 10px; cursor: pointer; transition: transform 0.2s; }
     .picker-line:active { transform: scale(0.98); }
     .picker-line h4 { margin-bottom: 3px; font-size: 1.1rem; }
@@ -187,13 +192,15 @@
   </div>
 
   <!-- LEVEL 3: LINE PICKER BOTTOM SHEET -->
+  <!-- UPGRADED: Removed bottom padding from the modal itself so the list can stretch fully to the bottom edge -->
   <div class="modal-overlay" id="modal-overlay"></div>
-  <div class="modal" id="modal-picker" style="height: 85vh;">
+  <div class="modal" id="modal-picker" style="height: 85vh; padding-bottom: 0;">
     <div class="modal-handle"></div>
     <h3 style="margin-bottom: 10px;">Select Line for <span id="picker-day-title" style="color:var(--primary);">Day</span></h3>
     
-    <!-- UPGRADED BUTTON: Slimmer, tighter padding for a cleaner UI -->
-    <button class="btn-alert btn-cancel" style="width: 100%; border-color: var(--danger); color: var(--danger); margin-bottom: 15px; flex-shrink: 0; padding: 10px; font-size: 0.95rem;" onclick="assignRouteToDay(null)">
+    <!-- UPGRADED BUTTON (OPTION A: ULTRA-SLIM PILL): 
+         Drastically reduced padding to 8px, shrank text, fully rounded edges, added letter spacing -->
+    <button class="btn-alert btn-cancel" style="width: 100%; border-color: var(--danger); color: var(--danger); margin-bottom: 15px; flex-shrink: 0; padding: 8px; font-size: 0.85rem; border-radius: 30px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: none; font-weight: 800;" onclick="assignRouteToDay(null)">
       Clear / Mark Day Off
     </button>
 
@@ -202,7 +209,6 @@
       <input type="text" id="search-lines" placeholder="Search line name or ID...">
     </div>
 
-    <!-- UPGRADED CONTAINER: Loader safely nested to prevent layout bounce -->
     <div id="picker-list">
       <div id="loading-lines" class="loading-trigger">Loading...</div>
     </div>
