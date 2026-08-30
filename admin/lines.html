@@ -70,12 +70,13 @@
     .btn-create:active { transform: scale(0.95); }
 
     /* --- Line Cards & Gradients --- */
-    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; }
-    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; }
-    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; }
-    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; }
-    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; }
-    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; }
+    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; border:none!important; }
+    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; border:none!important; }
+    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; border:none!important; }
+    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; border:none!important; }
+    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; border:none!important; }
+    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; border:none!important; }
+    .grad-none { background: var(--surface-card); color: var(--text-main); border: 2px dashed var(--border); }
 
     .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
     .line-card:active { transform: scale(0.98); }
@@ -103,12 +104,14 @@
     .product-header-new { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
     .product-name-wrap { font-size: 1.15rem; font-weight: 800; color: var(--text-main); line-height: 1.3; }
     .product-actions-row { display: flex; justify-content: flex-end; gap: 10px; width: 100%; border-bottom: 1px dashed var(--border); padding-bottom: 12px; }
+
     .product-math { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-sub); font-weight: 700; }
     .val-pending { color: var(--danger); font-weight: 800; }
 
     .btn-circle { width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: white; transition: transform 0.2s; }
     .btn-circle:active { transform: scale(0.9); }
     .btn-csv { background: #8b5cf6; }
+    .btn-add { background: var(--primary); }
     .btn-delete-prod { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
 
@@ -126,9 +129,10 @@
     .icon-btn:active { transform: scale(0.9); }
     .actions-wrap { display: flex; gap: 8px; }
 
-    /* --- Modals --- */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(3px); }
-    .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
+    /* --- Modals & Overlays --- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    
     .modal { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
     .modal.active { transform: translateY(0); }
     .modal-handle { width: 45px; height: 6px; background-color: var(--border); border-radius: 10px; margin: 0 auto 25px auto; flex-shrink: 0; }
@@ -158,7 +162,7 @@
     .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform 0.2s; }
     .color-option.selected { transform: scale(1.15); border-color: var(--text-main); }
 
-    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; transition: all 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; transition: transform 0.2s; }
     .btn-full:active { transform: scale(0.96); }
 
     .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
@@ -173,7 +177,7 @@
     
     .loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
 
-    /* Custom Confirm Modal */
+    /* Custom Confirm & Alert Overlays */
     .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .confirm-overlay.active { opacity: 1; pointer-events: auto; }
     .confirm-modal, .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
@@ -540,31 +544,13 @@
     import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     let currentUser = null;
-    onAuthStateChanged(auth, (user) => { if(user) currentUser = user; });
-
-    // Format Currency
-    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
-    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
-
-    // UPGRADED: Custom Ordinal Date Formatter
-    const formatOrdDate = (dateStr) => {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      if (isNaN(d)) return "";
-      const day = d.getDate();
-      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
-      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      const month = monthNames[d.getMonth()];
-      const year = d.getFullYear();
-      return `${day}${suffix} ${month} ${year}`;
-    };
-
+    
     // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
     window.handleFirebaseError = function(e, fallbackToAlert = false) {
       if (!e || !e.message) return;
       const urlMatch = e.message.match(/(https:\/\/console\.firebase\.google\.com[^\s]+)/);
       if (urlMatch) {
-        let url = urlMatch[1].replace(/['"\)]$/, ''); // Clean up trailing chars
+        let url = urlMatch[1].replace(/['"\)]$/, ''); 
         const container = document.getElementById('index-pill-container');
         const pill = document.createElement('div');
         pill.className = 'index-pill';
@@ -587,6 +573,23 @@
       }
     };
 
+    // Format Currency
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // UPGRADED: Custom Ordinal Date Formatter
+    const formatOrdDate = (dateStr) => {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d)) return "";
+      const day = d.getDate();
+      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const month = monthNames[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day}${suffix} ${month} ${year}`;
+    };
+
     // State
     let activeLineId = null;
     let activeCustId = null;
@@ -605,7 +608,7 @@
     let linesIdLastVisible = null, linesIdHasMore = true;
 
     let custLastVisible = null, custHasMore = true, custLoading = false, custSearch = "";
-    let linesDataMap = {}; // Added to support 0-read editing
+    let linesDataMap = {}; 
     let editingLineId = null;
     
     // Custom Confirm Logic
@@ -613,7 +616,6 @@
     window.customConfirm = function(msg) {
       return new Promise(resolve => {
         document.getElementById('confirm-msg').innerText = msg;
-        // UPGRADED: Safety check prevents history duplicates on double-tap
         if (!document.getElementById('confirm-overlay').classList.contains('active')) {
           document.getElementById('confirm-overlay').classList.add('active');
           document.getElementById('confirm-modal').classList.add('active');
@@ -628,14 +630,13 @@
       window.history.back(); 
     };
 
-    // Custom Alert Logic (Replaces System Alert)
+    // Custom Alert Logic
     let alertResolve = null;
     window.customAlert = function(msg, title="Notice") {
       return new Promise(resolve => {
         vibrate(50);
         document.getElementById('alert-title').innerText = title;
         document.getElementById('alert-msg').innerText = msg;
-        // UPGRADED: Safety check prevents history duplicates on double-tap
         if (!document.getElementById('alert-overlay').classList.contains('active')) {
           document.getElementById('alert-overlay').classList.add('active');
           document.getElementById('alert-modal').classList.add('active');
@@ -648,7 +649,6 @@
 
     // History API & Panel Navigation
     function openPanel(id, stateData) {
-      // UPGRADED: Safety check prevents history duplicates on double-tap
       if (!document.getElementById(id).classList.contains('active')) {
         document.getElementById(id).classList.add('active');
         window.history.pushState({ panel: id, ...stateData }, '');
@@ -657,7 +657,6 @@
     
     window.openModal = (id) => {
       vibrate();
-      // UPGRADED: Safety check prevents history duplicates on double-tap
       if (!document.getElementById(id).classList.contains('active')) {
         document.getElementById('modal-overlay').classList.add('active');
         document.getElementById(id).classList.add('active');
@@ -666,7 +665,6 @@
     };
 
     function closeTopUI() {
-      // Custom Alerts/Confirms
       const alertModal = document.getElementById('alert-modal');
       if (alertModal && alertModal.classList.contains('active')) {
           alertModal.classList.remove('active');
@@ -683,7 +681,7 @@
         return;
       }
 
-      // 1. Level 3 Advanced Bottom Sheets
+      // Level 3 Advanced Bottom Sheets
       const editSheetL3 = document.getElementById('edit-customer-sheet');
       if (editSheetL3 && editSheetL3.classList.contains('active')) {
           editSheetL3.classList.remove('active');
@@ -709,7 +707,7 @@
           return;
       }
 
-      // 2. Old Level 1/2 Modals
+      // Old Level 1/2 Modals
       const activeModal = document.querySelector('.modal.active');
       if (activeModal) {
         activeModal.classList.remove('active');
@@ -717,14 +715,17 @@
         return;
       }
 
-      // 3. Slide Panels
+      // Slide Panels
       if (document.getElementById('view-ledger').classList.contains('active')) {
         document.getElementById('view-ledger').classList.remove('active');
         activeCustId = null;
         activeCustomer = null; 
-      } else if (document.getElementById('view-customers').classList.contains('active')) {
+        return;
+      } 
+      if (document.getElementById('view-customers').classList.contains('active')) {
         document.getElementById('view-customers').classList.remove('active');
         activeLineId = null;
+        return;
       }
     }
 
@@ -755,7 +756,6 @@
     
     // Cust ID Check
     document.getElementById('cust-id').addEventListener('input', debounce(async (e) => {
-      // Only check if creating new
       if(!document.getElementById('cust-id').readOnly) {
         await checkIdAvailability('customers', e.target.value.toUpperCase().trim(), document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross'));
       }
@@ -789,7 +789,6 @@
     // LEVEL 1: LINES
     // ==========================================
     function createLineCardHTML(data) {
-      // Show Mon, Tue instead of Weekly
       const schedText = data.scheduleType === 'weekly' && data.scheduleDay ? data.scheduleDay.substring(0,3) : 'Daily';
       return `
         <div class="line-card ${data.color || 'grad-6'}" id="line-card-${data.id}" onclick="openCustomersView('${data.id}', '${data.name.replace(/'/g,"\\'")}')">
@@ -835,7 +834,7 @@
         let html = '';
         snap.forEach(d => {
           const data = d.data();
-          linesDataMap[data.id] = data; // Save to map for 0-read edits
+          linesDataMap[data.id] = data; 
           html += createLineCardHTML(data);
         });
         list.insertAdjacentHTML('beforeend', html);
@@ -854,10 +853,8 @@
       linesLastVisible = null; linesHasMore = true; loadLines();
     }));
 
-    // Color picker
     document.querySelectorAll('.color-option').forEach(el => {
       el.onclick = () => { 
-        // Need to target siblings in the specific picker container
         el.parentElement.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); 
         el.classList.add('selected'); 
       };
@@ -886,13 +883,12 @@
       const btn = document.getElementById('btn-save-line'); btn.disabled = true; btn.innerText = "Saving...";
       try {
         await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
-        window.history.back(); // close modal
-        linesLastVisible = null; loadLines(); // reload
+        window.history.back(); 
+        linesLastVisible = null; loadLines(); 
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Create Line";
     };
 
-    // Edit Line Logic
     window.openEditLineModal = (id) => {
       vibrate();
       const line = linesDataMap[id];
@@ -926,7 +922,6 @@
       try {
         await updateDoc(doc(db, "lines", editingLineId), { name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color });
         
-        // update local map and DOM directly (0 reads)
         linesDataMap[editingLineId].name = name;
         linesDataMap[editingLineId].scheduleType = stype;
         linesDataMap[editingLineId].scheduleDay = stype==='weekly'?sday:null;
@@ -935,12 +930,11 @@
         const card = document.getElementById('line-card-'+editingLineId);
         if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
 
-        window.history.back(); // close modal
+        window.history.back(); 
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Update Line";
     };
 
-    // Safe 480 Batch Delete
     window.deleteLine = async (id) => {
       vibrate([50,100]);
       if(!(await customConfirm(`Delete Line ${id} and ALL its customers permanently?`))) return;
@@ -1005,7 +999,6 @@
           const c = d.data();
           const pCount = c.products ? c.products.length : 0;
           
-          // UPGRADED: Added unique ID for ghost card animated deletion
           html += `
             <div class="customer-card" id="cust-card-${c.id}" onclick="openLedgerView('${c.id}')">
               <div class="cust-top">
@@ -1041,7 +1034,7 @@
       document.getElementById('cust-name').value = ''; document.getElementById('cust-phone').value = ''; document.getElementById('cust-loc').value = '';
       document.getElementById('initial-product-section').style.display = 'block';
       document.getElementById('btn-save-cust').onclick = saveNewCustomer;
-      document.getElementById('btn-fetch-gps').click(); // Auto-fetch
+      document.getElementById('btn-fetch-gps').click(); 
       openModal('modal-customer');
     };
 
@@ -1067,7 +1060,6 @@
             paid: pPaid, 
             pending: pTotal-pPaid, 
             addedAt: new Date().toISOString(),
-            // UPGRADED: Added method and agent_uid
             payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
         };
         await setDoc(doc(db, "customers", id), { id, lineId: activeLineId, name, phone, location: loc, products: [initProduct], createdAt: serverTimestamp() });
@@ -1114,7 +1106,6 @@
                 paid: pPaid, 
                 pending: pTotal-pPaid, 
                 addedAt: new Date().toISOString(),
-                // UPGRADED: Added method and agent_uid
                 payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
             };
             const updatedProds = cData.products ? [...cData.products, newP] : [newP];
@@ -1145,7 +1136,6 @@
         if(!cSnap.exists()) return;
         const c = cSnap.data();
 
-        // Bind global customer object required by advanced engines
         activeCustomer = { id: activeCustId, ref: doc(db, "customers", activeCustId), data: c };
 
         document.getElementById('ledger-cust-name').innerText = c.name;
@@ -1178,7 +1168,6 @@
       }
     }
 
-    // Dynamic Maps Location Trigger
     window.locateCustomer = () => {
         vibrate();
         const loc = activeCustomer?.data?.location;
@@ -1337,7 +1326,6 @@
                 paid: pPaid,
                 pending: pTotal-pPaid,
                 addedAt: new Date().toISOString(),
-                // UPGRADED: Added method and agent_uid
                 payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
             };
             
@@ -1638,7 +1626,6 @@
         linesNameLastVisible = null; linesNameHasMore = true;
         linesIdLastVisible = null; linesIdHasMore = true;
         
-        // OPENS INSTANTLY - No blocking lag
         window.history.pushState({ modal: 'line-picker' }, '');
         document.getElementById('modal-overlay').classList.add('active');
         document.getElementById('line-picker-sheet').classList.add('active');
@@ -1665,7 +1652,6 @@
       const list = document.getElementById('picker-list');
       const loader = document.getElementById('picker-loader');
 
-      // Smart Cache Check for Jitter-Free Load
       if (!isSearch && !isMore && hasFetchedDefaultLines) {
           linesLoading = true;
           let html = '';
@@ -1816,7 +1802,6 @@
             window.history.back(); 
             customAlert("Customer successfully moved to new line.", "Success");
             
-            // --- GHOST CARD FIX: 0-Read Animated Removal ---
             const ghostCard = document.getElementById('cust-card-' + activeCustomer.id);
             if (ghostCard) {
                 ghostCard.style.transition = 'all 0.3s ease';
@@ -1853,6 +1838,35 @@
         link.click();
         document.body.removeChild(link);
     };
+
+    // Initial Load
+    window.addEventListener('load', async () => { 
+      loadLines(); 
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const autoLineId = urlParams.get('lineId');
+      if (autoLineId) {
+        try {
+          const lineDoc = await getDoc(doc(db, "lines", autoLineId));
+          if (lineDoc.exists()) {
+            window.openCustomersView(lineDoc.data().id, lineDoc.data().name);
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } catch (error) {
+          console.error("Error auto-loading line:", error);
+        }
+      }
+    });
+
+    // Infinite Scroll logic for active panel
+    document.querySelectorAll('.view-panel').forEach(panel => {
+      panel.addEventListener('scroll', () => {
+        if((panel.clientHeight + panel.scrollTop) >= panel.scrollHeight - 150) {
+          if(panel.id === 'view-lines' && linesHasMore && !linesLoading) { vibrate(10); loadLines(true); }
+          if(panel.id === 'view-customers' && custHasMore && !custLoading) { vibrate(10); loadCustomers(true); }
+        }
+      });
+    });
 
   </script>
 </body>
