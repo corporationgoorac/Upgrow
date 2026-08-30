@@ -409,6 +409,7 @@
 
     // Line Picker State (Smart Cache)
     let linesCache = {};
+    let defaultLinesArray = [];
     let hasFetchedDefaultLines = false;
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let linesNameLastVisible = null, linesNameHasMore = true;
@@ -921,6 +922,8 @@
                 addedAt: new Date().toISOString(),
                 payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', pendingAfter: pTotal-pPaid }] : []
             };
+            
+            let finalUpdatedProds = null;
 
             await runTransaction(db, async (transaction) => {
                 const cSnap = await transaction.get(activeCustomer.ref);
@@ -928,8 +931,10 @@
                 const cData = cSnap.data();
                 const updatedProds = cData.products ? [...cData.products, newP] : [newP];
                 transaction.update(activeCustomer.ref, { products: updatedProds });
-                activeCustomer.data.products = updatedProds; // Sync local
+                finalUpdatedProds = updatedProds; 
             });
+            
+            if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds; 
 
             vibrate([30, 50]);
             renderProducts();
@@ -947,6 +952,7 @@
         if(!confirmed) return;
 
         try {
+            let finalUpdatedProds = null; 
             await runTransaction(db, async (transaction) => {
                 const cSnap = await transaction.get(activeCustomer.ref);
                 if (!cSnap.exists()) throw new Error("Customer not found.");
@@ -958,9 +964,10 @@
                 if (realIndex !== -1) {
                     updatedProds.splice(realIndex, 1); 
                     transaction.update(activeCustomer.ref, { products: updatedProds });
-                    activeCustomer.data.products = updatedProds; // Sync Local
+                    finalUpdatedProds = updatedProds; 
                 }
             });
+            if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds; 
             vibrate([50, 50, 50]);
             renderProducts();
         } catch(e) {
@@ -1024,6 +1031,7 @@
         btnSavePayment.disabled = true;
 
         try {
+            let finalUpdatedProds = null; 
             await runTransaction(db, async (transaction) => {
                 const cSnap = await transaction.get(activeCustomer.ref);
                 if (!cSnap.exists()) throw new Error("Customer not found.");
@@ -1076,8 +1084,10 @@
                 targetProd.pending = runningPending;
 
                 transaction.update(activeCustomer.ref, { products: safeProducts });
-                activeCustomer.data.products = safeProducts; // Sync Local
+                finalUpdatedProds = safeProducts; 
             });
+            
+            if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds; 
 
             vibrate([30, 50]);
             renderProducts(); 
@@ -1247,7 +1257,7 @@
       if (!isSearch && !isMore && hasFetchedDefaultLines) {
           linesLoading = true;
           let html = '';
-          const cachedLines = Object.values(linesCache);
+          const cachedLines = defaultLinesArray; 
           cachedLines.forEach(data => {
               const isCurrent = activeCustomer && data.id === activeCustomer.data.lineId;
               const style = isCurrent ? `opacity: 0.5; cursor: not-allowed; border-color: var(--primary); background: rgba(16, 185, 129, 0.05);` : ``;
@@ -1319,7 +1329,13 @@
           const snap = await getDocs(q);
           linesLastVisible = snap.docs[snap.docs.length-1];
           linesHasMore = snap.docs.length === 6;
-          snap.forEach(d => results.push(d.data()));
+          
+          if (!isMore) defaultLinesArray = []; 
+          
+          snap.forEach(d => {
+             results.push(d.data());
+             defaultLinesArray.push(d.data()); 
+          });
           if (!isMore) hasFetchedDefaultLines = true;
         }
 
