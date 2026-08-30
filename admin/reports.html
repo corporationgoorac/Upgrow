@@ -201,7 +201,7 @@
         <button class="back-btn icon-btn" onclick="window.history.back()" style="padding-left: 0; flex-shrink: 0; margin-right: 5px;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
-        <h2 style="font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0;" id="detail-cust-name">Customer</h2>
+        <h2 style="display: none !important; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0;" id="detail-cust-name">Customer</h2>
       </div>
       
       <!-- Flex Container for 2 Actions (Now fully optimized with distinct, native icons) -->
@@ -409,6 +409,7 @@
 
     // Line Picker State (Smart Cache)
     let linesCache = {};
+    let hasFetchedDefaultLines = false;
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let linesNameLastVisible = null, linesNameHasMore = true;
     let linesIdLastVisible = null, linesIdHasMore = true;
@@ -1234,14 +1235,38 @@
 
     async function loadPickerLines(isMore = false) {
       if(linesLoading) return;
-      
+
       const isSearch = linesSearch.trim() !== "";
       if (isSearch && isMore && !linesNameHasMore && !linesIdHasMore) return;
       if (!isSearch && isMore && !linesHasMore) return;
 
-      linesLoading = true;
       const list = document.getElementById('picker-list');
       const loader = document.getElementById('picker-loader');
+
+      // Smart Cache Check for Jitter-Free Load
+      if (!isSearch && !isMore && hasFetchedDefaultLines) {
+          linesLoading = true;
+          let html = '';
+          const cachedLines = Object.values(linesCache);
+          cachedLines.forEach(data => {
+              const isCurrent = activeCustomer && data.id === activeCustomer.data.lineId;
+              const style = isCurrent ? `opacity: 0.5; cursor: not-allowed; border-color: var(--primary); background: rgba(16, 185, 129, 0.05);` : ``;
+              const text = isCurrent ? ` (Current Line)` : ``;
+
+              html += `
+                <div class="picker-line ${data.color || 'grad-6'}" style="${style}" onclick="${isCurrent ? '' : `assignLineToCustomer('${data.id}')`}">
+                  <h4>${data.name}${text}</h4>
+                  <p>${data.id} • ${data.scheduleType || 'Daily'}</p>
+                </div>`;
+          });
+          list.innerHTML = html;
+          loader.style.display = linesHasMore ? 'block' : 'none';
+          loader.innerText = linesHasMore ? 'Scroll for more' : '';
+          linesLoading = false;
+          return;
+      }
+
+      linesLoading = true;
       
       if(!isMore) { 
         let h=''; for(let i=0;i<3;i++) h+=`<div class="picker-line"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:5px;"></div><div class="skeleton-box" style="height:15px;width:40%;"></div></div>`;
@@ -1295,6 +1320,7 @@
           linesLastVisible = snap.docs[snap.docs.length-1];
           linesHasMore = snap.docs.length === 6;
           snap.forEach(d => results.push(d.data()));
+          if (!isMore) hasFetchedDefaultLines = true;
         }
 
         // De-duplication
