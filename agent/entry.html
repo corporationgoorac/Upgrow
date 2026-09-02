@@ -474,10 +474,17 @@
                  if(!allPendingData[key]) allPendingData[key] = 0;
                  allPendingData[key] += parseInt(data[key].amount);
                  
-                 // NEW: Track the highest pending due number sitting in the outbox
-                 if(data[key].dueNumber) {
+                 // --- OLD DUE TRACKER COMMENTED OUT TO PRESERVE LINES ---
+                 // if(data[key].dueNumber) {
+                 //     if(!window.currentPendingDues[key]) window.currentPendingDues[key] = 0;
+                 //     if(data[key].dueNumber > window.currentPendingDues[key]) window.currentPendingDues[key] = data[key].dueNumber;
+                 // }
+                 
+                 // --- NEW UPGRADED PATH 2 DUE TRACKER ---
+                 let outboxMaxDue = data[key].targetDue || data[key].dueNumber;
+                 if(outboxMaxDue) {
                      if(!window.currentPendingDues[key]) window.currentPendingDues[key] = 0;
-                     if(data[key].dueNumber > window.currentPendingDues[key]) window.currentPendingDues[key] = data[key].dueNumber;
+                     if(outboxMaxDue > window.currentPendingDues[key]) window.currentPendingDues[key] = outboxMaxDue;
                  }
              }
           });
@@ -598,16 +605,6 @@
       const today = new Date().toISOString().split('T')[0];
       const entryKey = `${selectedCustomer.id}_${selectedProduct.index}`;
 
-      const paymentPayload = {
-        amount: amt,
-        method: payMethod.value,
-        cash_split: payMethod.value === 'split' ? (parseInt(payCashSplit.value) || 0) : (payMethod.value === 'cash' ? amt : 0),
-        online_split: payMethod.value === 'split' ? (parseInt(payOnlineSplit.value) || 0) : (payMethod.value === 'online' ? amt : 0),
-        status: "pending",
-        timestamp: new Date().toISOString(),
-        customer_name: selectedCustomer.name
-      };
-
       // NEW CHITTAI SPLIT LOGIC PRE-PROCESSING
       const isChittai = selectedProduct.fullObj && selectedProduct.fullObj.isChittai;
       let nextDue, targetDue, numDues = 1, baseAmt = amt, remainder = 0;
@@ -621,10 +618,25 @@
           remainder = amt - (baseAmt * (numDues - 1));
       }
 
+      const paymentPayload = {
+        amount: amt,
+        method: payMethod.value,
+        cash_split: payMethod.value === 'split' ? (parseInt(payCashSplit.value) || 0) : (payMethod.value === 'cash' ? amt : 0),
+        online_split: payMethod.value === 'split' ? (parseInt(payOnlineSplit.value) || 0) : (payMethod.value === 'online' ? amt : 0),
+        status: "pending",
+        timestamp: new Date().toISOString(),
+        customer_name: selectedCustomer.name,
+        // --- NEW: PATH 2 MASTER DRAFT FIELDS EXPOSED TO SUBMIT & APPROVAL ---
+        isChittai: isChittai ? true : false,
+        ...(isChittai && { nextDue: nextDue, targetDue: targetDue, numDues: numDues })
+      };
+
       try {
         // FIREBASE TRANSACTION: Guarantee atomicity for the outbox
         await runTransaction(db, async (transaction) => {
             
+          /* 
+          // --- BEGIN COMMENTED OUT OLD MULTI-SPLIT LOOP ---
           if (isChittai) {
               // CHITTAI MULTI-DUE PUSH
               for (let i = 0; i < numDues; i++) {
@@ -684,6 +696,24 @@
                     activeCustomers: arrayUnion(selectedCustomer.id) // <--- NEW OPTIMIZED PAYLOAD
                 });
               }
+          }
+          // --- END COMMENTED OUT OLD LOGIC ---
+          */
+
+          // --- NEW: PATH 2 SINGLE MASTER DRAFT PUSH (ZERO EXTRA READS) ---
+          const logRef = doc(db, "daily_logs", `${currentUser.uid}_${today}`);
+          const logDoc = await transaction.get(logRef);
+          
+          if (!logDoc.exists()) {
+            transaction.set(logRef, { 
+                [entryKey]: paymentPayload,
+                activeCustomers: [selectedCustomer.id]
+            });
+          } else {
+            transaction.update(logRef, { 
+                [entryKey]: paymentPayload,
+                activeCustomers: arrayUnion(selectedCustomer.id)
+            });
           }
         });
 
