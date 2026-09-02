@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Data - New App</title>
+  <style>
+    body { background-color: #f4f7f6; color: #111827; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .container { background: #ffffff; padding: 40px; border-radius: 16px; border: 1px solid #e5e7eb; text-align: center; max-width: 450px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #10B981; }
+    p { color: #6b7280; line-height: 1.5; margin-bottom: 25px; font-weight: 500; }
+    .file-input-wrapper { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #f8fafc; }
+    input[type="file"] { width: 100%; font-size: 0.9rem; color: #475569; }
+    button { background: #10B981; color: white; border: none; padding: 16px 24px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+    button:hover { background: #059669; transform: translateY(-2px); }
+    button:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; }
+    #status { margin-top: 20px; font-weight: bold; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Data Importer (Chittai Upgrade)</h2>
+    <p>Select your <b>old_customers_backup.json</b> file. This tool will assign them to Line <b>C01</b>, upgrade all products to Chittai mode, and upload them safely.</p>
+    
+    <div class="file-input-wrapper">
+      <input type="file" id="importFile" accept=".json">
+    </div>
+
+    <button id="btnImport">Import to Line C01</button>
+    <div id="status"></div>
+  </div>
+
+  <script type="module">
+    // Make sure this points to your NEW app's config.js
+    import { db } from "./config.js";
+    import { collection, doc, writeBatch } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    document.getElementById('btnImport').addEventListener('click', async () => {
+      const fileInput = document.getElementById('importFile');
+      const btn = document.getElementById('btnImport');
+      const status = document.getElementById('status');
+
+      if(!fileInput.files.length) {
+          status.innerText = "❌ Please select a JSON file first.";
+          status.style.color = "#ef4444";
+          return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "Processing...";
+      status.innerText = "Reading file...";
+      status.style.color = "#6b7280";
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const customers = JSON.parse(e.target.result);
+          
+          if(!Array.isArray(customers) || customers.length === 0) {
+              throw new Error("File is empty or invalid format.");
+          }
+
+          status.innerText = `Uploading ${customers.length} records...`;
+
+          let batch = writeBatch(db);
+          let count = 0;
+          
+          for(let c of customers) {
+            // 1. INJECT THE LINE ID AUTOMATICALLY
+            c.lineId = "C01"; 
+            
+            // 2. UPGRADE ALL OLD PRODUCTS TO CHITTAI
+            if (c.products && Array.isArray(c.products)) {
+              c.products.forEach(p => {
+                p.isChittai = true;          // Forces the Chittai UI to open in the new app
+                if (!p.startingDue) {
+                   p.startingDue = 1;        // Adds fallback starting due
+                }
+              });
+            }
+            
+            // Ensure ID exists, otherwise create a fallback document ID
+            const docId = c.id || `CUST_MIGRATE_${Date.now()}_${count}`;
+            
+            const ref = doc(collection(db, "customers"), docId);
+            batch.set(ref, c);
+            
+            count++;
+            
+            // Firestore allows max 500 writes per batch (using 400 to be safe)
+            if(count % 400 === 0) { 
+              await batch.commit(); 
+              batch = writeBatch(db); 
+            }
+          }
+          
+          // Commit any remaining records in the final batch
+          if (count % 400 !== 0) {
+            await batch.commit();
+          }
+          
+          status.innerText = `✅ Successfully imported ${count} customers with Chittai logic!`;
+          status.style.color = "#10B981";
+          fileInput.value = ""; // Clear input
+        } catch(err) {
+          status.innerText = "❌ Import failed: " + err.message;
+          status.style.color = "#ef4444";
+        } finally {
+          btn.disabled = false;
+          btn.innerText = "Import to Line C01";
+        }
+      };
+      
+      reader.onerror = () => {
+          status.innerText = "❌ Failed to read the file.";
+          status.style.color = "#ef4444";
+          btn.disabled = false;
+          btn.innerText = "Import to Line C01";
+      };
+
+      reader.readAsText(fileInput.files[0]);
+    });
+  </script>
+</body>
+</html>
