@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Master Lines - Up Grow</title>
+  <title>Reports & Ledger - Up Field</title>
   
   <style>
+    /* Shared Theme Variables */
     :root {
       --bg-color: #f4f7f6;
       --surface-color: #ffffff;
@@ -16,7 +17,7 @@
       --primary: #10B981;
       --primary-hover: #059669;
       --danger: #ef4444;
-      --danger-hover: #dc2626;
+      --warning: #f59e0b;
       --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
       --skeleton-base: #e5e7eb;
       --skeleton-highlight: #f3f4f6;
@@ -34,15 +35,13 @@
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
         /* Advanced CSS Filter: Turns bright white Google map into sleek dark dashboard while preserving clarity */
-        --map-filter: invert(92%) hue-rotate(180deg) brightness(95%) contrast(105%);
+        --map-filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%);
       }
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
-    input, select { user-select: auto; }
-    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
-
-    body { background-color: var(--bg-color); color: var(--text-main); overflow-x: hidden; -ms-overflow-style: none !important; scrollbar-width: none !important; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none !important; }
+    body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; }
 
     /* Chittai Toggle */
     .toggle-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: var(--bg-color); border-radius: 14px; border: 1px dashed var(--border); }
@@ -54,63 +53,40 @@
     input:checked + .toggle-slider { background-color: var(--primary); }
     input:checked + .toggle-slider:before { transform: translateX(22px); }
 
-    /* Animations */
-    @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
-    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    /* --- Screen Management --- */
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; }
+    .screen.hidden-right { transform: translateX(100%); }
+    .screen-content { flex: 1; overflow-y: auto; padding: 0 20px 120px 20px; }
 
-    /* --- Views / Slide Panels --- */
-    .view-panel { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background-color: var(--bg-color); overflow-y: auto; transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 10; padding: 20px; padding-bottom: 90px; }
-    #view-lines { z-index: 1; }
-    #view-customers { transform: translateX(100%); z-index: 2; }
-    #view-ledger { transform: translateX(100%); z-index: 3; }
-    .view-panel.active { transform: translateX(0) !important; }
-
-    .header-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; animation: fadeIn 0.3s; }
-    .header-nav h2 { font-size: 1.3rem; letter-spacing: -0.5px; margin: 0; }
-    .btn-back { background: transparent; border: none; color: var(--text-main); display: flex; align-items: center; gap: 5px; font-weight: 600; cursor: pointer; font-size: 1rem; padding: 5px 0; }
-    .btn-back svg { width: 22px; height: 22px; stroke: currentColor; }
-
-    /* --- Top Actions --- */
-    .action-row { display: flex; gap: 10px; margin-bottom: 20px; animation: popIn 0.4s forwards; }
-    .search-container { position: relative; flex: 1; }
-    .search-container svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: var(--text-sub); }
-    .search-container input { width: 100%; padding: 14px 14px 14px 45px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--surface-card); color: var(--text-main); font-size: 1rem; outline: none; transition: all 0.3s; }
-    .search-container input:focus { border-color: var(--primary); }
-    .btn-create { background-color: var(--primary); color: #fff; border: none; border-radius: 14px; padding: 0 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); flex-shrink: 0; }
-    .btn-create:active { transform: scale(0.95); }
-
-    /* --- Line Cards & Gradients --- */
-    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; border:none!important; }
-    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; border:none!important; }
-    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; border:none!important; }
-    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; border:none!important; }
-    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; border:none!important; }
-    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; border:none!important; }
-    .grad-none { background: var(--surface-card); color: var(--text-main); border: 2px dashed var(--border); }
-
-    .line-card { padding: 20px; border-radius: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow); animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s; }
-    .line-card:active { transform: scale(0.98); }
-    .line-info h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 5px; }
-    .line-info p { font-size: 0.95rem; opacity: 0.95; font-weight: 600; font-family: monospace; }
+    /* --- Top Header & Search --- */
+    .header { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-color); z-index: 10; position: relative; border-bottom: none; margin-bottom: 0 !important; }
+    .header h2 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .icon-btn { background: none; border: none; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; cursor: pointer; transition: transform 0.2s; }
+    .icon-btn:active { transform: scale(0.9); }
+    
+    .search-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--surface-color); display: flex; align-items: center; padding: 0 15px; transform: translateY(-100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); z-index: 11; }
+    .search-bar-container.active { transform: translateY(0); }
+    .search-input { flex: 1; border: none; background: var(--bg-color); padding: 12px 15px; border-radius: 12px; font-size: 1rem; color: var(--text-main); outline: none; font-weight: 600; margin: 0 10px; }
     
     /* --- Customer Cards --- */
-    .customer-card { background-color: var(--surface-card); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; display: flex; flex-direction: column; gap: 12px; cursor: pointer; animation: popIn 0.4s forwards; opacity: 0; transition: all 0.3s ease; }
-    .customer-card:active { transform: scale(0.98); }
-    .cust-top { display: flex; justify-content: space-between; align-items: flex-start; }
-    .cust-info h3 { font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
-    .cust-info p { font-size: 0.85rem; color: var(--text-sub); font-family: monospace; }
-    .cust-stats { display: flex; gap: 10px; font-size: 0.85rem; font-weight: 600; color: var(--primary); background: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 8px; width: fit-content; }
-    
-    /* --- Ledger View --- */
-    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
+    .card { background-color: var(--surface-card); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; margin-top: 15px; box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; gap: 8px; }
+    .card:active { transform: scale(0.97); }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
+    .card-top > div:first-child { flex: 1; min-width: 0; overflow: hidden; }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .card-sub { font-size: 0.85rem; color: var(--text-sub); font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+
+    /* --- Ledger Map Header --- */
+    .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 0px !important; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
     .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
     .detail-row svg { width: 18px; height: 18px; stroke: currentColor; flex-shrink: 0; }
 
-    .product-list { margin-bottom: 25px; }
-    
-    /* UPGRADED: Flex column header to prevent name crunching */
+    /* --- Product & Ledger UI (Level 2) --- */
     .product-item { background: var(--surface-card); padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+    
+    /* Flex column header to prevent name crunching */
     .product-header-new { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
     .product-name-wrap { font-size: 1.15rem; font-weight: 800; color: var(--text-main); line-height: 1.3; }
     .product-actions-row { display: flex; justify-content: flex-end; gap: 10px; width: 100%; border-bottom: 1px dashed var(--border); padding-bottom: 12px; }
@@ -122,58 +98,41 @@
     .btn-circle:active { transform: scale(0.9); }
     .btn-csv { background: #8b5cf6; }
     .btn-add { background: var(--primary); }
-    .btn-delete-prod { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+    .btn-delete { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
 
-    .table-wrapper { background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
-    table { width: 100%; min-width: 300px; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-    th { background: rgba(107, 114, 128, 0.1); padding: 10px; text-transform: uppercase; color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border); }
-    td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-weight: 500; }
-    tr:last-child td { border-bottom: none; }
+    /* --- Line Gradients (Restored) --- */
+    .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; border:none!important; }
+    .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; border:none!important;}
+    .grad-3 { background: linear-gradient(135deg, #43E97B, #38F9D7) !important; color: #0f4c2e !important; border:none!important;}
+    .grad-4 { background: linear-gradient(135deg, #FA709A, #FEE140) !important; color: #5a1a2b !important; border:none!important;}
+    .grad-5 { background: linear-gradient(135deg, #667EEA, #764BA2) !important; color: white !important; border:none!important;}
+    .grad-6 { background: linear-gradient(135deg, #232526, #414345) !important; color: white !important; border:none!important;}
+    .grad-none { background: var(--surface-card); color: var(--text-main); border: 2px dashed var(--border); }
 
-    /* --- Action Icons --- */
-    .icon-btn { background: var(--surface-card); border: none; padding: 8px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .icon-btn.delete { color: var(--danger); }
-    .icon-btn.add { color: var(--primary); }
-    .icon-btn.edit { color: #3b82f6; } 
-    .icon-btn:active { transform: scale(0.9); }
-    .actions-wrap { display: flex; gap: 8px; }
-
-    /* --- Modals --- */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(3px); }
-    .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
-    .modal { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 25px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
-    .modal.active { transform: translateY(0); }
-    .modal-handle { width: 45px; height: 6px; background-color: var(--border); border-radius: 10px; margin: 0 auto 25px auto; flex-shrink: 0; }
-    .modal h3 { font-size: 1.3rem; margin-bottom: 20px; }
-
-    /* UPGRADED: Level 3 Advanced Bottom Sheets */
+    /* --- Modals & Overlays --- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    
     .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-card); border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 10px 20px 40px 20px; z-index: 101; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); max-height: 90vh; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
     .bottom-sheet.active { transform: translateY(0); }
-
+    .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; flex-shrink: 0; }
+    
     /* --- REDESIGNED LINE PICKER --- */
-    #line-picker-sheet { padding-bottom: 15px; } 
+    #line-picker-sheet { padding-bottom: 15px; } /* REMOVED EXCESSIVE PADDING */
     #picker-list { overflow-y: auto; max-height: 55vh; padding-bottom: 5px; margin-top: 15px; display: flex; flex-direction: column; gap: 12px; }
     .picker-line { padding: 18px; border-radius: 16px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.2); border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     .picker-line:active { transform: scale(0.96); }
     .picker-line h4 { margin-bottom: 4px; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .picker-line p { font-size: 0.85rem; font-family: monospace; font-weight: 700; opacity: 0.9; }
 
-    .input-group { margin-bottom: 20px; position: relative; }
+    .input-group { margin-bottom: 20px; }
     .input-group label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
     .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
     .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
     
-    .id-check-icon { position: absolute; right: 15px; top: 40px; width: 22px; height: 22px; display: none; }
-    .id-check-icon.valid { fill: var(--primary); display: block; }
-    .id-check-icon.invalid { fill: var(--danger); display: block; }
-
-    .color-picker { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform 0.2s; }
-    .color-option.selected { transform: scale(1.15); border-color: var(--text-main); }
-
-    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; transition: transform 0.2s; }
-    .btn-full:active { transform: scale(0.96); }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
+    .btn-full:active { transform: scale(0.97); }
 
     .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .dash-card { background: var(--bg-color); padding: 12px; border-radius: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
@@ -182,311 +141,148 @@
     .dash-value.pending { color: var(--danger); }
     .dash-value.paid { color: var(--primary); }
 
-    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 8px; }
+    /* Loading & Skeletons */
+    .loader-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .skeleton-box { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 16px; height: 90px; margin-bottom: 15px; }
     @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    
-    .loading-trigger { text-align: center; padding: 20px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); display: none; }
+    .loading-trigger { text-align: center; padding: 15px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; display: none; }
 
-    /* Custom Confirm Modal */
+    /* Custom Confirm & Alert Overlays */
     .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .confirm-overlay.active { opacity: 1; pointer-events: auto; }
+
     .confirm-modal, .alert-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; visibility: hidden; width: 85%; max-width: 320px; background-color: var(--surface-card); border-radius: 24px; padding: 25px 20px; z-index: 105; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1px solid var(--border); transition: all 0.3s; }
     .confirm-modal.active, .alert-modal.active { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
     .alert-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; }
-    .alert-icon.danger { background-color: rgba(239, 68, 68, 0.1); color: var(--danger); }
-    .alert-icon.warning { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
     .alert-actions { display: flex; gap: 10px; margin-top: 25px; }
     .btn-alert { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; font-size: 1rem; transition: transform 0.2s; }
     .btn-alert:active { transform: scale(0.95); }
     .btn-cancel { background: var(--bg-color); color: var(--text-main); border: 2px solid var(--border); }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-primary { background: var(--primary); color: #fff; }
-
-    /* Firebase Index Error Pill container */
-    #index-pill-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; }
-    .index-pill { background: var(--danger); color: white; padding: 14px 18px; border-radius: 14px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4); display: flex; justify-content: space-between; align-items: center; gap: 12px; animation: popIn 0.3s forwards; cursor: pointer; }
-    .index-pill span { flex: 1; line-height: 1.3; }
-    .index-pill svg { flex-shrink: 0; width: 24px; height: 24px; stroke: white; }
-    .index-pill .close-pill { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: background 0.2s; }
-    .index-pill .close-pill:active { background: rgba(255,255,255,0.4); }
   </style>
 </head>
 <body>
-  
-  <!-- Index Pill Container -->
-  <div id="index-pill-container"></div>
 
-  <!-- LEVEL 1: MASTER LINES -->
-  <div id="view-lines" class="view-panel active">
-    <div class="header-nav">
-      <h2>Master Lines</h2>
+  <!-- ================= LEVEL 1: MASTER LIST ================= -->
+  <div id="screen-main" class="screen">
+    <div class="header">
+      <h2>Ledger Reports</h2>
+      <button class="icon-btn" onclick="openSearch()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </button>
+      
+      <!-- Hidden Search Bar -->
+      <div class="search-bar-container" id="search-bar">
+        <button class="icon-btn" onclick="closeSearch()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <input type="text" class="search-input" id="search-input" placeholder="Search Name or ID...">
+      </div>
     </div>
     
-    <div class="action-row">
-      <div class="search-container">
-        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input type="text" id="search-lines" placeholder="Search line name or ID...">
-      </div>
-      <button class="btn-create" onclick="openModal('modal-create-line')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        New
-      </button>
-    </div>
-
-    <div id="list-lines"></div>
-    <div id="loading-lines" class="loading-trigger">Loading...</div>
-  </div>
-
-  <!-- LEVEL 2: CUSTOMERS IN LINE -->
-  <div id="view-customers" class="view-panel">
-    <div class="header-nav">
-      <button class="btn-back" onclick="window.history.back()">
-        <svg viewBox="0 0 24 24" fill="none"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        Back
-      </button>
-      <h2 id="title-line-name">Line Name</h2>
-    </div>
-
-    <div class="action-row">
-      <div class="search-container">
-        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input type="text" id="search-customers" placeholder="Search customer...">
-      </div>
-      <button class="btn-create" onclick="openCreateCustomerModal()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      </button>
-    </div>
-
-    <div id="list-customers"></div>
-    <div id="loading-customers" class="loading-trigger">Loading...</div>
-  </div>
-
-  <!-- LEVEL 3: CUSTOMER LEDGER -->
-  <div id="view-ledger" class="view-panel">
-    <!-- UPGRADED: Flex Header with Dual Route & Edit Icons -->
-    <div class="header-nav" style="margin-bottom: 0; padding-bottom: 10px;">
-      <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
-        <button class="btn-back" onclick="window.history.back()" style="padding-left: 0; flex-shrink: 0; margin-right: 5px;">
-          <svg viewBox="0 0 24 24" fill="none"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          Back
-        </button>
-        <h2 style="display: none !important; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0;" id="detail-cust-name-hidden">Customer</h2>
+    <div class="screen-content" id="main-scroll-area">
+      <!-- MAIN PAGINATED LIST -->
+      <div id="customer-list">
+        <!-- High-Quality Skeletons -->
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:70%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:40%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:60%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:50%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
+        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:80%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:30%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
       </div>
       
+      <!-- DEDICATED SEARCH CONTAINER FOR 0-READ TOGGLING -->
+      <div id="search-results-list" style="display: none;"></div>
+
+      <div id="load-more-trigger" style="height: 20px; width: 100%;"></div>
+      <div class="loader-spinner" id="pagination-loader" style="display: none;"></div>
+      
+      <div class="empty-state" id="empty-state">
+        <h3 style="color:var(--text-main); margin-bottom:5px;">No Results Found</h3>
+        <p>Try searching a different name or ID.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LEVEL 2: CUSTOMER DETAIL ================= -->
+  <div id="screen-detail" class="screen hidden-right">
+    <div class="header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 10px;">
+      <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
+        <button class="back-btn icon-btn" onclick="window.history.back()" style="padding-left: 0; flex-shrink: 0; margin-right: 5px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <h2 style="display: none !important; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0;" id="detail-cust-name">Customer</h2>
+      </div>
+      
+      <!-- Flex Container for 2 Actions -->
       <div style="display: flex; gap: 8px; align-items: center;">
           <button class="icon-btn" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 6px 10px; border-radius: 8px; flex-shrink: 0;" onclick="openLinePickerModal()" title="Change Line">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path><circle cx="18" cy="5" r="3"></circle></svg>
           </button>
-          <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); padding: 6px 10px; border-radius: 8px; flex-shrink: 0;" onclick="openEditCustomerModalLevel3()" title="Edit Info">
+          <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); padding: 6px 10px; border-radius: 8px; flex-shrink: 0;" onclick="openEditCustomerModal()" title="Edit Info">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
           </button>
       </div>
     </div>
-
-    <!-- UPGRADED: Dark/Light Mode Dynamic GPS Map Background -->
-    <div class="ledger-summary" id="ledger-header" style="border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
-      
-      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: var(--map-filter, none); opacity: 0.85; pointer-events: none;">
-        <div id="ledger-map-container" style="width: 100%; height: 100%;">
-          <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
-        </div>
-      </div>
-      
-      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(18,18,18,0.95) 10%, rgba(18,18,18,0.65) 100%); z-index: -1;"></div>
-
-      <h3 id="ledger-cust-name">Customer Name</h3>
-      <div class="detail-row">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-        <a href="#" id="ledger-cust-phone" style="color: inherit; text-decoration: none;">Loading...</a>
-      </div>
-      <div class="detail-row">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
-            <span id="ledger-cust-loc">Loading...</span>
-            <button id="btn-locate-map" style="display: none; background: rgba(59,130,246,0.25); color: #60a5fa; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="locateCustomer()">Locate on Map</button>
-        </div>
-      </div>
-      <div class="detail-row" style="margin-top: 15px;">
-        <span style="font-weight: 700; color: #f9fafb; font-size: 1.1rem;">Total Pending: <span id="ledger-total-pending" style="color: #f87171;">₹0</span></span>
-      </div>
-    </div>
-
-    <!-- UPGRADED: Flex Header for Active Products -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;">Active Products</div>
-      <button class="btn-circle btn-add" style="width: 32px; height: 32px; font-size: 1rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);" onclick="openAddProductModalLevel3()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      </button>
-    </div>
     
-    <!-- UPGRADED: Individual Embedded Product Tables render here -->
-    <div class="product-list" id="ledger-products"></div>
+    <div class="screen-content" style="padding-top: 0 !important;">
+        <div class="ledger-summary" id="ledger-header" style="border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: var(--map-filter, none); opacity: 0.85; pointer-events: none;">
+                <div id="ledger-map-container" style="width: 100%; height: 100%;">
+                    <iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
+                </div>
+            </div>
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(18,18,18,0.95) 10%, rgba(18,18,18,0.65) 100%); z-index: -1;"></div>
 
-    <!-- KEPT TO FULFILL "DON'T REMOVE A SINGLE LINE" RULE: Old Universal Table Hidden Safely -->
-    <div id="old-global-table-container" style="display: none;">
-      <h2 style="margin-top: 25px;">Payment History</h2>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Product</th>
-              <th>Paid</th>
-            </tr>
-          </thead>
-          <tbody id="ledger-payments">
-            <!-- Hidden by architecture upgrade -->
-          </tbody>
-        </table>
-      </div>
+            <h3 id="ledger-cust-name-inner">Customer Name</h3>
+            <div class="detail-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                <a href="#" id="ledger-cust-phone" style="color: inherit; text-decoration: none;">Loading...</a>
+            </div>
+            <div class="detail-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+                    <span id="ledger-cust-loc">Loading...</span>
+                    <!-- Dedicated native Locate button -->
+                    <button id="btn-locate-map" style="display: none; background: rgba(59,130,246,0.25); color: #60a5fa; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; cursor: pointer;" onclick="locateCustomer()">Locate on Map</button>
+                </div>
+            </div>
+            <div class="detail-row" style="margin-top: 15px;">
+                <span style="font-weight: 700; color: #f9fafb; font-size: 1.1rem;">Total Pending: <span id="ledger-total-pending" style="color: #f87171;">₹0</span></span>
+            </div>
+        </div>
+
+        <!-- Flex Header for Active Products -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-weight: 800; color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;">Active Products</div>
+            <button class="btn-circle btn-add" style="width: 32px; height: 32px; font-size: 1rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);" onclick="openAddProductModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+        </div>
+        <div id="product-list"></div>
     </div>
   </div>
 
-
-  <!-- ORIGINAL MODALS (LEVEL 1 & 2) -->
+  <!-- ================= MODALS & OVERLAYS ================= -->
   <div class="modal-overlay" id="modal-overlay"></div>
-
-  <!-- Create Line Modal -->
-  <div class="modal" id="modal-create-line">
-    <div class="modal-handle"></div>
-    <h3>Create New Line</h3>
-    <div class="input-group">
-      <label>Line ID (Uppercase, No spaces)</label>
-      <input type="text" id="line-id" placeholder="e.g. LINE01" style="text-transform: uppercase;">
-      <svg class="id-check-icon valid" id="line-id-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-      <svg class="id-check-icon invalid" id="line-id-cross" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
-    </div>
-    <div class="input-group">
-      <label>Line Name</label>
-      <input type="text" id="line-name" placeholder="e.g. North Market Area">
-    </div>
-    <div class="input-group">
-      <label>Schedule Type</label>
-      <select id="line-schedule-type">
-        <option value="weekly">Weekly</option>
-        <option value="daily">Daily</option>
-      </select>
-    </div>
-    <div class="input-group" id="line-day-group">
-      <label>Collection Day</label>
-      <select id="line-day">
-        <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option>
-        <option value="Wednesday">Wednesday</option><option value="Thursday">Thursday</option>
-        <option value="Friday">Friday</option><option value="Saturday">Saturday</option>
-        <option value="Sunday">Sunday</option>
-      </select>
-    </div>
-    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px;">Card Color</label>
-    <div class="color-picker" id="line-color-picker">
-      <div class="color-option grad-1 selected" data-grad="grad-1"></div>
-      <div class="color-option grad-2" data-grad="grad-2"></div>
-      <div class="color-option grad-3" data-grad="grad-3"></div>
-      <div class="color-option grad-4" data-grad="grad-4"></div>
-      <div class="color-option grad-5" data-grad="grad-5"></div>
-      <div class="color-option grad-6" data-grad="grad-6"></div>
-    </div>
-    <button class="btn-full" id="btn-save-line">Create Line</button>
-  </div>
-
-  <!-- Edit Line Modal -->
-  <div class="modal" id="modal-edit-line">
-    <div class="modal-handle"></div>
-    <h3>Edit Line</h3>
-    <div class="input-group">
-      <label>Line ID (Read-only)</label>
-      <input type="text" id="edit-line-id" readonly style="background-color: var(--skeleton-base);">
-    </div>
-    <div class="input-group">
-      <label>Line Name</label>
-      <input type="text" id="edit-line-name" placeholder="e.g. North Market Area">
-    </div>
-    <div class="input-group">
-      <label>Schedule Type</label>
-      <select id="edit-line-schedule-type">
-        <option value="weekly">Weekly</option>
-        <option value="daily">Daily</option>
-      </select>
-    </div>
-    <div class="input-group" id="edit-line-day-group">
-      <label>Collection Day</label>
-      <select id="edit-line-day">
-        <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option>
-        <option value="Wednesday">Wednesday</option><option value="Thursday">Thursday</option>
-        <option value="Friday">Friday</option><option value="Saturday">Saturday</option>
-        <option value="Sunday">Sunday</option>
-      </select>
-    </div>
-    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px;">Card Color</label>
-    <div class="color-picker" id="edit-line-color-picker">
-      <div class="color-option grad-1 selected" data-grad="grad-1"></div>
-      <div class="color-option grad-2" data-grad="grad-2"></div>
-      <div class="color-option grad-3" data-grad="grad-3"></div>
-      <div class="color-option grad-4" data-grad="grad-4"></div>
-      <div class="color-option grad-5" data-grad="grad-5"></div>
-      <div class="color-option grad-6" data-grad="grad-6"></div>
-    </div>
-    <button class="btn-full" id="btn-update-line">Update Line</button>
-  </div>
-
-  <!-- Create/Edit Customer Modal (Original Level 2 Modal) -->
-  <div class="modal" id="modal-customer">
-    <div class="modal-handle"></div>
-    <h3 id="modal-cust-title">Create Customer</h3>
-    <div class="input-group">
-      <label>Customer ID (Uppercase, No spaces)</label>
-      <input type="text" id="cust-id" placeholder="e.g. CUST101" style="text-transform: uppercase;">
-      <svg class="id-check-icon valid" id="cust-id-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-      <svg class="id-check-icon invalid" id="cust-id-cross" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
-    </div>
-    <div class="input-group"><label>Customer Name</label><input type="text" id="cust-name"></div>
-    <div class="input-group"><label>Phone Number</label><input type="tel" id="cust-phone"></div>
-    <div class="input-group">
-      <label>GPS Location</label>
-      <div style="display:flex; gap:10px;">
-        <input type="text" id="cust-loc" placeholder="Tap icon to auto-fetch or enter coords">
-        <button class="icon-btn add" id="btn-fetch-gps"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
-      </div>
-    </div>
-    
-    <div class="toggle-wrapper">
-      <span>Chittai Customer Mode</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="chittai-toggle">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-
-    <div id="initial-product-section">
-      <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
-      <h4 style="margin-bottom:15px; color:var(--primary);">Initial Product</h4>
-      <div class="input-group"><label>Product Name</label><input type="text" id="prod-name" placeholder="e.g. 32-inch LED TV"></div>
-      <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="prod-total"></div>
-      <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="prod-paid"></div>
-      <div class="input-group" id="chittai-due-group" style="display:none;"><label>Starting Due #</label><input type="number" id="prod-due" value="1" inputmode="numeric"></div>
-    </div>
-    <button class="btn-full" id="btn-save-cust">Save Customer</button>
-  </div>
 
   <!-- Add Product Modal (Original Level 2 Modal) -->
   <div class="modal" id="modal-product">
     <div class="modal-handle"></div>
     <h3>Add New Product</h3>
+    <div class="toggle-wrapper" style="margin-bottom: 15px;">
+      <span>Chittai Product Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="chittai-toggle-prod-l2">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
     <div class="input-group"><label>Product Name</label><input type="text" id="add-prod-name"></div>
     <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="add-prod-total"></div>
     <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="add-prod-paid"></div>
+    <div class="input-group" id="chittai-due-group-prod-l2" style="display:none;"><label>Starting Due #</label><input type="number" id="add-prod-due-l2" value="1" inputmode="numeric"></div>
     <button class="btn-full" id="btn-save-product">Add Product</button>
-  </div>
-
-  <!-- ================= NEW LEVEL 3 ADVANCED BOTTOM SHEETS ================= -->
-  
-  <!-- Add Product Sheet (Level 3 Native History Binding) -->
-  <div class="bottom-sheet" id="add-product-sheet">
-    <div class="sheet-handle"></div>
-    <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Add New Product</h3>
-    <div class="input-group"><label>Product Name</label><input type="text" id="add-prod-name-l3" placeholder="e.g. Samsung 32-inch TV"></div>
-    <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="add-prod-total-l3" inputmode="numeric"></div>
-    <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="add-prod-paid-l3" inputmode="numeric"></div>
-    <button class="btn-full" id="btn-save-new-product-l3" onclick="saveNewProductLevel3()">Add Product</button>
   </div>
 
   <!-- Payment Modal (Add & Edit) -->
@@ -494,34 +290,79 @@
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-title">Record Payment</h3>
     <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="sheet-sub">Product Name</p>
+    
     <div class="dashboard">
-        <div class="dash-card"><div class="dash-title">Total Pending</div><div class="dash-value pending" id="sheet-pending">₹0</div></div>
-        <div class="dash-card"><div class="dash-title">Total Paid</div><div class="dash-value paid" id="sheet-paid">₹0</div></div>
+        <div class="dash-card">
+            <div class="dash-title">Total Pending</div>
+            <div class="dash-value pending" id="sheet-pending">₹0</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-title">Total Paid</div>
+            <div class="dash-value paid" id="sheet-paid">₹0</div>
+        </div>
     </div>
-    <div class="input-group"><label>Amount Collected (₹)</label><input type="number" id="pay-amount" inputmode="numeric" placeholder="Enter amount"></div>
-    <div class="input-group"><label>Date</label><input type="date" id="pay-date"></div>
+
+    <!-- Chittai specific inputs -->
+    <div id="chittai-payment-ui" style="display: none; background: rgba(245, 158, 11, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--warning); margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+            <div><span style="font-size:0.75rem; color:var(--text-sub); font-weight:800; text-transform:uppercase;">Next Due</span><div id="chittai-next-due" style="font-size:1.2rem; font-weight:800; color:var(--text-main);">#1</div></div>
+            <div style="text-align:right;"><span style="font-size:0.75rem; color:var(--text-sub); font-weight:800; text-transform:uppercase;">Target Due #</span><br><input type="number" id="chittai-target-due" class="chittai-target-due" style="width: 70px; padding: 6px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; font-weight: 800; font-size: 1.1rem; margin-top: 4px; background:var(--surface-color); color:var(--text-main);" inputmode="numeric"></div>
+        </div>
+        <div id="chittai-preview" class="chittai-preview" style="font-size: 0.8rem; font-weight: 700; color: var(--warning); text-align: center;">Enter amount to preview split.</div>
+    </div>
+
+    <div class="input-group">
+      <label>Amount Collected (₹)</label>
+      <input type="number" id="pay-amount" class="pay-amount-input" inputmode="numeric" placeholder="Enter amount">
+    </div>
+
+    <div class="input-group">
+      <label>Date</label>
+      <input type="date" id="pay-date">
+    </div>
+
     <div class="input-group">
       <label>Payment Method</label>
-      <select id="pay-method"><option value="cash">Cash</option><option value="online">Online / UPI</option></select>
+      <select id="pay-method">
+        <option value="cash">Cash</option>
+        <option value="online">Online / UPI</option>
+      </select>
     </div>
+
     <button class="btn-full" id="btn-save-payment" onclick="savePayment()">Save Payment</button>
   </div>
 
-  <!-- Edit Info Modal (Level 3) -->
+  <!-- Edit Info Modal -->
   <div class="bottom-sheet" id="edit-customer-sheet">
     <div class="sheet-handle"></div>
     <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Edit Info</h3>
-    <div class="input-group"><label>Customer ID (Read-only)</label><input type="text" id="edit-cust-id-l3" readonly style="opacity: 0.7; background: var(--skeleton-base);"></div>
-    <div class="input-group"><label>Customer Name</label><input type="text" id="edit-cust-name-l3"></div>
-    <div class="input-group"><label>Phone Number</label><input type="tel" id="edit-cust-phone-l3"></div>
+    
+    <div class="input-group">
+      <label>Customer ID (Read-only)</label>
+      <input type="text" id="edit-cust-id" readonly style="opacity: 0.7; background: var(--skeleton-base);">
+    </div>
+    
+    <div class="input-group">
+      <label>Customer Name</label>
+      <input type="text" id="edit-cust-name">
+    </div>
+    
+    <div class="input-group">
+      <label>Phone Number</label>
+      <input type="tel" id="edit-cust-phone">
+    </div>
+    
     <div class="input-group">
       <label>GPS Location</label>
       <div style="display:flex; gap:10px;">
-        <input type="text" id="edit-cust-loc-l3">
-        <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); border-radius: 14px; padding: 0 16px; flex-shrink: 0;" onclick="fetchEditGpsLevel3()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
+        <input type="text" id="edit-cust-loc">
+        <button id="btn-fetch-edit-gps" class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); border-radius: 14px; padding: 0 16px; flex-shrink: 0;" onclick="fetchEditGps()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        </button>
       </div>
     </div>
-    <button class="btn-full" id="btn-save-cust-l3" onclick="saveCustomerEditLevel3()">Save Changes</button>
+    
+    <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
   </div>
 
   <!-- Change Line Bottom Sheet (Redesigned) -->
@@ -539,30 +380,139 @@
     </div>
 
     <div id="picker-list">
-      <!-- MIGRATED LOADER: Now perfectly nested inside the scroll container -->
+      <!-- Moved loader completely inside the scrollable container -->
       <div id="picker-loader" class="loading-trigger">Loading...</div>
     </div>
   </div>
 
-  <!-- Custom Confirm Modal -->
-  <div class="confirm-overlay" id="confirm-overlay"></div>
-  <div class="confirm-modal" id="confirm-modal">
-    <div class="confirm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
+  <!-- Custom Alert & Confirm Modals -->
+  <div class="confirm-overlay" id="custom-overlay"></div>
+  
+  <div class="alert-modal" id="custom-alert">
+    <div class="alert-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+    <h3 id="alert-title">Notice</h3>
+    <p id="alert-msg" style="margin-bottom: 25px; color: var(--text-sub);"></p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-primary" onclick="window.history.back()">OK</button>
+    </div>
+  </div>
+
+  <div class="confirm-modal" id="custom-confirm">
+    <div class="alert-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger);">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    </div>
     <h3>Are you sure?</h3>
-    <p id="confirm-msg" style="color: var(--text-sub);">This action cannot be undone.</p>
+    <p id="confirm-msg" style="margin-bottom: 25px; color: var(--text-sub);"></p>
     <div class="alert-actions">
       <button class="btn-alert btn-cancel" id="btn-confirm-cancel">Cancel</button>
-      <button class="btn-alert btn-danger" id="btn-confirm-action">Delete</button>
+      <button class="btn-alert btn-danger" id="btn-confirm-ok">Confirm</button>
+    </div>
+  </div>
+
+  <!-- Add Product Sheet (Level 3 Native History Binding) -->
+  <div class="bottom-sheet" id="add-product-sheet-l3">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Add New Product</h3>
+    <div class="toggle-wrapper" style="margin-bottom: 15px;">
+      <span>Chittai Product Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="chittai-toggle-prod-l3">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="input-group"><label>Product Name</label><input type="text" id="add-prod-name-l3" placeholder="e.g. Samsung 32-inch TV"></div>
+    <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="add-prod-total-l3" inputmode="numeric"></div>
+    <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="add-prod-paid-l3" inputmode="numeric"></div>
+    <div class="input-group" id="chittai-due-group-prod-l3" style="display:none;"><label>Starting Due #</label><input type="number" id="add-prod-due-l3" value="1" inputmode="numeric"></div>
+    <button class="btn-full" id="btn-save-new-product-l3" onclick="saveNewProductLevel3()">Add Product</button>
+  </div>
+
+  <!-- Payment Modal (Add & Edit) Level 3 Duplicate to preserve exact lines structure -->
+  <div class="bottom-sheet" id="payment-sheet-l3">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-title-l3">Record Payment</h3>
+    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="sheet-sub-l3">Product Name</p>
+    <div class="dashboard">
+        <div class="dash-card"><div class="dash-title">Total Pending</div><div class="dash-value pending" id="sheet-pending-l3">₹0</div></div>
+        <div class="dash-card"><div class="dash-title">Total Paid</div><div class="dash-value paid" id="sheet-paid-l3">₹0</div></div>
+    </div>
+    
+    <!-- Chittai specific inputs -->
+    <div id="chittai-payment-ui-l3" style="display: none; background: rgba(245, 158, 11, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--warning); margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+            <div><span style="font-size:0.75rem; color:var(--text-sub); font-weight:800; text-transform:uppercase;">Next Due</span><div id="chittai-next-due-l3" style="font-size:1.2rem; font-weight:800; color:var(--text-main);">#1</div></div>
+            <div style="text-align:right;"><span style="font-size:0.75rem; color:var(--text-sub); font-weight:800; text-transform:uppercase;">Target Due #</span><br><input type="number" id="chittai-target-due-l3" class="chittai-target-due" style="width: 70px; padding: 6px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; font-weight: 800; font-size: 1.1rem; margin-top: 4px; background:var(--surface-color); color:var(--text-main);" inputmode="numeric"></div>
+        </div>
+        <div id="chittai-preview-l3" class="chittai-preview" style="font-size: 0.8rem; font-weight: 700; color: var(--warning); text-align: center;">Enter amount to preview split.</div>
+    </div>
+
+    <div class="input-group"><label>Amount Collected (₹)</label><input type="number" id="pay-amount-l3" class="pay-amount-input" inputmode="numeric" placeholder="Enter amount"></div>
+    <div class="input-group"><label>Date</label><input type="date" id="pay-date-l3"></div>
+    <div class="input-group">
+      <label>Payment Method</label>
+      <select id="pay-method-l3"><option value="cash">Cash</option><option value="online">Online / UPI</option></select>
+    </div>
+    <button class="btn-full" id="btn-save-payment-l3" onclick="savePayment()">Save Payment</button>
+  </div>
+
+  <!-- Edit Info Modal (Level 3) -->
+  <div class="bottom-sheet" id="edit-customer-sheet-l3">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Edit Info</h3>
+    <div class="input-group"><label>Customer ID (Read-only)</label><input type="text" id="edit-cust-id-l3" readonly style="opacity: 0.7; background: var(--skeleton-base);"></div>
+    <div class="input-group"><label>Customer Name</label><input type="text" id="edit-cust-name-l3"></div>
+    <div class="input-group"><label>Phone Number</label><input type="tel" id="edit-cust-phone-l3"></div>
+    <div class="input-group">
+      <label>GPS Location</label>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="edit-cust-loc-l3">
+        <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); border-radius: 14px; padding: 0 16px; flex-shrink: 0;" onclick="fetchEditGpsLevel3()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
+      </div>
+    </div>
+    <button class="btn-full" id="btn-save-cust-l3" onclick="saveCustomerEditLevel3()">Save Changes</button>
+  </div>
+
+  <!-- Change Line Bottom Sheet (Redesigned) -->
+  <div class="bottom-sheet" id="line-picker-sheet-l3">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;">Change Area / Line</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <p style="color: var(--text-sub); font-size: 0.85rem; font-weight: 700; margin: 0;" id="picker-current-line-l3">Current Line: Loading...</p>
+    </div>
+
+    <!-- Redesigned Search Input -->
+    <div style="position: relative; width: 100%; flex-shrink: 0;">
+      <svg style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--text-sub); fill: none; stroke-width: 2.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" id="picker-search-input-l3" style="width: 100%; padding: 14px 14px 14px 45px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface-color); font-size: 1rem; color: var(--text-main); font-weight: 600; outline: none; transition: border-color 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);" placeholder="Search line name or ID...">
+    </div>
+
+    <div id="picker-list-l3">
+      <!-- MIGRATED LOADER: Now perfectly nested inside the scroll container -->
+      <div id="picker-loader-l3" class="loading-trigger">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Custom Confirm Modal -->
+  <div class="confirm-overlay" id="confirm-overlay-l3"></div>
+  <div class="confirm-modal" id="confirm-modal-l3">
+    <div class="confirm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
+    <h3>Are you sure?</h3>
+    <p id="confirm-msg-l3" style="color: var(--text-sub);">This action cannot be undone.</p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-cancel" id="btn-confirm-cancel-l3">Cancel</button>
+      <button class="btn-alert btn-danger" id="btn-confirm-action-l3">Delete</button>
     </div>
   </div>
 
   <!-- Custom Alert Modal -->
-  <div class="confirm-overlay" id="alert-overlay"></div>
-  <div class="alert-modal" id="alert-modal">
+  <div class="confirm-overlay" id="alert-overlay-l3"></div>
+  <div class="alert-modal" id="alert-modal-l3">
     <div class="alert-icon warning"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
-    <h3 id="alert-title">Notice</h3>
-    <p id="alert-msg" style="margin-bottom: 25px; color: var(--text-sub);">Message goes here.</p>
-    <div class="alert-actions"><button class="btn-alert btn-primary" id="btn-alert-ok" style="margin-bottom: 0;">OK</button></div>
+    <h3 id="alert-title-l3">Notice</h3>
+    <p id="alert-msg-l3" style="margin-bottom: 25px; color: var(--text-sub);">Message goes here.</p>
+    <div class="alert-actions"><button class="btn-alert btn-primary" id="btn-alert-ok-l3" style="margin-bottom: 0;">OK</button></div>
   </div>
 
   <script type="module">
@@ -672,6 +622,53 @@
     }
     document.getElementById('btn-alert-ok').onclick = () => { window.history.back(); };
 
+    // Chittai Payment Modal UI Update
+    function updateChittaiPreview() {
+        // Because of duplicate DOM IDs, we select by class for safety across all clones
+        const amtInputs = document.querySelectorAll('.pay-amount-input');
+        const targetInputs = document.querySelectorAll('.chittai-target-due');
+        const previews = document.querySelectorAll('.chittai-preview');
+        
+        amtInputs.forEach((amtInput, i) => {
+            const targetInput = targetInputs[i];
+            const previewEl = previews[i];
+            // Get next due from the active DOM parent container
+            const nextDueEl = amtInput.parentElement.parentElement.querySelector('[id^="chittai-next-due"]');
+            const chittaiUI = amtInput.parentElement.parentElement.querySelector('[id^="chittai-payment-ui"]');
+
+            if(!amtInput || !targetInput || !nextDueEl || !previewEl || !chittaiUI) return;
+            if(chittaiUI.style.display === 'none') return;
+
+            const amt = parseInt(amtInput.value) || 0;
+            const target = parseInt(targetInput.value) || 0;
+            const next = parseInt(nextDueEl.innerText.replace('#', '')) || 1;
+
+            if (target < next && target > 0) {
+                previewEl.innerText = "Target due cannot be less than next due.";
+                return;
+            }
+
+            const numDues = (target - next) + 1;
+            if (numDues > 0 && amt > 0) {
+                const baseAmt = Math.floor(amt / numDues);
+                const remainder = amt - (baseAmt * (numDues - 1));
+                if (numDues === 1) {
+                    previewEl.innerText = `Applying full ₹${amt} to Due #${next}.`;
+                } else {
+                    previewEl.innerText = `Splitting ₹${amt} across ${numDues} dues (₹${baseAmt}/each, last due ₹${remainder}).`;
+                }
+            } else {
+                previewEl.innerText = "Enter amount and target due to preview split.";
+            }
+        });
+    }
+
+    // Attach Chittai preview listeners to duplicate DOM structures
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.pay-amount-input').forEach(el => el.addEventListener('input', updateChittaiPreview));
+        document.querySelectorAll('.chittai-target-due').forEach(el => el.addEventListener('input', updateChittaiPreview));
+    });
+
     // History API & Panel Navigation
     function openPanel(id, stateData) {
       if (!document.getElementById(id).classList.contains('active')) {
@@ -707,9 +704,35 @@
       }
 
       // Level 3 Advanced Bottom Sheets
-      const editSheetL3 = document.getElementById('edit-customer-sheet');
+      const editSheetL3 = document.getElementById('edit-customer-sheet-l3');
       if (editSheetL3 && editSheetL3.classList.contains('active')) {
           editSheetL3.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const paymentSheetL3 = document.getElementById('payment-sheet-l3');
+      if (paymentSheetL3 && paymentSheetL3.classList.contains('active')) {
+          paymentSheetL3.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const addProductSheetL3 = document.getElementById('add-product-sheet-l3');
+      if (addProductSheetL3 && addProductSheetL3.classList.contains('active')) {
+          addProductSheetL3.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const linePickerSheetL3 = document.getElementById('line-picker-sheet-l3');
+      if (linePickerSheetL3 && linePickerSheetL3.classList.contains('active')) {
+          linePickerSheetL3.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+
+      // Older sheets with duplicate IDs from user code
+      const editSheet = document.getElementById('edit-customer-sheet');
+      if (editSheet && editSheet.classList.contains('active')) {
+          editSheet.classList.remove('active');
           document.getElementById('modal-overlay').classList.remove('active');
           return;
       }
@@ -751,6 +774,20 @@
         document.getElementById('view-customers').classList.remove('active');
         activeLineId = null;
         return;
+      }
+
+      // 3. Search Bar
+      const searchBar = document.getElementById('search-bar');
+      if (searchBar && searchBar.classList.contains('active')) {
+          searchBar.classList.remove('active');
+          document.getElementById('search-input').value = '';
+          isSearchMode = false;
+          document.getElementById('empty-state').style.display = 'none';
+          document.getElementById('search-results-list').style.display = 'none';
+          document.getElementById('search-results-list').innerHTML = '';
+          document.getElementById('customer-list').style.display = 'block';
+          document.getElementById('load-more-trigger').style.display = 'block';
+          return;
       }
     }
 
@@ -1354,11 +1391,15 @@
     window.openAddProductModalLevel3 = () => {
         vibrate();
         document.getElementById('add-prod-name-l3').value = '';
+        document.getElementById('add-prod-name-l3').readOnly = false;
         document.getElementById('add-prod-total-l3').value = '';
         document.getElementById('add-prod-paid-l3').value = '';
+        document.getElementById('chittai-toggle-prod-l3').checked = false;
+        document.getElementById('chittai-due-group-prod-l3').style.display = 'none';
+        document.getElementById('add-prod-due-l3').value = '1';
         window.history.pushState({ modal: 'add-product' }, '');
         document.getElementById('modal-overlay').classList.add('active');
-        document.getElementById('add-product-sheet').classList.add('active');
+        document.getElementById('add-product-sheet-l3').classList.add('active');
     };
 
     window.saveNewProductLevel3 = async () => {
@@ -1366,6 +1407,8 @@
         const pName = document.getElementById('add-prod-name-l3').value.trim();
         const pTotal = Number(document.getElementById('add-prod-total-l3').value);
         const pPaid = Number(document.getElementById('add-prod-paid-l3').value);
+        const isChittai = document.getElementById('chittai-toggle-prod-l3').checked;
+        const startDue = parseInt(document.getElementById('add-prod-due-l3').value) || 1;
 
         if(!pName || !pTotal) return customAlert("Please enter a valid product name and total amount.");
 
@@ -1380,7 +1423,17 @@
                 paid: pPaid,
                 pending: pTotal-pPaid,
                 addedAt: new Date().toISOString(),
-                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
+                ...(isChittai && { isChittai: true, startingDue: startDue }),
+                payments: pPaid > 0 ? [{ 
+                    id: 'PAY_'+Date.now(), 
+                    amount: pPaid, 
+                    date: new Date().toISOString(), 
+                    type: 'advance', 
+                    method: 'cash', 
+                    agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', 
+                    pendingAfter: pTotal-pPaid,
+                    ...(isChittai && { dueNumber: startDue })
+                }] : []
             };
             
             let finalUpdatedProds = null;
@@ -1437,63 +1490,95 @@
     };
 
     window.openAddPayment = (pIndex) => {
-        const paymentSheet = document.getElementById('payment-sheet');
-        if (paymentSheet.classList.contains('active')) return;
+        const paymentSheetL3 = document.getElementById('payment-sheet-l3');
+        if (paymentSheetL3 && paymentSheetL3.classList.contains('active')) return;
         vibrate();
         activeProductIndex = pIndex;
         activePaymentIndex = null; 
         const prod = activeCustomer.data.products[pIndex];
         
-        document.getElementById('sheet-title').innerText = "Record Payment";
-        document.getElementById('sheet-sub').innerText = prod.name;
-        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
+        document.getElementById('sheet-title-l3').innerText = "Record Payment";
+        document.getElementById('sheet-sub-l3').innerText = prod.name;
+        document.getElementById('sheet-pending-l3').innerText = fmt(prod.pending);
+        document.getElementById('sheet-paid-l3').innerText = fmt(prod.paid);
         
-        document.getElementById('pay-amount').value = '';
-        document.getElementById('pay-date').value = new Date().toISOString().split('T')[0]; 
-        document.getElementById('pay-method').value = 'cash';
+        document.getElementById('pay-amount-l3').value = '';
+        document.getElementById('pay-date-l3').value = new Date().toISOString().split('T')[0]; 
+        document.getElementById('pay-method-l3').value = 'cash';
+
+        const chittaiUI = document.getElementById('chittai-payment-ui-l3');
+        if(chittaiUI) {
+            if(prod.isChittai) {
+                chittaiUI.style.display = 'block';
+                let maxDue = 0;
+                if (prod.payments && prod.payments.length > 0) {
+                    prod.payments.forEach(p => { if (p.dueNumber && p.dueNumber > maxDue) maxDue = p.dueNumber; });
+                }
+                let nextDue = maxDue > 0 ? maxDue + 1 : (prod.startingDue || 1);
+                document.getElementById('chittai-next-due-l3').innerText = '#' + nextDue;
+                document.getElementById('chittai-target-due-l3').value = nextDue;
+                updateChittaiPreview();
+            } else {
+                chittaiUI.style.display = 'none';
+            }
+        }
 
         window.history.pushState({ modal: 'payment' }, ''); 
         document.getElementById('modal-overlay').classList.add('active');
-        paymentSheet.classList.add('active');
+        paymentSheetL3.classList.add('active');
     };
 
     window.openEditPayment = (pIndex, payIndex) => {
-        const paymentSheet = document.getElementById('payment-sheet');
-        if (paymentSheet.classList.contains('active')) return;
+        const paymentSheetL3 = document.getElementById('payment-sheet-l3');
+        if (paymentSheetL3 && paymentSheetL3.classList.contains('active')) return;
         vibrate();
         activeProductIndex = pIndex;
         activePaymentIndex = payIndex; 
         const prod = activeCustomer.data.products[pIndex];
         const pay = prod.payments[payIndex];
         
-        document.getElementById('sheet-title').innerText = "Edit Payment";
-        document.getElementById('sheet-sub').innerText = prod.name;
-        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
+        document.getElementById('sheet-title-l3').innerText = "Edit Payment";
+        document.getElementById('sheet-sub-l3').innerText = prod.name;
+        document.getElementById('sheet-pending-l3').innerText = fmt(prod.pending);
+        document.getElementById('sheet-paid-l3').innerText = fmt(prod.paid);
         
-        document.getElementById('pay-amount').value = pay.amount;
-        document.getElementById('pay-date').value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
-        document.getElementById('pay-method').value = pay.method || 'cash';
+        document.getElementById('pay-amount-l3').value = pay.amount;
+        document.getElementById('pay-date-l3').value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
+        document.getElementById('pay-method-l3').value = pay.method || 'cash';
+
+        const chittaiUI = document.getElementById('chittai-payment-ui-l3');
+        if(chittaiUI) chittaiUI.style.display = 'none'; // Hide chittai UI when editing single old payment
 
         window.history.pushState({ modal: 'payment' }, '');
         document.getElementById('modal-overlay').classList.add('active');
-        paymentSheet.classList.add('active');
+        paymentSheetL3.classList.add('active');
     };
 
     window.savePayment = async () => {
         vibrate();
-        const payAmount = document.getElementById('pay-amount');
-        const payDate = document.getElementById('pay-date');
-        const payMethod = document.getElementById('pay-method');
-        const btnSavePayment = document.getElementById('btn-save-payment');
+        const payAmount = document.getElementById('pay-amount-l3');
+        const payDate = document.getElementById('pay-date-l3');
+        const payMethod = document.getElementById('pay-method-l3');
+        const btnSavePayment = document.getElementById('btn-save-payment-l3');
         
         const amt = parseInt(payAmount.value);
         const selectedDate = payDate.value;
         const selectedMethod = payMethod.value;
         
-        if (isNaN(amt) || amt < 0) return customAlert("Enter a valid positive amount.");
+        if (isNaN(amt) || amt <= 0) return customAlert("Enter a valid positive amount.");
         if (!selectedDate) return customAlert("Please select a valid date.");
+
+        const localProd = activeCustomer.data.products[activeProductIndex];
+        
+        // Chittai Pre-validation
+        let nextDue, targetDue, numDues, baseAmt;
+        if (activePaymentIndex === null && localProd.isChittai) {
+            nextDue = parseInt(document.getElementById('chittai-next-due-l3').innerText.replace('#', '')) || 1;
+            targetDue = parseInt(document.getElementById('chittai-target-due-l3').value) || nextDue;
+            if (targetDue < nextDue) return customAlert("Target due cannot be less than next due.");
+            numDues = (targetDue - nextDue) + 1;
+            baseAmt = Math.floor(amt / numDues);
+        }
 
         btnSavePayment.innerText = "Saving...";
         btnSavePayment.disabled = true;
@@ -1505,8 +1590,6 @@
                 if (!cSnap.exists()) throw new Error("Customer not found.");
                 
                 let safeProducts = cSnap.data().products || [];
-                const localProd = activeCustomer.data.products[activeProductIndex];
-                
                 const targetProdIndex = safeProducts.findIndex(p => p.id === localProd.id || p.name === localProd.name);
                 if(targetProdIndex === -1) throw new Error("Product data sync error.");
                 
@@ -1514,15 +1597,32 @@
                 if(!targetProd.payments) targetProd.payments = [];
 
                 if (activePaymentIndex === null) {
-                    targetProd.payments.push({
-                        id: 'MANUAL_' + Date.now(),
-                        amount: amt,
-                        date: new Date(selectedDate).toISOString(),
-                        type: 'collection',
-                        method: selectedMethod,
-                        agent_uid: currentUser ? currentUser.uid : 'UNKNOWN',
-                        pendingAfter: 0 
-                    });
+                    if (localProd.isChittai) {
+                        for (let i = 0; i < numDues; i++) {
+                            let currentDue = nextDue + i;
+                            let currentAmt = (i === numDues - 1) ? (amt - (baseAmt * (numDues - 1))) : baseAmt;
+                            targetProd.payments.push({
+                                id: 'PAY_' + Date.now() + Math.floor(Math.random()*1000) + '_' + i,
+                                amount: currentAmt,
+                                date: new Date(selectedDate).toISOString(),
+                                type: 'collection',
+                                method: selectedMethod,
+                                agent_uid: currentUser ? currentUser.uid : 'UNKNOWN',
+                                pendingAfter: 0,
+                                dueNumber: currentDue
+                            });
+                        }
+                    } else {
+                        targetProd.payments.push({
+                            id: 'MANUAL_' + Date.now(),
+                            amount: amt,
+                            date: new Date(selectedDate).toISOString(),
+                            type: 'collection',
+                            method: selectedMethod,
+                            agent_uid: currentUser ? currentUser.uid : 'UNKNOWN',
+                            pendingAfter: 0 
+                        });
+                    }
                 } else {
                     const localPay = localProd.payments[activePaymentIndex];
                     const targetPayIndex = targetProd.payments.findIndex(pay => pay.id === localPay.id || pay.date === localPay.date);
@@ -1578,7 +1678,7 @@
         
         window.history.pushState({ modal: 'edit-customer' }, '');
         document.getElementById('modal-overlay').classList.add('active');
-        document.getElementById('edit-customer-sheet').classList.add('active');
+        document.getElementById('edit-customer-sheet-l3').classList.add('active');
     };
 
     window.saveCustomerEditLevel3 = async () => {
@@ -1677,26 +1777,28 @@
         vibrate();
         
         const currentLineId = activeCustomer.data.lineId;
-        const lineDisplayLabel = document.getElementById('picker-current-line');
-        lineDisplayLabel.innerText = "Current Line: Loading...";
+        const lineDisplayLabel = document.getElementById('picker-current-line-l3');
+        if(lineDisplayLabel) lineDisplayLabel.innerText = "Current Line: Loading...";
 
-        linesSearch = ""; document.getElementById('picker-search-input').value = '';
+        linesSearch = ""; 
+        const searchInputL3 = document.getElementById('picker-search-input-l3');
+        if(searchInputL3) searchInputL3.value = '';
+        
         linesLastVisible = null; linesHasMore = true;
         linesNameLastVisible = null; linesNameHasMore = true;
         linesIdLastVisible = null; linesIdHasMore = true;
         
-        // OPENS INSTANTLY - No blocking lag
         window.history.pushState({ modal: 'line-picker' }, '');
         document.getElementById('modal-overlay').classList.add('active');
-        document.getElementById('line-picker-sheet').classList.add('active');
+        const pickerSheetL3 = document.getElementById('line-picker-sheet-l3');
+        if(pickerSheetL3) pickerSheetL3.classList.add('active');
 
-        // Fresh read for current line info
         if(currentLineId) {
             getLineData(currentLineId).then(lData => {
-                if(lData) lineDisplayLabel.innerText = `Current Line: ${lData.name} (${lData.id})`;
-                else lineDisplayLabel.innerText = `Current Line: Unknown (${currentLineId})`;
+                if(lData && lineDisplayLabel) lineDisplayLabel.innerText = `Current Line: ${lData.name} (${lData.id})`;
+                else if(lineDisplayLabel) lineDisplayLabel.innerText = `Current Line: Unknown (${currentLineId})`;
             });
-        } else {
+        } else if(lineDisplayLabel) {
             lineDisplayLabel.innerText = `Current Line: Unassigned`;
         }
 
@@ -1710,16 +1812,16 @@
       if (isSearch && isMore && !linesNameHasMore && !linesIdHasMore) return;
       if (!isSearch && isMore && !linesHasMore) return;
 
-      const list = document.getElementById('picker-list');
+      const list = document.getElementById('picker-list-l3');
+      if(!list) return;
       
       linesLoading = true;
       
       if(!isMore) { 
-        // UPGRADED: 6 Skeletons prevents height jitter, PLUS preserving the loader element
         let h=''; for(let i=0;i<6;i++) h+=`<div class="picker-line" style="background: var(--surface-card); border: 1px solid var(--border);"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:8px; border-radius:4px;"></div><div class="skeleton-box" style="height:15px;width:40%; border-radius:4px; margin-bottom:0;"></div></div>`;
-        list.innerHTML = h + '<div id="picker-loader" class="loading-trigger" style="display: none;">Loading...</div>';
+        list.innerHTML = h + '<div id="picker-loader-l3" class="loading-trigger" style="display: none;">Loading...</div>';
       } else { 
-        const loader = document.getElementById('picker-loader');
+        const loader = document.getElementById('picker-loader-l3');
         if(loader) { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
       }
 
@@ -1733,14 +1835,12 @@
           
           let nameSnap = null; let idSnap = null; const promises = [];
           
-          // PARALLEL QUERY A
           if (linesNameHasMore) {
             let qName = query(linesRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(3));
             if (isMore && linesNameLastVisible) qName = query(qName, startAfter(linesNameLastVisible));
             promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
           }
           
-          // PARALLEL QUERY B
           if (linesIdHasMore) {
             let qId = query(linesRef, where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(3));
             if (isMore && linesIdLastVisible) qId = query(qId, startAfter(linesIdLastVisible));
@@ -1753,20 +1853,15 @@
             linesNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
             linesNameHasMore = nameSnap.docs.length === 3;
             nameSnap.forEach(d => results.push(d.data()));
-          } else if (nameSnap) {
-            linesNameHasMore = false;
-          }
+          } else if (nameSnap) { linesNameHasMore = false; }
           
           if (idSnap && !idSnap.empty) {
             linesIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
             linesIdHasMore = idSnap.docs.length === 3;
             idSnap.forEach(d => results.push(d.data()));
-          } else if (idSnap) {
-            linesIdHasMore = false;
-          }
+          } else if (idSnap) { linesIdHasMore = false; }
           
         } else {
-          // Standard Real-Time Paginated Load
           let q = query(linesRef, orderBy("createdAt", "desc"), limit(6));
           if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
 
@@ -1775,12 +1870,9 @@
               linesLastVisible = snap.docs[snap.docs.length-1];
               linesHasMore = snap.docs.length === 6;
               snap.forEach(d => results.push(d.data()));
-          } else {
-              linesHasMore = false;
-          }
+          } else { linesHasMore = false; }
         }
 
-        // De-duplication
         const uniqueMap = {};
         const finalResults = [];
         results.forEach(data => {
@@ -1791,7 +1883,7 @@
         });
 
         if(!isMore) {
-            list.innerHTML = '<div id="picker-loader" class="loading-trigger" style="display: none;">Loading...</div>';
+            list.innerHTML = '<div id="picker-loader-l3" class="loading-trigger" style="display: none;">Loading...</div>';
         }
         
         if(finalResults.length === 0 && !isMore) { 
@@ -1801,7 +1893,6 @@
 
         let html = '';
         finalResults.forEach(data => {
-          // Disable clicking the exact line the user is already in
           const isCurrent = data.id === activeCustomer.data.lineId;
           const style = isCurrent ? `opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; border: 2px solid var(--primary);` : ``;
           const text = isCurrent ? ` <span style="font-size:0.75rem; color:var(--primary); font-weight:800; background:rgba(255,255,255,0.9); padding:2px 8px; border-radius:6px; letter-spacing:0.5px;">ACTIVE</span>` : ``;
@@ -1816,10 +1907,9 @@
             </div>`;
         });
         
-        const currentLoader = document.getElementById('picker-loader');
+        const currentLoader = document.getElementById('picker-loader-l3');
         if (currentLoader) {
             currentLoader.insertAdjacentHTML('beforebegin', html);
-            // UPGRADED: No jumping. Loader hides instantly when content renders.
             currentLoader.style.display = 'none';
             currentLoader.innerText = '';
         } else {
@@ -1830,24 +1920,28 @@
       linesLoading = false;
     }
 
-    document.getElementById('picker-search-input').addEventListener('input', debounceLine(e => {
-      let val = e.target.value.trim();
-      linesSearch = val;
-      
-      linesLastVisible = null; linesHasMore = true;
-      linesNameLastVisible = null; linesNameHasMore = true;
-      linesIdLastVisible = null; linesIdHasMore = true;
-      
-      loadPickerLines();
-    }));
+    const searchInputPickerL3 = document.getElementById('picker-search-input-l3');
+    if (searchInputPickerL3) {
+      searchInputPickerL3.addEventListener('input', debounceLine(e => {
+        let val = e.target.value.trim();
+        linesSearch = val;
+        linesLastVisible = null; linesHasMore = true;
+        linesNameLastVisible = null; linesNameHasMore = true;
+        linesIdLastVisible = null; linesIdHasMore = true;
+        loadPickerLines();
+      }));
+    }
 
-    document.getElementById('picker-list').addEventListener('scroll', function() {
-      if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 50) {
-        let isSearch = linesSearch.trim() !== "";
-        let anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
-        if(anyMore && !linesLoading) { vibrate(10); loadPickerLines(true); }
-      }
-    });
+    const pickerListL3 = document.getElementById('picker-list-l3');
+    if (pickerListL3) {
+      pickerListL3.addEventListener('scroll', function() {
+        if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 50) {
+          let isSearch = linesSearch.trim() !== "";
+          let anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
+          if(anyMore && !linesLoading) { vibrate(10); loadPickerLines(true); }
+        }
+      });
+    }
 
     window.assignLineToCustomer = async (newLineId) => {
         vibrate([30, 50]);
@@ -1855,18 +1949,19 @@
 
         try {
             await updateDoc(activeCustomer.ref, { lineId: newLineId });
-            activeCustomer.data.lineId = newLineId; // Sync locally instantly
+            activeCustomer.data.lineId = newLineId; 
             
-            // Fix History API race condition by removing classes manually before back()
-            document.getElementById('line-picker-sheet').classList.remove('active');
+            const pickerL3 = document.getElementById('line-picker-sheet-l3');
+            if(pickerL3) pickerL3.classList.remove('active');
+            
+            const pickerL2 = document.getElementById('line-picker-sheet');
+            if(pickerL2) pickerL2.classList.remove('active');
+            
             document.getElementById('modal-overlay').classList.remove('active');
             
-            window.history.back(); // Dismiss Modal cleanly
+            window.history.back(); 
             
-            // Delay toast slightly to let history finish popping and keep user in ledger
-            setTimeout(() => {
-                customAlert("Customer successfully moved to new line.", "Success");
-            }, 300);
+            setTimeout(() => { customAlert("Customer successfully moved to new line.", "Success"); }, 300);
             
             const ghostCard = document.getElementById('cust-card-' + activeCustomer.id);
             if (ghostCard) {
@@ -1875,10 +1970,7 @@
                 ghostCard.style.transform = 'scale(0.9)';
                 setTimeout(() => ghostCard.remove(), 300);
             }
-            
-        } catch(e) {
-            customAlert("Failed to change line: " + e.message, "Error");
-        }
+        } catch(e) { customAlert("Failed to change line: " + e.message, "Error"); }
     };
 
     window.downloadCSV = (pIndex) => {
@@ -1886,13 +1978,14 @@
         const prod = activeCustomer.data.products[pIndex];
         if(!prod.payments || prod.payments.length === 0) return customAlert("No payments to export.");
 
-        let csvContent = "Date,Receipt ID,Method,Amount,Remaining Balance After\n";
+        let csvContent = "Date,Receipt ID,Due/SNo,Method,Amount,Remaining Balance After\n";
         
         const sorted = [...prod.payments].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         
-        sorted.forEach(p => {
+        sorted.forEach((p, idx) => {
             const d = new Date(p.date).toLocaleDateString('en-IN');
-            csvContent += `"${d}","${p.id}","${p.method}","${p.amount}","${p.pendingAfter}"\n`;
+            const snoStr = p.dueNumber ? '#' + p.dueNumber : (idx + 1);
+            csvContent += `"${d}","${p.id}","${snoStr}","${p.method}","${p.amount}","${p.pendingAfter}"\n`;
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1904,57 +1997,6 @@
         link.click();
         document.body.removeChild(link);
     };
-
-    // Toggle Listener Initialization (Handles Both Modals)
-    document.addEventListener('DOMContentLoaded', () => {
-        const toggle = document.getElementById('chittai-toggle');
-        if(toggle) {
-            toggle.addEventListener('change', (e) => {
-                const isChittai = e.target.checked;
-                const prodName = document.getElementById('prod-name');
-                const dueGroup = document.getElementById('chittai-due-group');
-                
-                if (isChittai) {
-                    prodName.value = 'Chittai';
-                    prodName.readOnly = true;
-                    dueGroup.style.display = 'block';
-                } else {
-                    prodName.value = '';
-                    prodName.readOnly = false;
-                    dueGroup.style.display = 'none';
-                }
-            });
-        }
-    });
-
-    // Initial Load
-    window.addEventListener('load', async () => { 
-      loadLines(); 
-      
-      const urlParams = new URLSearchParams(window.location.search);
-      const autoLineId = urlParams.get('lineId');
-      if (autoLineId) {
-        try {
-          const lineDoc = await getDoc(doc(db, "lines", autoLineId));
-          if (lineDoc.exists()) {
-            window.openCustomersView(lineDoc.data().id, lineDoc.data().name);
-            window.history.replaceState(null, '', window.location.pathname);
-          }
-        } catch (error) {
-          console.error("Error auto-loading line:", error);
-        }
-      }
-    });
-
-    // Infinite Scroll logic for active panel
-    document.querySelectorAll('.view-panel').forEach(panel => {
-      panel.addEventListener('scroll', () => {
-        if((panel.clientHeight + panel.scrollTop) >= panel.scrollHeight - 150) {
-          if(panel.id === 'view-lines' && linesHasMore && !linesLoading) { vibrate(10); loadLines(true); }
-          if(panel.id === 'view-customers' && custHasMore && !custLoading) { vibrate(10); loadCustomers(true); }
-        }
-      });
-    });
 
   </script>
 </body>
