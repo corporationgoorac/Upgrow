@@ -234,8 +234,6 @@
       </button>
     </div>
 
-    <!-- NEW ADVANCED FIREBASE SEARCH CONTAINER (0 READS) -->
-    <div id="search-results-lines" style="display: none; padding-bottom: 20px;"></div>
     <div id="list-lines"></div>
     <div id="loading-lines" class="loading-trigger">Loading...</div>
   </div>
@@ -260,8 +258,6 @@
       </button>
     </div>
 
-    <!-- NEW ADVANCED FIREBASE SEARCH CONTAINER (0 READS) -->
-    <div id="search-results-customers" style="display: none; padding-bottom: 20px;"></div>
     <div id="list-customers"></div>
     <div id="loading-customers" class="loading-trigger">Loading...</div>
   </div>
@@ -616,30 +612,6 @@
 
     let currentUser = null;
     
-    // --- COMMENTED OUT INCORRECT RAM CACHE ---
-    /*
-    let globalLinesCache = [];
-    let globalCustomersCache = [];
-
-    async function buildSearchDictionaryBackground() {
-        try {
-            const linesSnap = await getDocs(collection(db, "lines"));
-            globalLinesCache = [];
-            linesSnap.forEach(d => {
-                const data = d.data();
-                globalLinesCache.push({ ...data, rawName: data.name, searchName: (data.name||'').toLowerCase(), rawId: d.id, searchId: (d.id||'').toLowerCase() });
-            });
-
-            const custSnap = await getDocs(collection(db, "customers"));
-            globalCustomersCache = [];
-            custSnap.forEach(d => {
-                const data = d.data();
-                globalCustomersCache.push({ ...data, rawName: data.name, searchName: (data.name||'').toLowerCase(), rawId: d.id, searchId: (d.id||'').toLowerCase(), phone: data.phone||'' });
-            });
-        } catch(e) { console.error("Cache build failed", e); }
-    }
-    */
-    
     // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
     window.handleFirebaseError = function(e, fallbackToAlert = false) {
       if (!e || !e.message) return;
@@ -700,24 +672,11 @@
     let linesNameLastVisible = null, linesNameHasMore = true;
     let linesIdLastVisible = null, linesIdHasMore = true;
 
-    // Advanced Search States for Level 1 & 2
-    let searchLinesNameLastVisible = null;
-    let searchLinesIdLastVisible = null;
-    let searchLinesNameHasMore = true;
-    let searchLinesIdHasMore = true;
-    let searchLinesIsFetching = false;
-    let currentSearchLinesTerm = "";
-    let currentSearchLinesRenderedIds = new Set();
-
-    let searchCustNameLastVisible = null;
-    let searchCustIdLastVisible = null;
-    let searchCustNameHasMore = true;
-    let searchCustIdHasMore = true;
-    let searchCustIsFetching = false;
-    let currentSearchCustTerm = "";
-    let currentSearchCustRenderedIds = new Set();
-
+    // CUSTOMER PARALLEL PAGINATION STATE
     let custLastVisible = null, custHasMore = true, custLoading = false, custSearch = "";
+    let custNameLastVisible = null, custNameHasMore = true;
+    let custIdLastVisible = null, custIdHasMore = true;
+
     let linesDataMap = {}; 
     let editingLineId = null;
     
@@ -835,11 +794,6 @@
       if (document.getElementById('view-customers').classList.contains('active')) {
         document.getElementById('view-customers').classList.remove('active');
         activeLineId = null;
-        
-        // Zero-Read UI reset for customer search
-        document.getElementById('search-customers').value = '';
-        document.getElementById('search-results-customers').style.display = 'none';
-        document.getElementById('list-customers').style.display = 'block';
         return;
       }
     }
@@ -863,8 +817,6 @@
     function debounce(func, delay = 400) {
       return (...args) => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => func(...args), delay); };
     }
-    
-    let searchTimeout;
 
     // Line ID Check
     document.getElementById('line-id').addEventListener('input', debounce(async (e) => {
@@ -927,8 +879,65 @@
       else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
 
       try {
+        let results = [];
+        const linesRef = collection(db, "lines");
+
+        if(linesSearch) {
+          let nameTerm = linesSearch; // Capitalized in listener
+          let idTerm = linesSearch.toUpperCase();
+
+          let nameSnap = null; let idSnap = null; const promises = [];
+
+          if (linesNameHasMore) {
+            let qName = query(linesRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(10));
+            if (isMore && linesNameLastVisible) qName = query(qName, startAfter(linesNameLastVisible));
+            promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
+          }
+
+          if (linesIdHasMore) {
+            let qId = query(linesRef, where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(10));
+            if (isMore && linesIdLastVisible) qId = query(qId, startAfter(linesIdLastVisible));
+            promises.push(getDocs(qId).then(snap => { idSnap = snap; }));
+          }
+
+          await Promise.all(promises);
+
+          if (nameSnap && !nameSnap.empty) {
+            linesNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
+            linesNameHasMore = nameSnap.docs.length === 10;
+            nameSnap.forEach(d => results.push(d.data()));
+          } else if (nameSnap) { linesNameHasMore = false; }
+
+          if (idSnap && !idSnap.empty) {
+            linesIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
+            linesIdHasMore = idSnap.docs.length === 10;
+            idSnap.forEach(d => results.push(d.data()));
+          } else if (idSnap) { linesIdHasMore = false; }
+
+          linesHasMore = (linesNameHasMore || linesIdHasMore);
+
+        } else {
+          // Standard Load
+          let q = query(linesRef, orderBy("createdAt", "desc"), limit(10));
+          if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
+
+          const snap = await getDocs(q);
+          if(!snap.empty) {
+            linesLastVisible = snap.docs[snap.docs.length-1];
+            linesHasMore = snap.docs.length === 10;
+            snap.forEach(d => results.push(d.data()));
+          } else {
+            linesHasMore = false;
+          }
+        }
+
+        /* OLD CODE KEPT PER RULES:
         let q = collection(db, "lines");
-        q = query(q, orderBy("createdAt", "desc"), limit(10));
+        if(linesSearch) {
+          q = query(q, where("name", ">=", linesSearch), where("name", "<=", linesSearch + "\uf8ff"), orderBy("name"), limit(10));
+        } else {
+          q = query(q, orderBy("createdAt", "desc"), limit(10));
+        }
         if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
 
         const snap = await getDocs(q);
@@ -951,127 +960,46 @@
           html += createLineCardHTML(data);
         });
         list.insertAdjacentHTML('beforeend', html);
+        */
+
+        if(!isMore) list.innerHTML = '';
+        if(results.length === 0 && !isMore) {
+           list.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No lines found.</p>';
+           loader.style.display = 'none';
+           linesLoading=false;
+           return;
+        }
+
+        let html = '';
+        const uniqueMap = {};
+        results.forEach(data => {
+            if(!uniqueMap[data.id]) {
+                uniqueMap[data.id] = true;
+                linesDataMap[data.id] = data;
+                html += createLineCardHTML(data);
+            }
+        });
+        list.insertAdjacentHTML('beforeend', html);
         
         loader.style.display = linesHasMore ? 'block' : 'none';
         loader.innerText = linesHasMore ? 'Scroll for more' : '';
+
       } catch(e) { 
         if(e.message && e.message.includes('index')) handleFirebaseError(e); else if(!isMore) list.innerHTML = `<p style="text-align:center; color:var(--danger);">${e.message}</p>`;
       }
       linesLoading = false;
     }
 
-    // --- NEW ADVANCED FIREBASE SEARCH (LINES) ---
-    document.getElementById('search-lines').addEventListener('input', e => {
-        clearTimeout(searchTimeout);
-        const term = e.target.value.trim();
-        const listLines = document.getElementById('list-lines');
-        const searchLinesDiv = document.getElementById('search-results-lines');
-        const loader = document.getElementById('loading-lines');
-
-        if(term.length === 0) {
-            searchLinesDiv.style.display = 'none';
-            listLines.style.display = 'block';
-            loader.style.display = linesHasMore ? 'block' : 'none';
-            return;
-        }
-
-        listLines.style.display = 'none';
-        loader.style.display = 'none';
-        searchLinesDiv.style.display = 'block';
-
-        searchTimeout = setTimeout(() => {
-            currentSearchLinesTerm = term;
-            searchLinesNameLastVisible = null;
-            searchLinesIdLastVisible = null;
-            searchLinesNameHasMore = true;
-            searchLinesIdHasMore = true;
-            currentSearchLinesRenderedIds.clear();
-            
-            searchLinesDiv.innerHTML = '<div class="loader-spinner" id="search-lines-main-loader"></div>';
-            fetchLineSearchBatch(true);
-        }, 400);
-    });
-
-    async function fetchLineSearchBatch(isFirst = false) {
-        if (searchLinesIsFetching || (!searchLinesNameHasMore && !searchLinesIdHasMore)) return;
-        searchLinesIsFetching = true;
-        
-        const term = currentSearchLinesTerm;
-        const nameTerm = term.charAt(0).toUpperCase() + term.slice(1).toLowerCase();
-        const idTerm = term.toUpperCase(); 
-
-        const linesRef = collection(db, "lines");
-        let nameSnap = null;
-        let idSnap = null;
-        const promises = [];
-
-        const searchLinesDiv = document.getElementById('search-results-lines');
-
-        if (!isFirst) {
-            searchLinesDiv.insertAdjacentHTML('beforeend', '<div class="loader-spinner" id="search-lines-batch-loader" style="margin: 10px auto;"></div>');
-        }
-
-        try {
-            if (searchLinesNameHasMore) {
-                let qName = query(linesRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(5));
-                if (!isFirst && searchLinesNameLastVisible) qName = query(qName, startAfter(searchLinesNameLastVisible));
-                promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
-            }
-
-            if (searchLinesIdHasMore) {
-                let qId = query(linesRef, where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(5));
-                if (!isFirst && searchLinesIdLastVisible) qId = query(qId, startAfter(searchLinesIdLastVisible));
-                promises.push(getDocs(qId).then(snap => { idSnap = snap; }));
-            }
-
-            await Promise.all(promises);
-
-            let results = [];
-
-            if (nameSnap && !nameSnap.empty) {
-                searchLinesNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
-                searchLinesNameHasMore = nameSnap.docs.length === 5;
-                nameSnap.forEach(d => results.push({ rawId: d.id, ...d.data() }));
-            } else if (nameSnap) {
-                searchLinesNameHasMore = false;
-            }
-
-            if (idSnap && !idSnap.empty) {
-                searchLinesIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
-                searchLinesIdHasMore = idSnap.docs.length === 5;
-                idSnap.forEach(d => results.push({ rawId: d.id, ...d.data() }));
-            } else if (idSnap) {
-                searchLinesIdHasMore = false;
-            }
-
-            const finalResults = [];
-            results.forEach(c => {
-                if (!currentSearchLinesRenderedIds.has(c.rawId)) {
-                    currentSearchLinesRenderedIds.add(c.rawId);
-                    finalResults.push(c);
-                }
-            });
-
-            if (isFirst) {
-                searchLinesDiv.innerHTML = '';
-            } else {
-                const batchLoader = document.getElementById('search-lines-batch-loader');
-                if (batchLoader) batchLoader.remove();
-            }
-
-            if (isFirst && finalResults.length === 0) {
-                searchLinesDiv.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No matching lines found.</p>';
-            } else {
-                let html = '';
-                finalResults.forEach(data => { html += createLineCardHTML(data); });
-                searchLinesDiv.insertAdjacentHTML('beforeend', html);
-            }
-        } catch (e) {
-            console.error("Search fetch error", e);
-            if (isFirst) searchLinesDiv.innerHTML = '<p style="text-align:center; color:var(--danger);">Search failed to connect.</p>';
-        }
-        searchLinesIsFetching = false;
-    }
+    document.getElementById('search-lines').addEventListener('input', debounce(e => {
+      let val = e.target.value.trim();
+      linesSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
+      
+      linesLastVisible = null; linesHasMore = true; 
+      linesNameLastVisible = null; linesNameHasMore = true;
+      linesIdLastVisible = null; linesIdHasMore = true;
+      
+      loadLines();
+    }));
 
     document.querySelectorAll('.color-option').forEach(el => {
       el.onclick = () => { 
@@ -1180,12 +1108,11 @@
     window.openCustomersView = (lineId, lineName) => {
       vibrate(); activeLineId = lineId; currentLineName = lineName;
       document.getElementById('title-line-name').innerText = lineName;
-      custLastVisible = null; custHasMore = true; custSearch = ""; document.getElementById('search-customers').value = '';
       
-      // UPGRADED: Reset Search UI when opening view
-      document.getElementById('search-results-customers').style.display = 'none';
-      document.getElementById('list-customers').style.display = 'block';
-
+      custLastVisible = null; custHasMore = true; custSearch = ""; document.getElementById('search-customers').value = '';
+      custNameLastVisible = null; custNameHasMore = true;
+      custIdLastVisible = null; custIdHasMore = true;
+      
       openPanel('view-customers', { lineId });
       loadCustomers();
     };
@@ -1210,8 +1137,62 @@
       else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
 
       try {
+        let results = [];
+        const custRef = collection(db, "customers");
+
+        if(custSearch) {
+          let nameTerm = custSearch; // Capitalized in listener
+          let idTerm = custSearch.toUpperCase();
+
+          let nameSnap = null; let idSnap = null; const promises = [];
+
+          if (custNameHasMore) {
+            let qName = query(custRef, where("lineId", "==", activeLineId), where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(10));
+            if (isMore && custNameLastVisible) qName = query(qName, startAfter(custNameLastVisible));
+            promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
+          }
+
+          if (custIdHasMore) {
+            let qId = query(custRef, where("lineId", "==", activeLineId), where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(10));
+            if (isMore && custIdLastVisible) qId = query(qId, startAfter(custIdLastVisible));
+            promises.push(getDocs(qId).then(snap => { idSnap = snap; }));
+          }
+
+          await Promise.all(promises);
+
+          if (nameSnap && !nameSnap.empty) {
+            custNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
+            custNameHasMore = nameSnap.docs.length === 10;
+            nameSnap.forEach(d => results.push(d.data()));
+          } else if (nameSnap) { custNameHasMore = false; }
+
+          if (idSnap && !idSnap.empty) {
+            custIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
+            custIdHasMore = idSnap.docs.length === 10;
+            idSnap.forEach(d => results.push(d.data()));
+          } else if (idSnap) { custIdHasMore = false; }
+
+          custHasMore = (custNameHasMore || custIdHasMore);
+
+        } else {
+          // Standard Load
+          let q = query(custRef, where("lineId", "==", activeLineId), orderBy("createdAt", "desc"), limit(10));
+          if(isMore && custLastVisible) q = query(q, startAfter(custLastVisible));
+
+          const snap = await getDocs(q);
+          if(!snap.empty) {
+            custLastVisible = snap.docs[snap.docs.length-1];
+            custHasMore = snap.docs.length === 10;
+            snap.forEach(d => results.push(d.data()));
+          } else {
+            custHasMore = false;
+          }
+        }
+
+        /* OLD CODE KEPT PER RULES:
         let q = query(collection(db, "customers"), where("lineId", "==", activeLineId));
-        q = query(q, orderBy("createdAt", "desc"), limit(10));
+        if(custSearch) q = query(q, where("name", ">=", custSearch), where("name", "<=", custSearch + "\uf8ff"), orderBy("name"), limit(10));
+        else q = query(q, orderBy("createdAt", "desc"), limit(10));
         
         if(isMore && custLastVisible) q = query(q, startAfter(custLastVisible));
         
@@ -1246,140 +1227,57 @@
             </div>`;
         });
         list.insertAdjacentHTML('beforeend', html);
-        
+        */
+
+        if(!isMore) list.innerHTML = '';
+        if(results.length === 0 && !isMore) {
+           list.innerHTML='<p style="text-align:center;color:var(--text-sub);">No customers found.</p>';
+           loader.style.display = 'none';
+           custLoading=false;
+           return;
+        }
+
+        let html = '';
+        const uniqueMap = {};
+        results.forEach(c => {
+            if(!uniqueMap[c.id]) {
+                uniqueMap[c.id] = true;
+                const pCount = c.products ? c.products.length : 0;
+                
+                html += `
+                  <div class="customer-card" id="cust-card-${c.id}" onclick="openLedgerView('${c.id}')">
+                    <div class="cust-top">
+                      <div class="cust-info"><h3>${c.name}</h3><p>${c.id} • ${c.phone || 'No Phone'}</p></div>
+                      <div class="actions-wrap">
+                        <button class="icon-btn add" onclick="event.stopPropagation(); openAddProductModal('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                        <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                      </div>
+                    </div>
+                    <div class="cust-stats">${pCount} Active Product${pCount!==1?'s':''}</div>
+                  </div>`;
+            }
+        });
+        list.insertAdjacentHTML('beforeend', html);
+
         loader.style.display = custHasMore ? 'block' : 'none';
         loader.innerText = custHasMore ? 'Scroll for more' : '';
+
       } catch(e) { 
         if(e.message && e.message.includes('index')) handleFirebaseError(e); else if(!isMore) list.innerHTML = `<p style="text-align:center; color:var(--danger);">${e.message}</p>`; 
       }
       custLoading = false;
     }
 
-    // --- NEW ADVANCED FIREBASE SEARCH (CUSTOMERS) ---
-    document.getElementById('search-customers').addEventListener('input', e => {
-        clearTimeout(searchTimeout);
-        const term = e.target.value.trim();
-        const listCust = document.getElementById('list-customers');
-        const searchCustDiv = document.getElementById('search-results-customers');
-        const loader = document.getElementById('loading-customers');
-
-        if(term.length === 0) {
-            searchCustDiv.style.display = 'none';
-            listCust.style.display = 'block';
-            loader.style.display = custHasMore ? 'block' : 'none';
-            return;
-        }
-
-        listCust.style.display = 'none';
-        loader.style.display = 'none';
-        searchCustDiv.style.display = 'block';
-
-        searchTimeout = setTimeout(() => {
-            currentSearchCustTerm = term;
-            searchCustNameLastVisible = null;
-            searchCustIdLastVisible = null;
-            searchCustNameHasMore = true;
-            searchCustIdHasMore = true;
-            currentSearchCustRenderedIds.clear();
-            
-            searchCustDiv.innerHTML = '<div class="loader-spinner" id="search-cust-main-loader"></div>';
-            fetchCustSearchBatch(true);
-        }, 400);
-    });
-
-    async function fetchCustSearchBatch(isFirst = false) {
-        if (searchCustIsFetching || (!searchCustNameHasMore && !searchCustIdHasMore)) return;
-        searchCustIsFetching = true;
-        
-        const term = currentSearchCustTerm;
-        const nameTerm = term.charAt(0).toUpperCase() + term.slice(1).toLowerCase();
-        const idTerm = term.toUpperCase(); 
-
-        const usersRef = collection(db, "customers");
-        let nameSnap = null;
-        let idSnap = null;
-        const promises = [];
-
-        const searchCustDiv = document.getElementById('search-results-customers');
-
-        if (!isFirst) {
-            searchCustDiv.insertAdjacentHTML('beforeend', '<div class="loader-spinner" id="search-cust-batch-loader" style="margin: 10px auto;"></div>');
-        }
-
-        try {
-            if (searchCustNameHasMore) {
-                let qName = query(usersRef, where("lineId", "==", activeLineId), where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(5));
-                if (!isFirst && searchCustNameLastVisible) qName = query(qName, startAfter(searchCustNameLastVisible));
-                promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
-            }
-
-            if (searchCustIdHasMore) {
-                let qId = query(usersRef, where("lineId", "==", activeLineId), where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(5));
-                if (!isFirst && searchCustIdLastVisible) qId = query(qId, startAfter(searchCustIdLastVisible));
-                promises.push(getDocs(qId).then(snap => { idSnap = snap; }));
-            }
-
-            await Promise.all(promises);
-
-            let results = [];
-
-            if (nameSnap && !nameSnap.empty) {
-                searchCustNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
-                searchCustNameHasMore = nameSnap.docs.length === 5;
-                nameSnap.forEach(d => results.push({ rawId: d.id, ...d.data() }));
-            } else if (nameSnap) {
-                searchCustNameHasMore = false;
-            }
-
-            if (idSnap && !idSnap.empty) {
-                searchCustIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
-                searchCustIdHasMore = idSnap.docs.length === 5;
-                idSnap.forEach(d => results.push({ rawId: d.id, ...d.data() }));
-            } else if (idSnap) {
-                searchCustIdHasMore = false;
-            }
-
-            const finalResults = [];
-            results.forEach(c => {
-                if (!currentSearchCustRenderedIds.has(c.rawId)) {
-                    currentSearchCustRenderedIds.add(c.rawId);
-                    finalResults.push(c);
-                }
-            });
-
-            if (isFirst) {
-                searchCustDiv.innerHTML = '';
-            } else {
-                const batchLoader = document.getElementById('search-cust-batch-loader');
-                if (batchLoader) batchLoader.remove();
-            }
-
-            if (isFirst && finalResults.length === 0) {
-                searchCustDiv.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No matching customers found.</p>';
-            } else {
-                let html = '';
-                finalResults.forEach(c => {
-                    const pCount = c.products ? c.products.length : 0;
-                    html += `
-                        <div class="customer-card" id="search-cust-card-${c.rawId}" onclick="openLedgerView('${c.rawId}')">
-                          <div class="cust-top">
-                            <div class="cust-info"><h3>${c.name}</h3><p>${c.rawId} • ${c.phone || 'No Phone'}</p></div>
-                            <div class="actions-wrap">
-                              <button class="icon-btn add" onclick="event.stopPropagation(); openAddProductModal('${c.rawId}')"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
-                              <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.rawId}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                            </div>
-                          </div>
-                          <div class="cust-stats">${pCount} Active Product${pCount!==1?'s':''}</div>
-                        </div>`;
-                });
-                searchCustDiv.insertAdjacentHTML('beforeend', html);
-            }
-        } catch (e) {
-            console.error("Search fetch error", e);
-            if (isFirst) searchCustDiv.innerHTML = '<p style="text-align:center; color:var(--danger);">Search failed to connect.</p>';
-        }
-        searchCustIsFetching = false;
-    }
+    document.getElementById('search-customers').addEventListener('input', debounce(e => {
+      let val = e.target.value.trim();
+      custSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
+      
+      custLastVisible = null; custHasMore = true; 
+      custNameLastVisible = null; custNameHasMore = true;
+      custIdLastVisible = null; custIdHasMore = true;
+      
+      loadCustomers();
+    }));
 
     window.openCreateCustomerModal = () => {
       document.getElementById('modal-cust-title').innerText = "Create Customer";
@@ -1445,10 +1343,7 @@
     window.deleteCustomer = async (id) => {
       vibrate([50,100]);
       if(!(await customConfirm(`Delete Customer ${id}?`))) return;
-      try { 
-          await deleteDoc(doc(db, "customers", id)); vibrate([50,50]); 
-          custLastVisible = null; loadCustomers(); 
-      } 
+      try { await deleteDoc(doc(db, "customers", id)); vibrate([50,50]); custLastVisible = null; loadCustomers(); } 
       catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Deletion Failed"); }
     };
 
@@ -1751,7 +1646,7 @@
                         <td style="color:var(--danger); font-weight:700;">${fmt(pay.displayPending)}</td>
                         <td style="text-align:right;">
                             <button class="icon-btn" style="background:transparent; padding:4px; box-shadow:none; display:inline-block;" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path></svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             </button>
                         </td>
                     </tr>`;
@@ -2330,6 +2225,11 @@
         const lineDisplayLabel = document.getElementById('picker-current-line');
         lineDisplayLabel.innerText = "Current Line: Loading...";
 
+        linesSearch = ""; document.getElementById('picker-search-input').value = '';
+        linesLastVisible = null; linesHasMore = true;
+        linesNameLastVisible = null; linesNameHasMore = true;
+        linesIdLastVisible = null; linesIdHasMore = true;
+        
         // OPENS INSTANTLY - No blocking lag
         window.history.pushState({ modal: 'line-picker' }, '');
         document.getElementById('modal-overlay').classList.add('active');
@@ -2345,14 +2245,7 @@
             lineDisplayLabel.innerText = `Current Line: Unassigned`;
         }
 
-        // Wait to load picker lines until the animation clears
-        setTimeout(() => {
-            linesSearch = ""; document.getElementById('picker-search-input').value = '';
-            linesLastVisible = null; linesHasMore = true;
-            linesNameLastVisible = null; linesNameHasMore = true;
-            linesIdLastVisible = null; linesIdHasMore = true;
-            loadPickerLines();
-        }, 100);
+        loadPickerLines();
     };
 
     async function loadPickerLines(isMore = false) {
@@ -2508,7 +2401,7 @@
         try {
             await updateDoc(activeCustomer.ref, { lineId: newLineId });
             activeCustomer.data.lineId = newLineId; // Sync locally instantly
-
+            
             // Fix History API race condition by removing classes manually before back()
             document.getElementById('line-picker-sheet').classList.remove('active');
             document.getElementById('modal-overlay').classList.remove('active');
@@ -2611,11 +2504,6 @@
 
     // Initial Load
     window.addEventListener('load', async () => { 
-      onAuthStateChanged(auth, (user) => { 
-        if (user) {
-          currentUser = user; 
-        }
-      });
       loadLines(); 
       
       const urlParams = new URLSearchParams(window.location.search);
@@ -2637,19 +2525,15 @@
     document.querySelectorAll('.view-panel').forEach(panel => {
       panel.addEventListener('scroll', () => {
         if((panel.clientHeight + panel.scrollTop) >= panel.scrollHeight - 150) {
-          if(panel.id === 'view-lines') {
-             if(document.getElementById('search-lines').value.trim() !== '') {
-                 if((searchLinesNameHasMore || searchLinesIdHasMore) && !searchLinesIsFetching) { vibrate(10); fetchLineSearchBatch(false); }
-             } else {
-                 if(linesHasMore && !linesLoading) { vibrate(10); loadLines(true); }
-             }
+          if(panel.id === 'view-lines') { 
+              let isSearch = linesSearch.trim() !== "";
+              let anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
+              if (anyMore && !linesLoading) { vibrate(10); loadLines(true); }
           }
           if(panel.id === 'view-customers') {
-             if(document.getElementById('search-customers').value.trim() !== '') {
-                 if((searchCustNameHasMore || searchCustIdHasMore) && !searchCustIsFetching) { vibrate(10); fetchCustSearchBatch(false); }
-             } else {
-                 if(custHasMore && !custLoading) { vibrate(10); loadCustomers(true); }
-             }
+              let isSearch = custSearch.trim() !== "";
+              let anyMore = isSearch ? (custNameHasMore || custIdHasMore) : custHasMore;
+              if (anyMore && !custLoading) { vibrate(10); loadCustomers(true); }
           }
         }
       });
