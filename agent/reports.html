@@ -83,6 +83,13 @@
     .btn-csv { background: #8b5cf6; }
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
 
+    /* --- Tables --- */
+    .table-wrapper { width: 100%; overflow-x: auto; max-height: 40vh; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-card); }
+    table { width: 100%; border-collapse: collapse; min-width: 350px; }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; white-space: nowrap; }
+    th { background: var(--bg-color); font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 2; }
+    td { color: var(--text-main); font-weight: 600; }
+
     /* --- Modals & Overlays --- */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
@@ -520,26 +527,49 @@
             let payHtml = '';
             if(p.payments && p.payments.length > 0) {
                 // Live Dynamic Math
-                const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
-                                      .sort((a,b) => new Date(a.date) - new Date(b.date));
+                const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}));
+                
+                // UNIFIED MATH BRAIN: Sort ascending first to calculate running balance
+                if (p.isChittai) {
+                    sortedPayments.sort((a, b) => {
+                        const dueA = a.dueNumber || 0;
+                        const dueB = b.dueNumber || 0;
+                        if (dueA !== dueB) return dueA - dueB;
+                        return new Date(a.date).getTime() - new Date(b.date).getTime();
+                    });
+                } else {
+                    sortedPayments.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                }
                 
                 let dynamicPending = total;
-                sortedPayments.forEach(pay => {
+                let lastDue = 0;
+                
+                sortedPayments.forEach((pay, idx) => {
                     let amt = parseInt(pay.amount) || 0;
                     dynamicPending = Math.max(0, dynamicPending - amt);
                     pay.displayPending = dynamicPending; 
+                    pay.sno = idx + 1;
+                    if (pay.dueNumber) lastDue = pay.dueNumber;
+                    pay.effectiveDue = pay.dueNumber || lastDue;
                 });
 
-                sortedPayments.reverse().forEach((pay, idx) => {
-                    const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
-                    const sNo = sortedPayments.length - idx;
+                // STRICT DUE NUMBER SORTING (Largest at the top)
+                const displayPayments = [...sortedPayments].sort((a, b) => {
+                    if (a.effectiveDue !== b.effectiveDue) {
+                        return b.effectiveDue - a.effectiveDue;
+                    }
+                    return b.sno - a.sno; // Fallback chronological for identical effective dues
+                });
+
+                displayPayments.forEach(pay => {
+                    const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year: 'numeric' });
                     
                     payHtml += `
-                    <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 12px 10px; text-align:left;">${sNo}</td>
-                        <td style="padding: 12px 10px; text-align:left;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
-                        <td style="padding: 12px 10px; color:var(--primary); font-weight:700; text-align:left;">${fmt(pay.amount)}</td>
-                        <td style="padding: 12px 10px; color:var(--danger); font-weight:700; text-align:left;">${fmt(pay.displayPending)}</td>
+                    <tr>
+                        <td>${pay.dueNumber ? '#' + pay.dueNumber : pay.sno}</td>
+                        <td>${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
+                        <td style="color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
+                        <td style="color:var(--danger); font-weight:700;">${fmt(pay.displayPending)}</td>
                     </tr>`;
                 });
             } else {
@@ -568,14 +598,14 @@
                 </div>
                 
                 <div id="ledger-collapse-${pIndex}" style="display: none; margin-top: 10px;">
-                    <div class="product-table-wrapper" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border);">
-                      <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.85rem;">
-                        <thead style="background: rgba(107, 114, 128, 0.1);">
+                    <div class="table-wrapper">
+                      <table>
+                        <thead>
                           <tr>
-                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">S.No</th>
-                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Date</th>
-                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Paid</th>
-                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Remaining</th>
+                            <th>S.No/Due</th>
+                            <th>Date</th>
+                            <th>Paid</th>
+                            <th>Remaining</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -597,13 +627,24 @@
         const prod = activeCustomer.data.products[pIndex];
         if(!prod.payments || prod.payments.length === 0) return alert("No payments to export.");
 
-        let csvContent = "Date,Receipt ID,Method,Amount,Remaining Balance After\n";
+        let csvContent = "Date,Receipt ID,Due/SNo,Method,Amount,Remaining Balance After\n";
         
-        const sorted = [...prod.payments].sort((a,b) => new Date(a.date) - new Date(b.date));
+        const sorted = [...prod.payments];
+        if (prod.isChittai) {
+            sorted.sort((a, b) => {
+                const dueA = a.dueNumber || 0;
+                const dueB = b.dueNumber || 0;
+                if (dueA !== dueB) return dueA - dueB;
+                return new Date(a.date).getTime() - new Date(b.date).getTime();
+            });
+        } else {
+            sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        }
         
-        sorted.forEach(p => {
+        sorted.forEach((p, idx) => {
             const d = new Date(p.date).toLocaleDateString('en-IN');
-            csvContent += `"${d}","${p.id}","${p.method}","${p.amount}","${p.pendingAfter}"\n`;
+            const snoStr = p.dueNumber ? '#' + p.dueNumber : (idx + 1);
+            csvContent += `"${d}","${p.id}","${snoStr}","${p.method}","${p.amount}","${p.pendingAfter}"\n`;
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
