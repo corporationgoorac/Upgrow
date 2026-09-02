@@ -90,7 +90,8 @@
     .btn-act svg { width: 16px; height: 16px; stroke-width: 2.5; }
 
     /* --- Floating Action Button (FAB) --- */
-    .fab { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 90px); right: 20px; background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 30px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 90; transition: transform 0.2s; }
+    /* ADJUSTED: Changed 90px to 30px to fix the massive gap at the bottom */
+    .fab { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 30px); right: 20px; background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 30px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 90; transition: transform 0.2s; }
     .fab:active { transform: scale(0.95); }
     .fab svg { width: 22px; height: 22px; stroke-width: 2.5; fill: none; stroke: currentColor; }
 
@@ -379,6 +380,16 @@
         let methodBadge = '';
         let splitHTML = '';
 
+        // --- NEW CHITTAI UI BADGE INJECTION ---
+        let chittaiBadge = '';
+        if (entry.isChittai && entry.nextDue) {
+            if (entry.targetDue && entry.targetDue > entry.nextDue) {
+                chittaiBadge = `<div style="font-size: 0.75rem; color: var(--warning); font-weight: 800; margin-top: 4px; background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 6px; display: inline-block;">Dues #${entry.nextDue} to #${entry.targetDue} (${entry.numDues} Dues)</div>`;
+            } else {
+                chittaiBadge = `<div style="font-size: 0.75rem; color: var(--warning); font-weight: 800; margin-top: 4px; background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 6px; display: inline-block;">Due #${entry.nextDue}</div>`;
+            }
+        }
+
         if (entry.method === 'cash') methodBadge = '<span class="badge-method badge-cash">Cash</span>';
         else if (entry.method === 'online') methodBadge = '<span class="badge-method badge-online">Online</span>';
         else if (entry.method === 'split') {
@@ -396,7 +407,10 @@
         card.className = 'card';
         card.innerHTML = `
           <div class="card-top">
-            <div class="card-title">${entry.customer_name || 'Customer'}</div>
+            <div>
+               <div class="card-title">${entry.customer_name || 'Customer'}</div>
+               ${chittaiBadge}
+            </div>
             <div class="card-time">${dateStr}</div>
           </div>
           <div style="display:flex; align-items:center; gap: 10px;">
@@ -528,7 +542,8 @@
         // Update local array & UI instantly
         const index = pendingEntries.findIndex(e => e.docId === editingDocId && e.key === editingKey);
         if (index !== -1) {
-            pendingEntries[index] = { docId: editingDocId, key: editingKey, ...updatedPayload };
+            // Spread the original data first so we don't lose the isChittai tags during an edit
+            pendingEntries[index] = { ...pendingEntries[index], ...updatedPayload };
         }
         
         vibrate([30,50]);
