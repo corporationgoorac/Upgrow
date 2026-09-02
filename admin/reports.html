@@ -102,7 +102,7 @@
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
 
     /* --- Tables --- */
-    .table-wrapper { width: 100%; overflow-x: auto; max-height: 300px; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-card); }
+    .table-wrapper { width: 100%; overflow-x: auto; max-height: 40vh; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-card); }
     table { width: 100%; border-collapse: collapse; min-width: 350px; }
     th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; white-space: nowrap; }
     th { background: var(--bg-color); font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 2; }
@@ -138,8 +138,8 @@
     .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
     .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
     
-    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; }
-    .btn-full:active { transform: scale(0.97); }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; transition: opacity 0.3s, transform 0.2s; }
+    .btn-full:active:not(:disabled) { transform: scale(0.97); }
 
     .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .dash-card { background: var(--bg-color); padding: 12px; border-radius: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
@@ -596,11 +596,12 @@
         }
     });
 
-    // Chittai Payment Modal UI Update
+    // Chittai Payment Modal UI Update with DUPLICATE BLOCKER
     function updateChittaiPreview() {
         const amtInputs = document.querySelectorAll('.pay-amount-input');
         const targetInputs = document.querySelectorAll('.chittai-target-due');
         const previews = document.querySelectorAll('.chittai-preview');
+        const btnSavePayment = document.getElementById('btn-save-payment');
         
         amtInputs.forEach((amtInput, i) => {
             const targetInput = targetInputs[i];
@@ -611,14 +612,48 @@
             const chittaiUI = amtInput.closest('.bottom-sheet').querySelector('[id^="chittai-payment-ui"]');
 
             if(!nextDueEl || !chittaiUI) return;
-            if(chittaiUI.style.display === 'none') return;
+            if(chittaiUI.style.display === 'none') {
+                if (btnSavePayment) { btnSavePayment.disabled = false; btnSavePayment.style.opacity = '1'; }
+                return;
+            }
 
             const amt = parseInt(amtInput.value) || 0;
             const target = parseInt(targetInput.value) || 0;
             const next = parseInt(nextDueEl.innerText.replace('#', '')) || 1;
 
+            // DUPLICATE DUE VALIDATION
+            let hasDuplicate = false;
+            if (activeCustomer && activeProductIndex !== null) {
+                const prod = activeCustomer.data.products[activeProductIndex];
+                if (prod && prod.payments) {
+                    const existingDues = prod.payments.map(p => p.dueNumber).filter(n => n);
+                    if (existingDues.includes(target)) {
+                        hasDuplicate = true;
+                    }
+                    if (!hasDuplicate && target >= next) {
+                        for (let d = next; d <= target; d++) {
+                            if (existingDues.includes(d)) {
+                                hasDuplicate = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (hasDuplicate) {
+                previewEl.style.color = "var(--danger)";
+                previewEl.innerText = `Warning: Due #${target} is already paid!`;
+                if (btnSavePayment) { btnSavePayment.disabled = true; btnSavePayment.style.opacity = '0.5'; }
+                return;
+            } else {
+                previewEl.style.color = "var(--warning)";
+                if (btnSavePayment) { btnSavePayment.disabled = false; btnSavePayment.style.opacity = '1'; }
+            }
+
             if (target < next && target > 0) {
                 previewEl.innerText = "Target due cannot be less than next due.";
+                if (btnSavePayment) { btnSavePayment.disabled = true; btnSavePayment.style.opacity = '0.5'; }
                 return;
             }
 
@@ -909,14 +944,26 @@
                                       .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                 
                 let dynamicPending = total;
+                let lastDue = 0;
+                
                 sortedPayments.forEach((pay, idx) => {
                     let amt = parseInt(pay.amount) || 0;
                     dynamicPending = Math.max(0, dynamicPending - amt);
                     pay.displayPending = dynamicPending; 
                     pay.sno = idx + 1;
+                    if (pay.dueNumber) lastDue = pay.dueNumber;
+                    pay.effectiveDue = pay.dueNumber || lastDue;
                 });
 
-                sortedPayments.reverse().forEach(pay => {
+                // STRICT DUE NUMBER SORTING (Largest at the top)
+                const displayPayments = [...sortedPayments].sort((a, b) => {
+                    if (a.effectiveDue !== b.effectiveDue) {
+                        return b.effectiveDue - a.effectiveDue;
+                    }
+                    return b.sno - a.sno; // Fallback chronological for identical effective dues
+                });
+
+                displayPayments.forEach(pay => {
                     const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year: 'numeric' });
                     payHtml += `
                     <tr>
