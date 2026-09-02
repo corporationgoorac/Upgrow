@@ -229,6 +229,19 @@
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
     const vibrate = (ms = 30) => { if(navigator.vibrate) navigator.vibrate(ms); };
 
+    // --- NEW: History API Management for Mobile Back Button ---
+    window.addEventListener('popstate', (e) => {
+        const overlay = document.getElementById('ledger-overlay');
+        const panel = document.getElementById('ledger-panel');
+        if (overlay && overlay.classList.contains('visible')) {
+            overlay.classList.remove('visible');
+            if (panel) {
+                panel.classList.remove('expanded');
+                panel.style.transform = '';
+            }
+        }
+    });
+
     // --- 1. Initialization & Auto-Redirect ---
     document.addEventListener("DOMContentLoaded", () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -574,6 +587,7 @@
         }
 
         // Show Sheet
+        window.history.pushState({ modal: 'ledger' }, ''); // --- INJECTED HISTORY STATE ---
         document.getElementById('ledger-overlay').classList.add('visible');
         const panel = document.getElementById('ledger-panel');
         panel.classList.add('expanded');
@@ -586,6 +600,11 @@
         const panel = document.getElementById('ledger-panel');
         panel.classList.remove('expanded');
         panel.style.transform = '';
+        
+        // --- INJECTED HISTORY CLEANUP ---
+        if (window.history.state && window.history.state.modal === 'ledger') {
+            window.history.back();
+        }
     };
 
     // --- 5. Haptic Swipe Physics for Ledger Sheet ---
