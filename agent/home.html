@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Agent Route - Up Field</title>
   
-  <!-- Leaflet CSS for Live Uber-Style Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   
   <style>
@@ -168,12 +167,10 @@
 </head>
 <body>
 
-  <!-- ================= GPS PERMISSION WARNING BANNER ================= -->
   <div id="gps-warning" style="display:none; position:absolute; top:calc(env(safe-area-inset-top) + 10px); left:10px; right:10px; background:rgba(239, 68, 68, 0.95); color:white; padding:12px; border-radius:12px; z-index:9999; text-align:center; font-weight:800; backdrop-filter:blur(5px); box-shadow:var(--shadow); border:1px solid rgba(255,255,255,0.2);">
       ⚠️ GPS Permission Denied. Live Map Disabled.
   </div>
 
-  <!-- ================= SCREEN 1: "GOOD MORNING" START ================= -->
   <div id="screen-start" class="screen">
     <div class="header" style="justify-content: center; padding: 25px 20px; display: none !important;">
       <h2 style="font-size: 1.5rem;">Up Field</h2>
@@ -198,10 +195,8 @@
     </div>
   </div>
 
-  <!-- ================= SCREEN 2: LIVE UBER MAP & ROUTING ================= -->
   <div id="screen-route" class="screen hidden">
     
-    <!-- Leaflet Map Container -->
     <div id="map-container"></div>
     
     <div class="map-controls">
@@ -213,29 +208,22 @@
         </button>
     </div>
 
-    <!-- Swipeable Bottom Sheet -->
     <div class="route-panel" id="route-panel">
         
-        <!-- Advanced Feature: Dynamic Progress Bar -->
         <div class="panel-progress-bg">
             <div class="panel-progress-fill" id="route-progress-bar"></div>
         </div>
 
-        <!-- Draggable Handle Area (Vibration Trigger Attached Here) -->
         <div class="panel-handle-area" id="panel-drag-handle" onclick="window.toggleRoutePanel()">
             <div class="panel-handle"></div>
         </div>
 
         <div class="panel-content" id="panel-content">
-            <!-- 1. The Nearest "Next Stop" Section -->
             <div id="next-stop-section">
-                <!-- Injected via JS -->
-            </div>
+                </div>
 
-            <!-- 2. The Expanded List Section -->
             <div id="expanded-list-section" style="display: none;">
                 
-                <!-- Advanced Feature: Live Route Search -->
                 <div class="sticky-filter">
                     <input type="text" class="filter-input" id="route-filter" placeholder="Find customer in route...">
                 </div>
@@ -252,17 +240,10 @@
                 <h3 style="font-size:1.5rem; font-weight:800; color:var(--primary); margin-bottom:10px;">Route Complete!</h3>
                 <p style="color:var(--text-sub); font-weight:600; margin-bottom:25px;">You have collected or skipped all stops for today.</p>
                 
-                <!-- <button class="btn-check-route-animated" onclick="window.checkForNewRoute()"> --> <!-- OLD LINE COMMENTED OUT -->
-                    <!-- Check for New Route --> <!-- OLD LINE COMMENTED OUT -->
-                    <!-- <div class="shimmer-sweep"></div> --> <!-- OLD LINE COMMENTED OUT -->
-                <!-- </button> --> <!-- OLD LINE COMMENTED OUT -->
-                
-                <!-- NEW: Dynamic Enterprise Smart Check Container -->
                 <div id="dynamic-new-route-container"></div>
             </div>
         </div>
 
-        <!-- Advanced Feature: Jump to Top -->
         <button class="btn-jump-top" id="btn-jump-top" onclick="jumpToTop()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
         </button>
@@ -270,7 +251,6 @@
     </div>
   </div>
 
-  <!-- ================= SAFE DELETE SKIPPED MODAL ================= -->
   <div class="modal-overlay" id="delete-modal-overlay" style="z-index: 104; opacity: 0; pointer-events: none; transition: opacity 0.3s; background: rgba(0,0,0,0.6); position: fixed; inset: 0; backdrop-filter: blur(2px);"></div>
   <div class="alert-modal" id="delete-confirm-modal">
     <div class="alert-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger);">
@@ -284,13 +264,40 @@
     </div>
   </div>
 
-  <!-- Leaflet JS for Map -->
+  <div class="modal-overlay" id="global-alert-overlay" style="z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s; background: rgba(0,0,0,0.6); position: fixed; inset: 0; backdrop-filter: blur(2px);"></div>
+  <div class="alert-modal" id="global-alert-modal" style="z-index: 9999;">
+    <div class="alert-icon" style="background-color: rgba(245, 158, 11, 0.1); color: var(--warning);">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+    <h3 style="margin-bottom:10px; font-weight:800;">Notice</h3>
+    <p id="global-alert-message" style="margin-bottom: 25px; color: var(--text-sub); font-size: 0.95rem;"></p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-cancel" style="width: 100%; background: var(--primary); color: white; border: none;" onclick="closeGlobalAlert()">Okay</button>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    // --- NEW: Global Alert Override ---
+    window.closeGlobalAlert = () => {
+        document.getElementById('global-alert-overlay').classList.remove('active');
+        document.getElementById('global-alert-modal').classList.remove('active');
+    };
+
+    window.alert = (message) => {
+        const msgEl = document.getElementById('global-alert-message');
+        if(msgEl) msgEl.innerText = message;
+        const overlay = document.getElementById('global-alert-overlay');
+        const modal = document.getElementById('global-alert-modal');
+        if(overlay) overlay.classList.add('active');
+        if(modal) modal.classList.add('active');
+    };
+    // ----------------------------------
 
     // --- Global State ---
     let currentUser = null;
@@ -577,6 +584,18 @@
             
             // ✅ FIX: Save the active route array into memory alongside the customers
             localStorage.setItem(cacheKey + '_lines', JSON.stringify(todayLineArray));
+
+            // --- NEW: Update Agent Status with year-date-time ---
+            if(currentUser) {
+                try {
+                    const dt = new Date();
+                    const statusStr = dt.getFullYear() + "-" + String(dt.getMonth()+1).padStart(2, '0') + "-" + String(dt.getDate()).padStart(2, '0') + " " + dt.toLocaleTimeString();
+                    await updateDoc(doc(db, "users", currentUser.uid), { Status: statusStr });
+                } catch(e) {
+                    console.warn("Status update failed", e);
+                }
+            }
+            // ----------------------------------------------------
             
             // Execute Enterprise Pre-Flight Hold instead of immediate transition
             executePreFlightHold();
@@ -854,7 +873,6 @@
                             <h4 style="text-decoration: line-through;">${c.name}</h4>
                             <p style="color:var(--text-sub);">Skipped</p>
                         </div>
-                        <!-- SAFE DELETE BUTTON ADDED NEXT TO REVISIT -->
                         <div style="display:flex; gap: 8px;">
                             <button class="btn-delete-skip" onclick="window.confirmDeleteSkip('${c.id}')" title="Delete Forever">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -897,11 +915,24 @@
 
     // Integrate with History API
     window.addEventListener('popstate', (e) => {
+        // Handle Delete Modal
         const deleteModal = document.getElementById('delete-confirm-modal');
-        if(deleteModal.classList.contains('active')) {
+        if(deleteModal && deleteModal.classList.contains('active')) {
             deleteModal.classList.remove('active');
             document.getElementById('delete-modal-overlay').classList.remove('active');
             pendingDeleteId = null;
+        }
+
+        // Handle Bottom Sheet Expansion
+        const panel = document.getElementById('route-panel');
+        if(panel && panel.classList.contains('expanded')) {
+            // If the state isn't the bottomSheet (e.g. we pressed back button)
+            if(!e.state || e.state.modal !== 'bottomSheet') {
+                vibrate(20);
+                panel.classList.remove('expanded');
+                document.getElementById('expanded-list-section').style.display = 'none';
+                panel.style.height = ''; 
+            }
         }
     });
     // ----------------------------------------------------------------------
@@ -938,14 +969,14 @@
         panelContent.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Feature C: Native Pull-to-Collapse Physics with Haptics
+    // Feature C: Native Pull-to-Collapse Physics with Haptics (Upgraded to History API)
     const panel = document.getElementById('route-panel');
     const dragHandle = document.getElementById('panel-drag-handle');
     let startY = 0;
     let startHeight = 0;
     let isDraggingContent = false;
 
-    // Handle Dragging
+    // Handle Dragging via Top Edge ONLY
     dragHandle.addEventListener('touchstart', (e) => {
         vibrate(10); // Micro-tick on grab
         startY = e.touches[0].clientY;
@@ -962,9 +993,9 @@
     
     dragHandle.addEventListener('touchend', finalizeDrag);
 
-    // Content Dragging (Only pull down when at the top of scroll)
+    // Content Dragging (Strictly for closing, only when at the very top)
     panelContent.addEventListener('touchstart', (e) => {
-        if (panelContent.scrollTop <= 0) {
+        if (panelContent.scrollTop <= 0 && panel.classList.contains('expanded')) {
             startY = e.touches[0].clientY;
             startHeight = panel.clientHeight;
             isDraggingContent = true;
@@ -977,6 +1008,10 @@
         const deltaY = startY - e.touches[0].clientY;
         if (deltaY < 0) { // Only allow dragging DOWN to collapse
             panel.style.height = (startHeight + deltaY) + 'px';
+        } else {
+            // Cancel drag intent if they start scrolling up
+            isDraggingContent = false;
+            panel.style.transition = 'height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1)';
         }
     }, {passive: true});
     
@@ -987,13 +1022,21 @@
     function finalizeDrag() {
         panel.style.transition = 'height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1)';
         if (panel.clientHeight > window.innerHeight * 0.55) {
-            if(!panel.classList.contains('expanded')) vibrate(30); // Solid snap up
-            panel.classList.add('expanded');
-            document.getElementById('expanded-list-section').style.display = 'block';
+            if(!panel.classList.contains('expanded')) {
+                vibrate(30); // Solid snap up
+                panel.classList.add('expanded');
+                document.getElementById('expanded-list-section').style.display = 'block';
+                window.history.pushState({ modal: 'bottomSheet' }, '');
+            }
         } else {
-            if(panel.classList.contains('expanded')) vibrate(20); // Quick snap down
-            panel.classList.remove('expanded');
-            document.getElementById('expanded-list-section').style.display = 'none';
+            if(panel.classList.contains('expanded')) {
+                // Trigger native back to close smoothly and clean history state
+                window.history.back();
+            } else {
+                vibrate(20); // Quick snap down
+                panel.classList.remove('expanded');
+                document.getElementById('expanded-list-section').style.display = 'none';
+            }
         }
         panel.style.height = ''; 
     }
@@ -1001,13 +1044,12 @@
     // Manual Click Toggle fallback
     window.toggleRoutePanel = () => {
         if(panel.classList.contains('expanded')) {
-            vibrate(20);
-            panel.classList.remove('expanded');
-            document.getElementById('expanded-list-section').style.display = 'none';
+            window.history.back(); // Let popstate handle the UI sync
         } else {
             vibrate(30);
             panel.classList.add('expanded');
             document.getElementById('expanded-list-section').style.display = 'block';
+            window.history.pushState({ modal: 'bottomSheet' }, '');
         }
         panel.style.height = ''; 
     };
@@ -1068,6 +1110,14 @@
             document.getElementById('btn-map-lock').style.color = 'var(--text-main)';
             document.getElementById('btn-map-lock').style.borderColor = 'var(--border)';
             document.getElementById('btn-map-lock').style.background = 'var(--surface-card)';
+        });
+
+        // NEW: Close modal seamlessly on map click
+        map.on('click', () => {
+            const panel = document.getElementById('route-panel');
+            if(panel && panel.classList.contains('expanded')) {
+                window.history.back();
+            }
         });
 
         setTimeout(() => map.invalidateSize(), 500);
