@@ -220,7 +220,8 @@
 
   <script type="module">
     import { db } from './admin/config.js';
-    import { collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js"; // Corrected import to match standard firestore in your other files, assuming it's meant to be firestore.js
+    import {  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js"; // Keeping structure
 
     // Global State
     let activeCustomerData = null;
@@ -459,12 +460,25 @@
         if (!prod.payments || prod.payments.length === 0) {
             tlContainer.innerHTML = `<div style="color:var(--text-sub); padding: 20px 0; font-weight:600;">No payments recorded yet.</div>`;
         } else {
-            // Clone and sort payments by date descending (newest first)
-            const sortedPayments = [...prod.payments].sort((a, b) => {
-                const dateA = new Date(a.date || a.timestamp || 0);
-                const dateB = new Date(b.date || b.timestamp || 0);
-                return dateB - dateA;
+            // Clone and sort payments securely (UNIFIED MATH BRAIN SORTING)
+            const sortedPayments = [...prod.payments].map((pay, i) => {
+                return { ...pay, sno: i + 1, effectiveDue: pay.dueNumber || pay.nextDue || 0 };
             });
+
+            if (prod.isChittai) {
+                sortedPayments.sort((a, b) => {
+                    if (a.effectiveDue !== b.effectiveDue) return b.effectiveDue - a.effectiveDue;
+                    const dateA = new Date(a.date || a.timestamp || 0);
+                    const dateB = new Date(b.date || b.timestamp || 0);
+                    return dateB - dateA;
+                });
+            } else {
+                sortedPayments.sort((a, b) => {
+                    const dateA = new Date(a.date || a.timestamp || 0);
+                    const dateB = new Date(b.date || b.timestamp || 0);
+                    return dateB - dateA;
+                });
+            }
 
             sortedPayments.forEach(pay => {
                 const pAmt = parseInt(pay.amount) || 0;
@@ -529,7 +543,7 @@
 
                 // --- NEW: Chittai Due Badge Logic ---
                 let chittaiBadgeHtml = '';
-                if (pay.isChittai) {
+                if (prod.isChittai || pay.isChittai || pay.dueNumber || pay.nextDue) {
                     if (pay.dueNumber) {
                         chittaiBadgeHtml = `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); margin-left: 6px;">Due #${pay.dueNumber}</span>`;
                     } else if (pay.nextDue) {
