@@ -34,7 +34,7 @@
         --text-main: #f9fafb;
         --text-sub: #9ca3af;
         --border: #2d3748;
-        --shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.5);
+        --shadow: 0 8px 30px -3px rgba(0, 0, 0, 0.5);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
       }
@@ -65,15 +65,25 @@
     .search-container input { width: 100%; padding: 14px 14px 14px 45px; border-radius: 14px; border: 2px solid var(--border); background-color: var(--surface-card); color: var(--text-main); font-size: 1rem; outline: none; transition: all 0.3s; }
     .search-container input:focus { border-color: var(--primary); }
 
-    /* --- Staff Cards --- */
+    /* --- Staff Cards & Avatar Dot Wrappers (UPGRADED) --- */
     .staff-card { background-color: var(--surface-card); padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; margin-bottom: 15px; cursor: pointer; animation: popIn 0.4s forwards; opacity: 0; transition: transform 0.2s, box-shadow 0.2s; box-shadow: var(--shadow); }
     .staff-card:active { transform: scale(0.98); }
-    .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); background-color: var(--skeleton-base); flex-shrink: 0; }
+    
+    .avatar-wrapper { position: relative; display: inline-block; flex-shrink: 0; }
+    .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); background-color: var(--skeleton-base); display: block; }
+    .status-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background-color: var(--primary); border: 2.5px solid var(--surface-card); border-radius: 50%; display: none; z-index: 2; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6); }
+    .status-dot.active { display: block; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
     .staff-info { flex: 1; overflow: hidden; }
     .staff-info h3 { font-size: 1.1rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .staff-info p { font-size: 0.85rem; color: var(--text-sub); font-family: monospace; }
     .today-route-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; margin-top: 6px; }
     
+    /* --- Sleek Toast Notification (UPGRADED) --- */
+    .toast-container { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-color); padding: 14px 26px; border-radius: 30px; font-weight: 700; font-size: 0.95rem; z-index: 10000; box-shadow: 0 15px 40px rgba(0,0,0,0.4); transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 12px; white-space: nowrap; pointer-events: none; }
+    .toast-container.show { top: max(env(safe-area-inset-top) + 20px, 20px); }
+    .toast-container svg { width: 22px; height: 22px; stroke: var(--primary); }
+
     /* --- Line Cards & Gradients --- */
     .grad-1 { background: linear-gradient(135deg, #FF6B6B, #C0392B) !important; color: white !important; border:none!important; }
     .grad-2 { background: linear-gradient(135deg, #4FACFE, #00F2FE) !important; color: white !important; border:none!important;}
@@ -135,7 +145,6 @@
     #index-pill-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; }
     .index-pill { background: var(--danger); color: white; padding: 14px 18px; border-radius: 14px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4); display: flex; justify-content: space-between; align-items: center; gap: 12px; animation: popIn 0.3s forwards; cursor: pointer; }
     .index-pill span { flex: 1; line-height: 1.3; }
-    .index-pill svg { flex-shrink: 0; width: 24px; height: 24px; stroke: white; }
     .index-pill .close-pill { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: background 0.2s; }
     .index-pill .close-pill:active { background: rgba(255,255,255,0.4); }
   </style>
@@ -144,6 +153,12 @@
 
   <!-- Index Pill Container -->
   <div id="index-pill-container"></div>
+  
+  <!-- UPGRADED: Sleek 10-Second Toast -->
+  <div id="status-toast" class="toast-container">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      <span id="toast-msg"></span>
+  </div>
 
   <!-- LEVEL 1: STAFF LIST -->
   <div id="view-staff" class="view-panel active">
@@ -177,7 +192,11 @@
           <h2 id="sched-agent-name" style="margin:0; font-size:1.5rem; font-weight:800;">Agent Name</h2>
           <p id="sched-agent-phone" style="color:var(--text-sub); font-size:0.9rem; font-weight:600;">Phone</p>
         </div>
-        <img id="sched-agent-dp" class="avatar" src="" style="width:60px; height:60px; border-width:3px;">
+        <!-- UPGRADED: Added Avatar Wrapper with interactive dot -->
+        <div class="avatar-wrapper" id="sched-avatar-wrapper" style="cursor: pointer;">
+            <img id="sched-agent-dp" class="avatar" src="" style="width:60px; height:60px; border-width:3px;">
+            <div id="sched-status-dot" class="status-dot" style="bottom: 4px; right: 4px; width: 16px; height: 16px;"></div>
+        </div>
       </div>
 
       <h3 style="margin-bottom: 15px; font-size:1.1rem;">Weekly Route</h3>
@@ -257,6 +276,7 @@
     
     let activeAgentId = null;
     let activeDayPicker = null;
+    let activeSelectedLineId = null; // UPGRADED: Track current line to mark/disable in Picker
     
     // Smart Cache for Lines (1-read optimization)
     const linesCache = {}; 
@@ -264,6 +284,37 @@
 
     // Get Today String
     const todayStr = daysOfWeek[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+
+    // --- UPGRADED: 6-Hour Parsing Engine ---
+    function isWithin6Hours(statusStr) {
+      if(!statusStr) return false;
+      const safeStr = statusStr.replace(/-/g, '/');
+      const d = new Date(safeStr);
+      if(isNaN(d)) return false;
+      const diffMs = new Date() - d;
+      return diffMs >= 0 && diffMs <= (6 * 60 * 60 * 1000); // <= 6 hours
+    }
+
+    let toastTimeout;
+    window.showStatusToast = (e, statusStr) => {
+      if(e) e.stopPropagation();
+      vibrate(20);
+      const toast = document.getElementById('status-toast');
+      const msgEl = document.getElementById('toast-msg');
+      
+      if (!statusStr) {
+          msgEl.innerHTML = `Never active`;
+      } else {
+          msgEl.innerHTML = `<span style="opacity:0.7; font-weight:500;">Active:</span> ${statusStr}`;
+      }
+
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+          toast.classList.remove('show');
+      }, 10000); // 10 seconds exactly
+    };
+    // ----------------------------------------
 
     // --- Firebase Error Handler ---
     window.handleFirebaseError = function(e) {
@@ -432,10 +483,16 @@
           if(todayLine) {
             badgeHtml = `<span class="today-route-badge ${todayLine.color || 'grad-6'}">Today: ${todayLine.name}</span>`;
           }
+          
+          // UPGRADED: Added interactive status dot wrapper
+          const activeDotClass = isWithin6Hours(u.Status) ? 'active' : '';
 
           html += `
             <div class="staff-card" style="animation-delay: ${idx*0.05}s" onclick="openAgentSchedule('${u.uid}')">
-              <img src="${dp}" class="avatar" onerror="this.src='${defaultDp}'">
+              <div class="avatar-wrapper" onclick="window.showStatusToast(event, '${u.Status || ''}')">
+                  <img src="${dp}" class="avatar" onerror="this.src='${defaultDp}'">
+                  <div class="status-dot ${activeDotClass}"></div>
+              </div>
               <div class="staff-info">
                 <h3>${u.name || 'Unnamed'}</h3>
                 <p>${u.role.toUpperCase()} • ${phone}</p>
@@ -469,6 +526,15 @@
       document.getElementById('sched-agent-name').innerText = u.name;
       document.getElementById('sched-agent-phone').innerText = u.phone || u.email;
       document.getElementById('sched-agent-dp').src = u.photoURL || defaultDp;
+      
+      // UPGRADED: Set header Toast onclick event and Green Dot logic
+      document.getElementById('sched-avatar-wrapper').onclick = (e) => window.showStatusToast(e, u.Status);
+      const dot = document.getElementById('sched-status-dot');
+      if (isWithin6Hours(u.Status)) {
+          dot.classList.add('active');
+      } else {
+          dot.classList.remove('active');
+      }
 
       const listContainer = document.getElementById('list-7days');
       listContainer.innerHTML = '';
@@ -534,6 +600,9 @@
     window.openLinePicker = (day) => {
       activeDayPicker = day;
       document.getElementById('picker-day-title').innerText = day;
+      
+      // UPGRADED: Store the currently assigned line for UI disablement
+      activeSelectedLineId = agentsCache[activeAgentId]?.schedule?.[day] || null;
       
       linesSearch = ""; document.getElementById('search-lines').value = '';
       linesLastVisible = null; linesHasMore = true;
@@ -636,10 +705,19 @@
 
         let html = '';
         finalResults.forEach(data => {
+          
+          // UPGRADED: Disable active item and append Check icon
+          const isSelected = data.id === activeSelectedLineId;
+          const disabledStyle = isSelected ? 'opacity: 0.5; pointer-events: none; border: 2px dashed rgba(255,255,255,0.8); transform: scale(0.98);' : '';
+          const checkIcon = isSelected ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>` : '';
+          
           html += `
-            <div class="picker-line ${data.color || 'grad-6'}" onclick="assignRouteToDay('${data.id}')">
-              <h4>${data.name}</h4>
-              <p>${data.id} • ${data.scheduleType}</p>
+            <div class="picker-line ${data.color || 'grad-6'}" style="display:flex; justify-content:space-between; align-items:center; ${disabledStyle}" onclick="assignRouteToDay('${data.id}')">
+              <div>
+                  <h4>${data.name}</h4>
+                  <p>${data.id} • ${data.scheduleType}</p>
+              </div>
+              ${checkIcon}
             </div>`;
         });
         
