@@ -165,6 +165,11 @@
     .input-group input, .input-group select { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.1rem; outline: none; font-weight: 800; transition: border-color 0.3s; }
     .input-group input:focus, .input-group select:focus { border-color: var(--primary); }
     
+    /* Custom Schedule Checkbox UI */
+    .custom-days-wrapper { display: flex; gap: 8px; justify-content: space-between; margin-top: 10px; }
+    .day-circle { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; cursor: pointer; color: var(--text-sub); transition: all 0.2s; background: var(--bg-color); }
+    .day-circle.selected { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.1); }
+
     .id-check-icon { position: absolute; right: 15px; top: 40px; width: 22px; height: 22px; display: none; }
     .id-check-icon.valid { fill: var(--primary); display: block; }
     .id-check-icon.invalid { fill: var(--danger); display: block; }
@@ -366,6 +371,7 @@
       <select id="line-schedule-type">
         <option value="weekly">Weekly</option>
         <option value="daily">Daily</option>
+        <option value="custom">Custom</option>
       </select>
     </div>
     <div class="input-group" id="line-day-group">
@@ -376,6 +382,18 @@
         <option value="Friday">Friday</option><option value="Saturday">Saturday</option>
         <option value="Sunday">Sunday</option>
       </select>
+    </div>
+    <div class="input-group" id="line-custom-days-group" style="display:none;">
+      <label>Select Custom Days</label>
+      <div class="custom-days-wrapper" id="line-custom-days">
+        <div class="day-circle" data-day="Monday">M</div>
+        <div class="day-circle" data-day="Tuesday">T</div>
+        <div class="day-circle" data-day="Wednesday">W</div>
+        <div class="day-circle" data-day="Thursday">T</div>
+        <div class="day-circle" data-day="Friday">F</div>
+        <div class="day-circle" data-day="Saturday">S</div>
+        <div class="day-circle" data-day="Sunday">S</div>
+      </div>
     </div>
     <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px;">Card Color</label>
     <div class="color-picker" id="line-color-picker">
@@ -406,6 +424,7 @@
       <select id="edit-line-schedule-type">
         <option value="weekly">Weekly</option>
         <option value="daily">Daily</option>
+        <option value="custom">Custom</option>
       </select>
     </div>
     <div class="input-group" id="edit-line-day-group">
@@ -416,6 +435,18 @@
         <option value="Friday">Friday</option><option value="Saturday">Saturday</option>
         <option value="Sunday">Sunday</option>
       </select>
+    </div>
+    <div class="input-group" id="edit-line-custom-days-group" style="display:none;">
+      <label>Select Custom Days</label>
+      <div class="custom-days-wrapper" id="edit-line-custom-days">
+        <div class="day-circle" data-day="Monday">M</div>
+        <div class="day-circle" data-day="Tuesday">T</div>
+        <div class="day-circle" data-day="Wednesday">W</div>
+        <div class="day-circle" data-day="Thursday">T</div>
+        <div class="day-circle" data-day="Friday">F</div>
+        <div class="day-circle" data-day="Saturday">S</div>
+        <div class="day-circle" data-day="Sunday">S</div>
+      </div>
     </div>
     <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px;">Card Color</label>
     <div class="color-picker" id="edit-line-color-picker">
@@ -844,6 +875,14 @@
       } else { locIn.value = originalVal || ""; customAlert("GPS Not Supported", "Error"); }
     };
 
+    // --- Day Circle Multi-select logic ---
+    document.querySelectorAll('.day-circle').forEach(el => {
+      el.addEventListener('click', () => {
+        vibrate(10);
+        el.classList.toggle('selected');
+      });
+    });
+
     // --- Skeletons ---
     function getSkeletons(type, count=4) {
       let h = '';
@@ -858,7 +897,10 @@
     // LEVEL 1: LINES
     // ==========================================
     function createLineCardHTML(data) {
-      const schedText = data.scheduleType === 'weekly' && data.scheduleDay ? data.scheduleDay.substring(0,3) : 'Daily';
+      let schedText = data.scheduleType === 'weekly' && data.scheduleDay ? data.scheduleDay.substring(0,3) : 'Daily';
+      if (data.scheduleType === 'custom' && data.scheduleDays) {
+          schedText = `Custom (${data.scheduleDays.length} days)`;
+      }
       return `
         <div class="line-card ${data.color || 'grad-6'}" id="line-card-${data.id}" onclick="openCustomersView('${data.id}', '${data.name.replace(/'/g,"\\'")}')">
           <div class="line-info"><h3>${data.name}</h3><p>${data.id} • ${schedText}</p></div>
@@ -931,37 +973,6 @@
           }
         }
 
-        /* OLD CODE KEPT PER RULES:
-        let q = collection(db, "lines");
-        if(linesSearch) {
-          q = query(q, where("name", ">=", linesSearch), where("name", "<=", linesSearch + "\uf8ff"), orderBy("name"), limit(10));
-        } else {
-          q = query(q, orderBy("createdAt", "desc"), limit(10));
-        }
-        if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
-
-        const snap = await getDocs(q);
-        if(!isMore) list.innerHTML = '';
-        if(snap.empty) { 
-          linesHasMore = false; 
-          if(!isMore) list.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No lines found.</p>'; 
-          loader.style.display = 'none';
-          linesLoading=false; 
-          return; 
-        }
-
-        linesLastVisible = snap.docs[snap.docs.length-1];
-        linesHasMore = snap.docs.length === 10;
-        
-        let html = '';
-        snap.forEach(d => {
-          const data = d.data();
-          linesDataMap[data.id] = data; 
-          html += createLineCardHTML(data);
-        });
-        list.insertAdjacentHTML('beforeend', html);
-        */
-
         if(!isMore) list.innerHTML = '';
         if(results.length === 0 && !isMore) {
            list.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No lines found.</p>';
@@ -1010,10 +1021,12 @@
 
     document.getElementById('line-schedule-type').onchange = (e) => {
       document.getElementById('line-day-group').style.display = e.target.value === 'weekly' ? 'block' : 'none';
+      document.getElementById('line-custom-days-group').style.display = e.target.value === 'custom' ? 'block' : 'none';
     };
 
     document.getElementById('edit-line-schedule-type').onchange = (e) => {
       document.getElementById('edit-line-day-group').style.display = e.target.value === 'weekly' ? 'block' : 'none';
+      document.getElementById('edit-line-custom-days-group').style.display = e.target.value === 'custom' ? 'block' : 'none';
     };
 
     document.getElementById('btn-save-line').onclick = async () => {
@@ -1023,6 +1036,12 @@
       const stype = document.getElementById('line-schedule-type').value;
       const sday = document.getElementById('line-day').value;
       const color = document.querySelector('#line-color-picker .color-option.selected').dataset.grad;
+      
+      let customDays = [];
+      if (stype === 'custom') {
+          document.querySelectorAll('#line-custom-days-group .day-circle.selected').forEach(el => customDays.push(el.dataset.day));
+          if (customDays.length === 0) return customAlert("Please select at least one custom day.", "Error");
+      }
 
       if(!id || !name) return customAlert("Fill ID and Name", "Error");
       const isAvail = await checkIdAvailability('lines', id, document.getElementById('line-id-tick'), document.getElementById('line-id-cross'));
@@ -1030,7 +1049,15 @@
 
       const btn = document.getElementById('btn-save-line'); btn.disabled = true; btn.innerText = "Saving...";
       try {
-        await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
+        await setDoc(doc(db, "lines", id), { 
+            id, 
+            name, 
+            scheduleType: stype, 
+            scheduleDay: stype === 'weekly' ? sday : null, 
+            scheduleDays: stype === 'custom' ? customDays : null,
+            color, 
+            createdAt: serverTimestamp() 
+        });
         window.history.back(); 
         linesLastVisible = null; loadLines(); 
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
@@ -1048,7 +1075,16 @@
       document.getElementById('edit-line-schedule-type').value = line.scheduleType || 'daily';
       document.getElementById('edit-line-day').value = line.scheduleDay || 'Monday';
       document.getElementById('edit-line-day-group').style.display = line.scheduleType === 'weekly' ? 'block' : 'none';
+      document.getElementById('edit-line-custom-days-group').style.display = line.scheduleType === 'custom' ? 'block' : 'none';
       
+      document.querySelectorAll('#edit-line-custom-days .day-circle').forEach(el => el.classList.remove('selected'));
+      if (line.scheduleType === 'custom' && line.scheduleDays) {
+          line.scheduleDays.forEach(d => {
+              const circle = document.querySelector(`#edit-line-custom-days .day-circle[data-day="${d}"]`);
+              if (circle) circle.classList.add('selected');
+          });
+      }
+
       document.querySelectorAll('#edit-line-color-picker .color-option').forEach(c => {
          c.classList.remove('selected');
          if(c.dataset.grad === (line.color || 'grad-6')) c.classList.add('selected');
@@ -1064,15 +1100,28 @@
       const sday = document.getElementById('edit-line-day').value;
       const color = document.querySelector('#edit-line-color-picker .color-option.selected').dataset.grad;
 
+      let customDays = [];
+      if (stype === 'custom') {
+          document.querySelectorAll('#edit-line-custom-days-group .day-circle.selected').forEach(el => customDays.push(el.dataset.day));
+          if (customDays.length === 0) return customAlert("Please select at least one custom day.", "Error");
+      }
+
       if(!name) return customAlert("Fill Name", "Error");
       const btn = document.getElementById('btn-update-line'); btn.disabled = true; btn.innerText = "Saving...";
       
       try {
-        await updateDoc(doc(db, "lines", editingLineId), { name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color });
+        await updateDoc(doc(db, "lines", editingLineId), { 
+            name, 
+            scheduleType: stype, 
+            scheduleDay: stype === 'weekly' ? sday : null, 
+            scheduleDays: stype === 'custom' ? customDays : null,
+            color 
+        });
         
         linesDataMap[editingLineId].name = name;
         linesDataMap[editingLineId].scheduleType = stype;
-        linesDataMap[editingLineId].scheduleDay = stype==='weekly'?sday:null;
+        linesDataMap[editingLineId].scheduleDay = stype === 'weekly' ? sday : null;
+        linesDataMap[editingLineId].scheduleDays = stype === 'custom' ? customDays : null;
         linesDataMap[editingLineId].color = color;
         
         const card = document.getElementById('line-card-'+editingLineId);
@@ -1188,46 +1237,6 @@
             custHasMore = false;
           }
         }
-
-        /* OLD CODE KEPT PER RULES:
-        let q = query(collection(db, "customers"), where("lineId", "==", activeLineId));
-        if(custSearch) q = query(q, where("name", ">=", custSearch), where("name", "<=", custSearch + "\uf8ff"), orderBy("name"), limit(10));
-        else q = query(q, orderBy("createdAt", "desc"), limit(10));
-        
-        if(isMore && custLastVisible) q = query(q, startAfter(custLastVisible));
-        
-        const snap = await getDocs(q);
-        if(!isMore) list.innerHTML = '';
-        if(snap.empty) { 
-          custHasMore=false; 
-          if(!isMore) list.innerHTML='<p style="text-align:center;color:var(--text-sub);">No customers found.</p>'; 
-          loader.style.display = 'none';
-          custLoading=false; 
-          return; 
-        }
-
-        custLastVisible = snap.docs[snap.docs.length-1];
-        custHasMore = snap.docs.length === 10;
-
-        let html = '';
-        snap.forEach(d => {
-          const c = d.data();
-          const pCount = c.products ? c.products.length : 0;
-          
-          html += `
-            <div class="customer-card" id="cust-card-${c.id}" onclick="openLedgerView('${c.id}')">
-              <div class="cust-top">
-                <div class="cust-info"><h3>${c.name}</h3><p>${c.id} • ${c.phone || 'No Phone'}</p></div>
-                <div class="actions-wrap">
-                  <button class="icon-btn add" onclick="event.stopPropagation(); openAddProductModal('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
-                  <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="cust-stats">${pCount} Active Product${pCount!==1?'s':''}</div>
-            </div>`;
-        });
-        list.insertAdjacentHTML('beforeend', html);
-        */
 
         if(!isMore) list.innerHTML = '';
         if(results.length === 0 && !isMore) {
@@ -2351,13 +2360,20 @@
           const style = isCurrent ? `opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; border: 2px solid var(--primary);` : ``;
           const text = isCurrent ? ` <span style="font-size:0.75rem; color:var(--primary); font-weight:800; background:rgba(255,255,255,0.9); padding:2px 8px; border-radius:6px; letter-spacing:0.5px;">ACTIVE</span>` : ``;
           
+          let schedTextPicker = data.scheduleType || 'Daily';
+          if (data.scheduleType === 'custom' && data.scheduleDays) {
+              schedTextPicker = `Custom (${data.scheduleDays.length} days)`;
+          } else if (data.scheduleType === 'weekly' && data.scheduleDay) {
+              schedTextPicker = `Weekly (${data.scheduleDay.substring(0,3)})`;
+          }
+
           html += `
             <div class="picker-line ${data.color || 'grad-6'}" style="${style}" onclick="${isCurrent ? '' : `assignLineToCustomer('${data.id}')`}">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                   <h4>${data.name}${text}</h4>
                   ${isCurrent ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="background:rgba(255,255,255,0.9); border-radius:50%; padding:2px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>` : ''}
               </div>
-              <p style="${isCurrent ? '' : 'color: rgba(255,255,255,0.85); border: none; font-family: monospace;'}">${data.id} • ${data.scheduleType || 'Daily'}</p>
+              <p style="${isCurrent ? '' : 'color: rgba(255,255,255,0.85); border: none; font-family: monospace;'}">${data.id} • ${schedTextPicker}</p>
             </div>`;
         });
         
