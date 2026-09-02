@@ -940,30 +940,32 @@
             
             let payHtml = '';
             if(p.payments && p.payments.length > 0) {
-                const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}))
-                                      .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                const sortedPayments = [...p.payments].map((pay, i) => ({...pay, originalIndex: i}));
+                
+                // UNIFIED MATH BRAIN: Sort ascending first to calculate running balance
+                if (p.isChittai) {
+                    sortedPayments.sort((a, b) => {
+                        const dueA = a.dueNumber || 0;
+                        const dueB = b.dueNumber || 0;
+                        if (dueA !== dueB) return dueA - dueB;
+                        return new Date(a.date).getTime() - new Date(b.date).getTime();
+                    });
+                } else {
+                    sortedPayments.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                }
                 
                 let dynamicPending = total;
-                let lastDue = 0;
-                
                 sortedPayments.forEach((pay, idx) => {
                     let amt = parseInt(pay.amount) || 0;
                     dynamicPending = Math.max(0, dynamicPending - amt);
                     pay.displayPending = dynamicPending; 
                     pay.sno = idx + 1;
-                    if (pay.dueNumber) lastDue = pay.dueNumber;
-                    pay.effectiveDue = pay.dueNumber || lastDue;
                 });
 
-                // STRICT DUE NUMBER SORTING (Largest at the top)
-                const displayPayments = [...sortedPayments].sort((a, b) => {
-                    if (a.effectiveDue !== b.effectiveDue) {
-                        return b.effectiveDue - a.effectiveDue;
-                    }
-                    return b.sno - a.sno; // Fallback chronological for identical effective dues
-                });
+                // UNIFIED DISPLAY BRAIN: Flip upside down so highest/newest is at the top
+                sortedPayments.reverse();
 
-                displayPayments.forEach(pay => {
+                sortedPayments.forEach(pay => {
                     const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year: 'numeric' });
                     payHtml += `
                     <tr>
@@ -1161,9 +1163,18 @@
                     targetProd.payments.splice(targetPayIndex, 1);
                 }
 
-                // Recalculate remaining payments
+                // Recalculate remaining payments with UNIFIED MATH BRAIN
                 let totalPaidCalculated = 0;
-                targetProd.payments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                if (targetProd.isChittai) {
+                    targetProd.payments.sort((a, b) => {
+                        const dueA = a.dueNumber || 0;
+                        const dueB = b.dueNumber || 0;
+                        if (dueA !== dueB) return dueA - dueB;
+                        return new Date(a.date).getTime() - new Date(b.date).getTime();
+                    });
+                } else {
+                    targetProd.payments.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                }
 
                 const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
                 let runningPending = safeTotal;
@@ -1348,8 +1359,18 @@
                     }
                 }
 
+                // Recalculate remaining payments with UNIFIED MATH BRAIN
                 let totalPaidCalculated = 0;
-                targetProd.payments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                if (targetProd.isChittai) {
+                    targetProd.payments.sort((a, b) => {
+                        const dueA = a.dueNumber || 0;
+                        const dueB = b.dueNumber || 0;
+                        if (dueA !== dueB) return dueA - dueB;
+                        return new Date(a.date).getTime() - new Date(b.date).getTime();
+                    });
+                } else {
+                    targetProd.payments.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                }
 
                 const safeTotal = parseInt(targetProd.total) || parseInt(targetProd.amount) || 0;
                 let runningPending = safeTotal;
@@ -1734,7 +1755,17 @@
 
         let csvContent = "Date,Receipt ID,Due/SNo,Method,Amount,Remaining Balance After\n";
         
-        const sorted = [...prod.payments].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const sorted = [...prod.payments];
+        if (prod.isChittai) {
+            sorted.sort((a, b) => {
+                const dueA = a.dueNumber || 0;
+                const dueB = b.dueNumber || 0;
+                if (dueA !== dueB) return dueA - dueB;
+                return new Date(a.date).getTime() - new Date(b.date).getTime();
+            });
+        } else {
+            sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        }
         
         sorted.forEach((p, idx) => {
             const d = new Date(p.date).toLocaleDateString('en-IN');
