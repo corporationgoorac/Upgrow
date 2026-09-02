@@ -95,7 +95,9 @@
     .today-route-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; margin-top: 6px; }
     
     /* --- Sleek Toast Notification (UPGRADED) --- */
-    .toast-container { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-color); padding: 14px 26px; border-radius: 30px; font-weight: 700; font-size: 0.95rem; z-index: 10000; box-shadow: 0 15px 40px rgba(0,0,0,0.4); transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 12px; white-space: nowrap; pointer-events: none; }
+    /* OLD LINE COMMENTED: .toast-container { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--text-main); color: var(--bg-color); padding: 14px 26px; border-radius: 30px; font-weight: 700; font-size: 0.95rem; z-index: 10000; box-shadow: 0 15px 40px rgba(0,0,0,0.4); transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 12px; white-space: nowrap; pointer-events: none; } */
+    /* UPGRADED: Theme-dependent Toast for Light/Dark mode syncing */
+    .toast-container { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--surface-card); color: var(--text-main); border: 2px solid var(--border); padding: 12px 24px; border-radius: 20px; font-weight: 700; font-size: 0.95rem; z-index: 10000; box-shadow: 0 15px 40px rgba(0,0,0,0.25); transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 15px; white-space: nowrap; pointer-events: none; }
     .toast-container.show { top: max(env(safe-area-inset-top) + 20px, 20px); }
     .toast-container svg { width: 22px; height: 22px; stroke: var(--primary); }
 
@@ -309,7 +311,9 @@
     let bgMap = null;
     function initBgMap() {
         if(bgMap) return;
-        bgMap = L.map('parallax-map', { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false, boxZoom: false, keyboard: false, tap: false }).setView([8.7642, 78.1348], 13);
+        // OLD LINE COMMENTED: bgMap = L.map('parallax-map', { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false, boxZoom: false, keyboard: false, tap: false }).setView([8.7642, 78.1348], 13);
+        // UPGRADED: Zoomed out from 13 to 11 for better city-wide context
+        bgMap = L.map('parallax-map', { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false, boxZoom: false, keyboard: false, tap: false }).setView([8.7642, 78.1348], 11);
         
         const tileUrl = 'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
         L.tileLayer(tileUrl, {
@@ -335,10 +339,24 @@
       const toast = document.getElementById('status-toast');
       const msgEl = document.getElementById('toast-msg');
       
+      // OLD LINES COMMENTED:
+      // if (!statusStr) {
+      //     msgEl.innerHTML = `Never active`;
+      // } else {
+      //     msgEl.innerHTML = `<span style="opacity:0.7; font-weight:500;">Active:</span> ${statusStr}`;
+      // }
+      
+      // UPGRADED: Two-line professional date/time layout
       if (!statusStr) {
-          msgEl.innerHTML = `Never active`;
+          msgEl.innerHTML = `<div style="display:flex; flex-direction:column; line-height:1.3;"><span style="opacity:0.6; font-size:0.8rem; text-transform:uppercase; font-weight:800;">Status</span><span style="font-size:1.05rem;">Never Active</span></div>`;
       } else {
-          msgEl.innerHTML = `<span style="opacity:0.7; font-weight:500;">Active:</span> ${statusStr}`;
+          const parts = statusStr.split(' ');
+          const datePart = parts[0] || '';
+          const timePart = parts.slice(1).join(' ') || '';
+          msgEl.innerHTML = `<div style="display:flex; flex-direction:column; line-height:1.3;">
+                               <span style="opacity:0.6; font-size:0.8rem; text-transform:uppercase; font-weight:800;">Last Active</span>
+                               <span style="font-size:1.05rem;">${datePart} <span style="color:var(--primary); margin:0 4px;">|</span> ${timePart}</span>
+                             </div>`;
       }
 
       toast.classList.add('show');
