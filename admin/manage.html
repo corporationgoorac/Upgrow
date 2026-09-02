@@ -127,8 +127,9 @@
     .modal-handle:active { background-color: var(--text-sub); }
     
     .modal-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; animation: fadeIn 0.4s 0.1s both; }
+    .modal-header > div { flex: 1; min-width: 0; overflow: hidden; }
     .modal-header .avatar { width: 65px; height: 65px; border-width: 3px; }
-    .modal-header h3 { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; }
+    .modal-header h3 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .input-group { margin-bottom: 20px; animation: fadeIn 0.4s 0.15s both; }
     .input-group label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px; transition: color 0.3s; }
