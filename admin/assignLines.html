@@ -10,6 +10,9 @@
   
   <title>Assign Routes - Up Grow</title>
   
+  <!-- UPGRADED: Leaflet CSS for Google Maps Parallax -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
     :root {
       --bg-color: #f4f7f6;
@@ -24,6 +27,8 @@
       --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
       --skeleton-base: #e5e7eb;
       --skeleton-highlight: #f3f4f6;
+      /* UPGRADED: Light mode map filter variable */
+      --map-filter: none;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -37,8 +42,18 @@
         --shadow: 0 8px 30px -3px rgba(0, 0, 0, 0.5);
         --skeleton-base: #2d3748;
         --skeleton-highlight: #3f4a5e;
+        /* UPGRADED: Dark mode map filter applied */
+        --map-filter: invert(92%) hue-rotate(180deg) brightness(95%) contrast(105%);
+      }
+      
+      /* UPGRADED: Feed a white background to Leaflet in dark mode so the invert filter turns it black */
+      .leaflet-container {
+          background-color: #ffffff !important; 
       }
     }
+
+    /* UPGRADED: Fixes the white splash in Light Mode */
+    .leaflet-container { background-color: #e5e3df !important; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
     input { user-select: auto; }
@@ -95,7 +110,8 @@
 
     /* --- UBER-STYLE PARALLAX MAP & SCHEDULE --- */
     /* UPGRADED: Fixed sticky math and removed default iframe borders so it sits perfectly */
-    #parallax-map { position: -webkit-sticky; position: sticky; top: 0; left: 0; width: 100%; height: 35vh; z-index: 0; border: none !important; margin: 0; padding: 0; display: block; filter: invert(100%) hue-rotate(180deg) brightness(80%); pointer-events: none; }
+    /* OLD LINE COMMENTED: #parallax-map { position: -webkit-sticky; position: sticky; top: 0; left: 0; width: 100%; height: 35vh; z-index: 0; border: none !important; margin: 0; padding: 0; display: block; filter: invert(100%) hue-rotate(180deg) brightness(80%); pointer-events: none; } */
+    #parallax-map { position: -webkit-sticky; position: sticky; top: 0; left: 0; width: 100%; height: 35vh; z-index: 0; border: none !important; margin: 0; padding: 0; display: block; filter: var(--map-filter, none); pointer-events: none; }
     #parallax-map-overlay { position: -webkit-sticky; position: sticky; top: 0; left: 0; width: 100%; height: 35vh; background: linear-gradient(to bottom, rgba(18,18,18,0.2) 0%, var(--bg-color) 95%); z-index: 1; pointer-events: none; margin-top: -35vh; border: none !important; display: block; }
     
     .btn-back-map { position: -webkit-sticky; position: sticky; top: 20px; margin-left: 20px; margin-top: calc(-35vh + 20px); margin-bottom: calc(35vh - 60px); z-index: 20; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); border: none; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -179,7 +195,8 @@
   <div id="view-schedule" class="view-panel">
     
     <!-- Background Map Locked to Thoothukudi -->
-    <iframe id="parallax-map" src="https://www.openstreetmap.org/export/embed.html?bbox=77.95,8.7,78.25,8.9&layer=mapnik"></iframe>
+    <!-- OLD LINE COMMENTED: <iframe id="parallax-map" src="https://www.openstreetmap.org/export/embed.html?bbox=77.95,8.7,78.25,8.9&layer=mapnik"></iframe> -->
+    <div id="parallax-map"></div>
     <div id="parallax-map-overlay"></div>
 
     <button class="btn-back-map" onclick="window.history.back()">
@@ -259,6 +276,9 @@
     </div>
   </div>
 
+  <!-- UPGRADED: Leaflet JS import -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <script type="module">
     import { auth, db } from './config.js';
     import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
@@ -284,6 +304,19 @@
 
     // Get Today String
     const todayStr = daysOfWeek[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+
+    // --- UPGRADED: Google Maps Leaflet Background ---
+    let bgMap = null;
+    function initBgMap() {
+        if(bgMap) return;
+        bgMap = L.map('parallax-map', { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false, boxZoom: false, keyboard: false, tap: false }).setView([8.7642, 78.1348], 13);
+        
+        const tileUrl = 'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+        L.tileLayer(tileUrl, {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        }).addTo(bgMap);
+    }
 
     // --- UPGRADED: 6-Hour Parsing Engine ---
     function isWithin6Hours(statusStr) {
@@ -542,6 +575,11 @@
       // Open Panel instantly for fluid UX
       openPanel('view-schedule', { uid });
 
+      // UPGRADED: Recalculate map size when panel opens to prevent gray tiles
+      if (bgMap) {
+          setTimeout(() => bgMap.invalidateSize(), 350);
+      }
+
       // Cascade render the 7 days
       daysOfWeek.forEach(async (day, idx) => {
         // Create placeholder card
@@ -792,8 +830,9 @@
       } catch(e) { handleFirebaseError(e); }
     };
 
-    // Initial Load & Infinite Scroll
-    window.addEventListener('load', () => { loadStaff(); });
+    // OLD LINE COMMENTED: window.addEventListener('load', () => { loadStaff(); });
+    // UPGRADED: Added initBgMap execution on window load
+    window.addEventListener('load', () => { loadStaff(); initBgMap(); });
     document.getElementById('view-staff').addEventListener('scroll', function() {
       if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 100) {
         if(staffHasMore && !staffLoading) { vibrate(10); loadStaff(true); }
