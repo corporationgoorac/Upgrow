@@ -234,6 +234,8 @@
       </button>
     </div>
 
+    <!-- NEW ADVANCED RAM CACHE SEARCH CONTAINER (0 READS) -->
+    <div id="search-results-lines" style="display: none; padding-bottom: 20px;"></div>
     <div id="list-lines"></div>
     <div id="loading-lines" class="loading-trigger">Loading...</div>
   </div>
@@ -258,6 +260,8 @@
       </button>
     </div>
 
+    <!-- NEW ADVANCED RAM CACHE SEARCH CONTAINER (0 READS) -->
+    <div id="search-results-customers" style="display: none; padding-bottom: 20px;"></div>
     <div id="list-customers"></div>
     <div id="loading-customers" class="loading-trigger">Loading...</div>
   </div>
@@ -611,6 +615,28 @@
     import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     let currentUser = null;
+
+    // --- NEW: RAM CACHE FOR ZERO-READ SEARCH ---
+    let globalLinesCache = [];
+    let globalCustomersCache = [];
+
+    async function buildSearchDictionaryBackground() {
+        try {
+            const linesSnap = await getDocs(collection(db, "lines"));
+            globalLinesCache = [];
+            linesSnap.forEach(d => {
+                const data = d.data();
+                globalLinesCache.push({ ...data, rawName: data.name, searchName: (data.name||'').toLowerCase(), rawId: d.id, searchId: (d.id||'').toLowerCase() });
+            });
+
+            const custSnap = await getDocs(collection(db, "customers"));
+            globalCustomersCache = [];
+            custSnap.forEach(d => {
+                const data = d.data();
+                globalCustomersCache.push({ ...data, rawName: data.name, searchName: (data.name||'').toLowerCase(), rawId: d.id, searchId: (d.id||'').toLowerCase(), phone: data.phone||'' });
+            });
+        } catch(e) { console.error("Cache build failed", e); }
+    }
     
     // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
     window.handleFirebaseError = function(e, fallbackToAlert = false) {
@@ -790,6 +816,11 @@
       if (document.getElementById('view-customers').classList.contains('active')) {
         document.getElementById('view-customers').classList.remove('active');
         activeLineId = null;
+        
+        // Zero-Read UI reset for customer search
+        document.getElementById('search-customers').value = '';
+        document.getElementById('search-results-customers').style.display = 'none';
+        document.getElementById('list-customers').style.display = 'block';
         return;
       }
     }
@@ -912,11 +943,50 @@
       linesLoading = false;
     }
 
+    /* ORIGINAL LINES PRESERVED:
     document.getElementById('search-lines').addEventListener('input', debounce(e => {
       let val = e.target.value.trim();
       linesSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
       linesLastVisible = null; linesHasMore = true; loadLines();
     }));
+    */
+    
+    // NEW ADVANCED RAM CACHE SEARCH (LINES)
+    document.getElementById('search-lines').addEventListener('input', e => {
+        const term = e.target.value.trim().toLowerCase();
+        const listLines = document.getElementById('list-lines');
+        const searchLinesDiv = document.getElementById('search-results-lines');
+        const loader = document.getElementById('loading-lines');
+
+        if(term.length === 0) {
+            searchLinesDiv.style.display = 'none';
+            listLines.style.display = 'block';
+            loader.style.display = linesHasMore ? 'block' : 'none';
+            return;
+        }
+
+        listLines.style.display = 'none';
+        loader.style.display = 'none';
+        searchLinesDiv.style.display = 'block';
+
+        let matchedNames = [];
+        let matchedIDs = [];
+        for(let l of globalLinesCache) {
+            if(matchedNames.length < 10 && l.searchName.includes(term)) matchedNames.push(l);
+            else if(matchedIDs.length < 10 && l.searchId.includes(term)) matchedIDs.push(l);
+            if(matchedNames.length === 10 && matchedIDs.length === 10) break;
+        }
+        
+        const combined = [...matchedNames, ...matchedIDs];
+        searchLinesDiv.innerHTML = '';
+        if(combined.length === 0) {
+            searchLinesDiv.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No matching lines found.</p>';
+        } else {
+            let html = '';
+            combined.forEach(data => { html += createLineCardHTML(data); });
+            searchLinesDiv.innerHTML = html;
+        }
+    });
 
     document.querySelectorAll('.color-option').forEach(el => {
       el.onclick = () => { 
@@ -948,6 +1018,10 @@
       const btn = document.getElementById('btn-save-line'); btn.disabled = true; btn.innerText = "Saving...";
       try {
         await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
+        
+        // UPGRADED: Sync RAM cache instantly
+        globalLinesCache.push({ id, rawId: id, searchId: id.toLowerCase(), name, rawName: name, searchName: name.toLowerCase(), scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color });
+        
         window.history.back(); 
         linesLastVisible = null; loadLines(); 
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
@@ -992,6 +1066,13 @@
         linesDataMap[editingLineId].scheduleDay = stype==='weekly'?sday:null;
         linesDataMap[editingLineId].color = color;
         
+        // UPGRADED: Sync RAM cache instantly
+        let cacheLine = globalLinesCache.find(l => l.rawId === editingLineId);
+        if(cacheLine) {
+            cacheLine.name = name; cacheLine.rawName = name; cacheLine.searchName = name.toLowerCase();
+            cacheLine.scheduleType = stype; cacheLine.scheduleDay = stype==='weekly'?sday:null; cacheLine.color = color;
+        }
+
         const card = document.getElementById('line-card-'+editingLineId);
         if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
 
@@ -1014,6 +1095,10 @@
           await batch.commit();
         }
         await deleteDoc(doc(db, "lines", id));
+        
+        // UPGRADED: Sync RAM cache instantly
+        globalLinesCache = globalLinesCache.filter(l => l.rawId !== id);
+        
         vibrate([50,50,50]);
         linesLastVisible = null; loadLines();
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert("Error: " + e.message, "Deletion Failed"); }
@@ -1026,6 +1111,11 @@
       vibrate(); activeLineId = lineId; currentLineName = lineName;
       document.getElementById('title-line-name').innerText = lineName;
       custLastVisible = null; custHasMore = true; custSearch = ""; document.getElementById('search-customers').value = '';
+      
+      // UPGRADED: Reset Search UI when opening view
+      document.getElementById('search-results-customers').style.display = 'none';
+      document.getElementById('list-customers').style.display = 'block';
+
       openPanel('view-customers', { lineId });
       loadCustomers();
     };
@@ -1096,11 +1186,64 @@
       custLoading = false;
     }
 
+    /* ORIGINAL LINES PRESERVED:
     document.getElementById('search-customers').addEventListener('input', debounce(e => {
       let val = e.target.value.trim();
       custSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
       custLastVisible = null; custHasMore = true; loadCustomers();
     }));
+    */
+
+    // NEW ADVANCED RAM CACHE SEARCH (CUSTOMERS)
+    document.getElementById('search-customers').addEventListener('input', e => {
+        const term = e.target.value.trim().toLowerCase();
+        const listCust = document.getElementById('list-customers');
+        const searchCustDiv = document.getElementById('search-results-customers');
+        const loader = document.getElementById('loading-customers');
+
+        if(term.length === 0) {
+            searchCustDiv.style.display = 'none';
+            listCust.style.display = 'block';
+            loader.style.display = custHasMore ? 'block' : 'none';
+            return;
+        }
+
+        listCust.style.display = 'none';
+        loader.style.display = 'none';
+        searchCustDiv.style.display = 'block';
+
+        let matchedNames = [];
+        let matchedIDs = [];
+        for(let c of globalCustomersCache) {
+            if(c.lineId !== activeLineId) continue; // Safety: only search within active line!
+            if(matchedNames.length < 10 && c.searchName.includes(term)) matchedNames.push(c);
+            else if(matchedIDs.length < 10 && c.searchId.includes(term)) matchedIDs.push(c);
+            if(matchedNames.length === 10 && matchedIDs.length === 10) break;
+        }
+
+        const combined = [...matchedNames, ...matchedIDs];
+        searchCustDiv.innerHTML = '';
+        if(combined.length === 0) {
+            searchCustDiv.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No matching customers found.</p>';
+        } else {
+            let html = '';
+            combined.forEach(c => {
+                const pCount = c.products ? c.products.length : 0;
+                html += `
+                    <div class="customer-card" id="search-cust-card-${c.rawId}" onclick="openLedgerView('${c.rawId}')">
+                      <div class="cust-top">
+                        <div class="cust-info"><h3>${c.rawName}</h3><p>${c.rawId} • ${c.phone || 'No Phone'}</p></div>
+                        <div class="actions-wrap">
+                          <button class="icon-btn add" onclick="event.stopPropagation(); openAddProductModal('${c.rawId}')"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                          <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.rawId}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                        </div>
+                      </div>
+                      <div class="cust-stats">${pCount} Active Product${pCount!==1?'s':''}</div>
+                    </div>`;
+            });
+            searchCustDiv.innerHTML = html;
+        }
+    });
 
     window.openCreateCustomerModal = () => {
       document.getElementById('modal-cust-title').innerText = "Create Customer";
@@ -1158,6 +1301,9 @@
         };
         await setDoc(doc(db, "customers", id), { id, lineId: activeLineId, name, phone, location: loc, products: [initProduct], createdAt: serverTimestamp() });
         
+        // UPGRADED: Sync RAM cache instantly
+        globalCustomersCache.push({ id, rawId: id, searchId: id.toLowerCase(), name, rawName: name, searchName: name.toLowerCase(), phone, location: loc, lineId: activeLineId, products: [initProduct] });
+
         window.history.back(); custLastVisible = null; loadCustomers();
       } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
       btn.disabled = false; btn.innerText = "Save Customer";
@@ -1166,7 +1312,14 @@
     window.deleteCustomer = async (id) => {
       vibrate([50,100]);
       if(!(await customConfirm(`Delete Customer ${id}?`))) return;
-      try { await deleteDoc(doc(db, "customers", id)); vibrate([50,50]); custLastVisible = null; loadCustomers(); } 
+      try { 
+          await deleteDoc(doc(db, "customers", id)); vibrate([50,50]); 
+          
+          // UPGRADED: Sync RAM cache instantly
+          globalCustomersCache = globalCustomersCache.filter(c => c.rawId !== id);
+
+          custLastVisible = null; loadCustomers(); 
+      } 
       catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Deletion Failed"); }
     };
 
@@ -1469,7 +1622,7 @@
                         <td style="color:var(--danger); font-weight:700;">${fmt(pay.displayPending)}</td>
                         <td style="text-align:right;">
                             <button class="icon-btn" style="background:transparent; padding:4px; box-shadow:none; display:inline-block;" onclick="window.openEditPayment(${pIndex}, ${pay.originalIndex})">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path></svg>
                             </button>
                         </td>
                     </tr>`;
@@ -1971,6 +2124,13 @@
             activeCustomer.data.name = newName;
             activeCustomer.data.phone = newPhone;
             activeCustomer.data.location = newLoc;
+            
+            // UPGRADED: Sync RAM cache instantly
+            let cacheObj = globalCustomersCache.find(c => c.rawId === activeCustomer.id);
+            if(cacheObj) {
+                cacheObj.name = newName; cacheObj.rawName = newName; cacheObj.searchName = newName.toLowerCase();
+                cacheObj.phone = newPhone; cacheObj.location = newLoc;
+            }
 
             document.getElementById('ledger-cust-name').innerText = newName;
             document.getElementById('detail-cust-name-hidden').innerText = newName;
@@ -2162,7 +2322,7 @@
             list.innerHTML = '<div id="picker-loader" class="loading-trigger" style="display: none;">Loading...</div>';
         }
         
-        if(finalResults.length === 0 && !isMore) { 
+        if(finalResults.length === 0 && !is felt) { 
           list.innerHTML = '<p style="text-align:center;color:var(--text-sub);">No lines found.</p>'; 
           linesLoading=false; return; 
         }
@@ -2225,6 +2385,12 @@
             await updateDoc(activeCustomer.ref, { lineId: newLineId });
             activeCustomer.data.lineId = newLineId; // Sync locally instantly
             
+            // UPGRADED: Sync RAM cache instantly
+            let cacheObj = globalCustomersCache.find(c => c.rawId === activeCustomer.id);
+            if(cacheObj) {
+                cacheObj.lineId = newLineId;
+            }
+
             // Fix History API race condition by removing classes manually before back()
             document.getElementById('line-picker-sheet').classList.remove('active');
             document.getElementById('modal-overlay').classList.remove('active');
@@ -2327,6 +2493,12 @@
 
     // Initial Load
     window.addEventListener('load', async () => { 
+      onAuthStateChanged(auth, (user) => { 
+        if (user) {
+          currentUser = user; 
+          buildSearchDictionaryBackground(); // Kick off RAM cache build instantly
+        }
+      });
       loadLines(); 
       
       const urlParams = new URLSearchParams(window.location.search);
