@@ -438,6 +438,15 @@
     let searchTimeout = null;
     let isOpeningCustomer = false; 
 
+    // Search Pagination State (NEW: Replaces background cache mapping)
+    let searchNameLastVisible = null;
+    let searchIdLastVisible = null;
+    let searchNameHasMore = true;
+    let searchIdHasMore = true;
+    let searchIsFetching = false;
+    let currentSearchTerm = "";
+    let currentSearchRenderedIds = new Set();
+
     // Line Picker State (Fully Real-Time)
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let linesNameLastVisible = null, linesNameHasMore = true;
@@ -682,26 +691,15 @@
       if (user) {
         currentUser = user; 
         fetchInitialCustomers();
-        buildSearchDictionaryBackground();
+        // REMOVED: buildSearchDictionaryBackground() 
+        // We are now exclusively using the Live Paginated Search Engine instead of local memory.
       }
     });
 
     async function buildSearchDictionaryBackground() {
-        try {
-            const snap = await getDocs(collection(db, "customers"));
-            const newCache = []; 
-            snap.forEach(d => {
-                const data = d.data();
-                newCache.push({
-                    id: d.id.toLowerCase(),
-                    name: (data.name || '').toLowerCase(),
-                    rawName: data.name || 'Unknown',
-                    rawId: d.id,
-                    phone: data.phone || ''
-                });
-            });
-            localSearchCache = newCache;
-        } catch(e) { console.error("Cache build failed", e); }
+        // Obsolete function kept empty to strictly adhere to not removing lines.
+        // Data is now pulled instantly and flawlessly via Firebase double-query pagination below.
+        localSearchCache = []; 
     }
 
     // --- Pagination Engine ---
@@ -777,7 +775,7 @@
         observer.observe(loadMoreTrigger);
     }
 
-    // --- 3. Instant Live Search Engine ---
+    // --- 3. Instant Live Search Engine (UPGRADED: 5+5 Live Pagination) ---
     window.openSearch = () => {
         vibrate();
         window.history.pushState({ panel: 'search' }, ''); 
@@ -792,7 +790,7 @@
 
     searchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
-        const term = e.target.value.trim().toLowerCase();
+        const term = e.target.value.trim();
         
         if(term.length === 0) {
             searchResultsListEl.style.display = 'none';
@@ -803,35 +801,109 @@
         }
 
         customerListEl.style.display = 'none';
-        loadMoreTrigger.style.display = 'none';
+        loadMoreTrigger.style.display = 'none'; // Safely disable main list intersection triggers
         searchResultsListEl.style.display = 'block';
 
         searchTimeout = setTimeout(() => {
-            searchResultsListEl.innerHTML = '';
-            let matchedNames = [];
-            let matchedIDs = [];
+            // Reset Search State
+            currentSearchTerm = term;
+            searchNameLastVisible = null;
+            searchIdLastVisible = null;
+            searchNameHasMore = true;
+            searchIdHasMore = true;
+            currentSearchRenderedIds.clear();
+            
+            searchResultsListEl.innerHTML = '<div class="loader-spinner" id="search-main-loader"></div>';
+            
+            // Fire the first batch
+            fetchSearchBatch(true);
+        }, 400); 
+    });
 
-            for(let c of localSearchCache) {
-                if(matchedNames.length < 10 && c.name.includes(term)) matchedNames.push(c);
-                else if(matchedIDs.length < 10 && c.id.includes(term)) matchedIDs.push(c);
-                if(matchedNames.length === 10 && matchedIDs.length === 10) break;
+    async function fetchSearchBatch(isFirst = false) {
+        if (searchIsFetching || (!searchNameHasMore && !searchIdHasMore)) return;
+        searchIsFetching = true;
+        
+        const term = currentSearchTerm;
+        const nameTerm = term.charAt(0).toUpperCase() + term.slice(1).toLowerCase();
+        const idTerm = term.toUpperCase(); 
+
+        const usersRef = collection(db, "customers");
+        let nameSnap = null;
+        let idSnap = null;
+        const promises = [];
+
+        if (!isFirst) {
+            searchResultsListEl.insertAdjacentHTML('beforeend', '<div class="loader-spinner" id="search-batch-loader" style="margin: 10px auto;"></div>');
+        }
+
+        try {
+            // Parallel Name Query (Batch of 5)
+            if (searchNameHasMore) {
+                let qName = query(usersRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(5));
+                if (!isFirst && searchNameLastVisible) qName = query(qName, startAfter(searchNameLastVisible));
+                promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
             }
 
-            const combined = [...matchedNames, ...matchedIDs];
-            
-            if(combined.length === 0) {
+            // Parallel ID Query (Batch of 5)
+            if (searchIdHasMore) {
+                let qId = query(usersRef, where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(5));
+                if (!isFirst && searchIdLastVisible) qId = query(qId, startAfter(searchIdLastVisible));
+                promises.push(getDocs(qId).then(snap => { idSnap = snap; }));
+            }
+
+            await Promise.all(promises);
+
+            let results = [];
+
+            // Process Name Batch
+            if (nameSnap && !nameSnap.empty) {
+                searchNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
+                searchNameHasMore = nameSnap.docs.length === 5;
+                nameSnap.forEach(d => results.push({ rawId: d.id, ...d.data() }));
+            } else if (nameSnap) {
+                searchNameHasMore = false;
+            }
+
+            // Process ID Batch
+            if (idSnap && !idSnap.empty) {
+                searchIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
+                searchIdHasMore = idSnap.docs.length === 5;
+                idSnap.forEach(d => results.push({ rawId: d.id, ...d.data() }));
+            } else if (idSnap) {
+                searchIdHasMore = false;
+            }
+
+            // Deduplicate across the entire Infinite Scroll session
+            const finalResults = [];
+            results.forEach(c => {
+                if (!currentSearchRenderedIds.has(c.rawId)) {
+                    currentSearchRenderedIds.add(c.rawId);
+                    finalResults.push(c);
+                }
+            });
+
+            // Clear active loaders
+            if (isFirst) {
+                searchResultsListEl.innerHTML = '';
+            } else {
+                const batchLoader = document.getElementById('search-batch-loader');
+                if (batchLoader) batchLoader.remove();
+            }
+
+            if (isFirst && finalResults.length === 0) {
                 emptyState.style.display = 'block';
             } else {
                 emptyState.style.display = 'none';
-                combined.forEach(c => {
+                finalResults.forEach(c => {
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.id = `search-card-${c.rawId}`; 
                     card.innerHTML = `
                         <div class="card-top">
                             <div>
-                                <div class="card-title" id="search-card-name-${c.rawId}">${c.rawName}</div> 
-                                <div class="card-sub" id="search-card-phone-${c.rawId}">ID: ${c.rawId} | 📞 ${c.phone}</div> 
+                                <div class="card-title" id="search-card-name-${c.rawId}">${c.name || 'Unknown'}</div> 
+                                <div class="card-sub" id="search-card-phone-${c.rawId}">ID: ${c.rawId} | 📞 ${c.phone || 'N/A'}</div> 
                             </div>
                         </div>
                     `;
@@ -839,7 +911,23 @@
                     searchResultsListEl.appendChild(card);
                 });
             }
-        }, 300); 
+        } catch (e) {
+            console.error("Search fetch error", e);
+            if (isFirst) searchResultsListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Search failed to connect.</p>';
+        }
+        searchIsFetching = false;
+    }
+
+    // Attach Intersection Scroll Watcher to Master Scroll Area
+    document.getElementById('main-scroll-area').addEventListener('scroll', function() {
+        if (isSearchMode) {
+            if ((this.clientHeight + this.scrollTop) >= this.scrollHeight - 100) {
+                if ((searchNameHasMore || searchIdHasMore) && !searchIsFetching) {
+                    vibrate(10);
+                    fetchSearchBatch(false);
+                }
+            }
+        }
     });
 
     // --- 4. Level 2: Customer Ledger & Products ---
@@ -1479,20 +1567,7 @@
             if (searchPhoneEl) searchPhoneEl.innerText = `ID: ${activeCustomer.id} | 📞 ${newPhone || 'N/A'}`;
 
             // 3. Update RAM Cache Manually
-            const cacheIndex = localSearchCache.findIndex(c => c.rawId === activeCustomer.id);
-            if (cacheIndex !== -1) {
-                localSearchCache[cacheIndex].name = newName.toLowerCase();
-                localSearchCache[cacheIndex].rawName = newName;
-                localSearchCache[cacheIndex].phone = newPhone;
-            } else {
-                localSearchCache.push({
-                    id: activeCustomer.id.toLowerCase(),
-                    name: newName.toLowerCase(),
-                    rawName: newName,
-                    rawId: activeCustomer.id,
-                    phone: newPhone
-                });
-            }
+            // (Disabled: Migrated to fully Live Paginated Search, background dict removed)
             
             vibrate([30, 50]);
             window.history.back(); // Invokes popstate securely
