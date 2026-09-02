@@ -70,7 +70,7 @@
     .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 0px !important; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
     .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .detail-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #f9fafb; position: relative; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
-    .detail-row svg { width: 18px; height: 18px; stroke: currentColor; }
+    .detail-row svg { width: 18px; height: 18px; stroke: currentColor; flex-shrink: 0; }
 
     /* --- Product & Ledger UI (Level 2) --- */
     .product-item { background: var(--surface-card); padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: var(--shadow); }
@@ -198,7 +198,8 @@
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, getDocs, doc, getDoc, limit, startAfter } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    // ADDED where and orderBy to import to support the new live pagination queries
+    import { collection, query, getDocs, doc, getDoc, limit, startAfter, where, orderBy } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // --- Global State ---
     let currentUser = null;
@@ -208,6 +209,15 @@
     let isSearchMode = false;
     let searchTimeout = null;
     let isOpeningCustomer = false; 
+
+    // --- NEW: Live Paginated Search State ---
+    let searchNameLastVisible = null;
+    let searchIdLastVisible = null;
+    let searchNameHasMore = true;
+    let searchIdHasMore = true;
+    let searchIsFetching = false;
+    let currentSearchTerm = "";
+    let currentSearchRenderedIds = new Set();
 
     // Pagination State
     let lastVisibleDoc = null;
@@ -385,6 +395,10 @@
         window.history.back();
     };
 
+    // -----------------------------------------------------------------------------
+    // OLD BACKGROUND CACHE SEARCH (Preserved but commented out per strict instructions)
+    // -----------------------------------------------------------------------------
+    /*
     searchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
         const term = e.target.value.trim().toLowerCase();
@@ -436,6 +450,152 @@
                 });
             }
         }, 300); 
+    });
+    */
+
+    // -----------------------------------------------------------------------------
+    // NEW ADVANCED LIVE DOUBLE-QUERY INFINITE SCROLL SEARCH ENGINE
+    // -----------------------------------------------------------------------------
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const term = e.target.value.trim();
+        
+        if(term.length === 0) {
+            searchResultsListEl.style.display = 'none';
+            customerListEl.style.display = 'block';
+            loadMoreTrigger.style.display = 'block';
+            emptyState.style.display = 'none';
+            return;
+        }
+
+        customerListEl.style.display = 'none';
+        loadMoreTrigger.style.display = 'none'; // Safely disable main list intersection triggers
+        searchResultsListEl.style.display = 'block';
+
+        searchTimeout = setTimeout(() => {
+            // Reset Search State
+            currentSearchTerm = term;
+            searchNameLastVisible = null;
+            searchIdLastVisible = null;
+            searchNameHasMore = true;
+            searchIdHasMore = true;
+            currentSearchRenderedIds.clear();
+            
+            searchResultsListEl.innerHTML = '<div class="loader-spinner" id="search-main-loader"></div>';
+            
+            // Fire the first batch
+            fetchSearchBatch(true);
+        }, 400); 
+    });
+
+    async function fetchSearchBatch(isFirst = false) {
+        if (searchIsFetching || (!searchNameHasMore && !searchIdHasMore)) return;
+        searchIsFetching = true;
+        
+        const term = currentSearchTerm;
+        const nameTerm = term.charAt(0).toUpperCase() + term.slice(1).toLowerCase();
+        const idTerm = term.toUpperCase(); 
+
+        const usersRef = collection(db, "customers");
+        let nameSnap = null;
+        let idSnap = null;
+        const promises = [];
+
+        if (!isFirst) {
+            searchResultsListEl.insertAdjacentHTML('beforeend', '<div class="loader-spinner" id="search-batch-loader" style="margin: 10px auto;"></div>');
+        }
+
+        try {
+            // Parallel Name Query (Batch of 5)
+            if (searchNameHasMore) {
+                let qName = query(usersRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(5));
+                if (!isFirst && searchNameLastVisible) qName = query(qName, startAfter(searchNameLastVisible));
+                promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
+            }
+
+            // Parallel ID Query (Batch of 5)
+            if (searchIdHasMore) {
+                let qId = query(usersRef, where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(5));
+                if (!isFirst && searchIdLastVisible) qId = query(qId, startAfter(searchIdLastVisible));
+                promises.push(getDocs(qId).then(snap => { idSnap = snap; }));
+            }
+
+            await Promise.all(promises);
+
+            let results = [];
+
+            // Process Name Batch
+            if (nameSnap && !nameSnap.empty) {
+                searchNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
+                searchNameHasMore = nameSnap.docs.length === 5;
+                nameSnap.forEach(d => results.push({ rawId: d.id, ...d.data() }));
+            } else if (nameSnap) {
+                searchNameHasMore = false;
+            }
+
+            // Process ID Batch
+            if (idSnap && !idSnap.empty) {
+                searchIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
+                searchIdHasMore = idSnap.docs.length === 5;
+                idSnap.forEach(d => results.push({ rawId: d.id, ...d.data() }));
+            } else if (idSnap) {
+                searchIdHasMore = false;
+            }
+
+            // Deduplicate across the entire Infinite Scroll session
+            const finalResults = [];
+            results.forEach(c => {
+                if (!currentSearchRenderedIds.has(c.rawId)) {
+                    currentSearchRenderedIds.add(c.rawId);
+                    finalResults.push(c);
+                }
+            });
+
+            // Clear active loaders
+            if (isFirst) {
+                searchResultsListEl.innerHTML = '';
+            } else {
+                const batchLoader = document.getElementById('search-batch-loader');
+                if (batchLoader) batchLoader.remove();
+            }
+
+            if (isFirst && finalResults.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                finalResults.forEach(c => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.id = `search-card-${c.rawId}`; 
+                    card.innerHTML = `
+                        <div class="card-top">
+                            <div>
+                                <div class="card-title" id="search-card-name-${c.rawId}">${c.name || 'Unknown'}</div> 
+                                <div class="card-sub" id="search-card-phone-${c.rawId}">ID: ${c.rawId} | 📞 ${c.phone || 'N/A'}</div> 
+                            </div>
+                        </div>
+                    `;
+                    card.onclick = () => loadCustomerDetail(c.rawId);
+                    searchResultsListEl.appendChild(card);
+                });
+            }
+        } catch (e) {
+            console.error("Search fetch error", e);
+            if (isFirst) searchResultsListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Search failed to connect.</p>';
+        }
+        searchIsFetching = false;
+    }
+
+    // Attach Intersection Scroll Watcher to Master Scroll Area
+    document.getElementById('main-scroll-area').addEventListener('scroll', function() {
+        if (isSearchMode) {
+            if ((this.clientHeight + this.scrollTop) >= this.scrollHeight - 100) {
+                if ((searchNameHasMore || searchIdHasMore) && !searchIsFetching) {
+                    vibrate(10);
+                    fetchSearchBatch(false);
+                }
+            }
+        }
     });
 
     // --- 4. Level 2: Customer Ledger & Products ---
