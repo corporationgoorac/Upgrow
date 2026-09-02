@@ -1,0 +1,38 @@
+FROM node:18-bullseye-slim
+
+# SET THE SERVER TIMEZONE TO INDIAN STANDARD TIME (IST)
+ENV TZ="Asia/Kolkata"
+
+# 1. Skip Puppeteer's automatic Chrome download (Saves time & storage)
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+# 2. Install Chromium and required Linux fonts for check.js image generation
+RUN apt-get update && apt-get install -y \
+    chromium \
+    fonts-liberation \
+    fontconfig \
+    --no-install-recommends \
+    --no-install-suggests && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up working directory
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install --omit=dev && npm cache clean --force
+
+# 3. Fixed syntax typo: Copy the rest of your application code
+COPY . .
+
+# CRITICAL FOR HUGGING FACE: Hugging Face runs spaces as a non-root user (UID 1000).
+# We must give this user ownership of the application folder so WhatsApp can write session files securely.
+RUN chown -R 1000:1000 /app
+USER 1000
+
+# Expose the Hugging Face port
+EXPOSE 7860
+
+# Start the server
+CMD ["node", "server.js"]

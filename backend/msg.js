@@ -116,11 +116,29 @@ function getRandomConfirmationTemplate(agentName, count, formattedAmount, timeNo
 // 1. WHATSAPP CLIENT INITIALIZATION
 // ---------------------------------------------------------
 console.log("⏳ Initializing WhatsApp Engine...");
+
+// Cross-Platform Browser Detector (Works on Windows & Linux)
+const getBrowserPath = () => {
+    const paths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/snap/bin/chromium'
+    ];
+    for (const p of paths) {
+        if (fs.existsSync(p)) return p;
+    }
+    return undefined; // Falls back to internal Puppeteer browser if installed
+};
+
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './whatsapp-session' }),
     authTimeoutMs: 60000, 
     puppeteer: {
-        executablePath: '/usr/bin/chromium', 
+        executablePath: getBrowserPath(), 
         headless: true, 
         timeout: 60000, 
         args: [

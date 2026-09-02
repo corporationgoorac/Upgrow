@@ -1,31 +1,18 @@
 {
-  "name": "up-field-backend",
-  "version": "2.0.0",
-  "description": "Up Field / Goorac Systems API and Headless WhatsApp Engine",
+  "name": "meena-groups-admin-backend",
+  "version": "1.0.0",
+  "description": "Admin Server for Meena Groups via Hugging Face",
   "main": "server.js",
   "scripts": {
-    "start": "node --expose-gc server.js",
-    "dev": "nodemon --expose-gc server.js"
+    "start": "node server.js"
   },
-  "keywords": [
-    "express",
-    "firebase",
-    "whatsapp-bot",
-    "puppeteer",
-    "automation"
-  ],
-  "author": "Goorac Systems",
-  "license": "MIT",
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "firebase-admin": "^12.1.0",
-    "node-cron": "^3.0.3",
+    "cors": "2.8.5",
+    "dotenv": "16.4.5",
+    "express": "5.0.1",
+    "firebase-admin": "13.8.0",
+    "node-cron": "3.0.3",
     "qrcode": "^1.5.3",
-    "whatsapp-web.js": "^1.23.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "whatsapp-web.js": "1.34.7"
   }
 }
