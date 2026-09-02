@@ -295,13 +295,17 @@
         // Query 2: All Weekly Lines specifically for Today
         const qWeekly = query(linesRef, where("scheduleType", "==", "weekly"), where("scheduleDay", "==", todayStr));
         
+        // UPGRADED: Query 2.5: All Custom Lines containing Today's string in their array
+        const qCustom = query(linesRef, where("scheduleType", "==", "custom"), where("scheduleDays", "array-contains", todayStr));
+
         // Query 3: All Agents who actually have a route assigned for Today
         const qAgents = query(usersRef, where(`schedule.${todayStr}`, "!=", null));
 
-        // Fire all 3 simultaneously for maximum speed
-        const [snapDaily, snapWeekly, snapAgents] = await Promise.all([
+        // Fire all 4 simultaneously for maximum speed
+        const [snapDaily, snapWeekly, snapCustom, snapAgents] = await Promise.all([
           getDocs(qDaily),
           getDocs(qWeekly),
+          getDocs(qCustom),
           getDocs(qAgents)
         ]);
 
@@ -309,6 +313,7 @@
         const activeLines = [];
         snapDaily.forEach(d => activeLines.push(d.data()));
         snapWeekly.forEach(d => activeLines.push(d.data()));
+        snapCustom.forEach(d => activeLines.push(d.data())); // Safely injecting the new custom lines!
 
         // 2. Map the agents by the Line ID they are assigned to today
         const agentsMap = {}; 
