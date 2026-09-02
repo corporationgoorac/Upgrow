@@ -472,9 +472,24 @@
   <div class="modal" id="modal-product">
     <div class="modal-handle"></div>
     <h3>Add New Product</h3>
+    
+    <div class="toggle-wrapper" style="margin-bottom: 15px;">
+      <span>Chittai Product Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="chittai-toggle-prod-l2">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
     <div class="input-group"><label>Product Name</label><input type="text" id="add-prod-name"></div>
     <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="add-prod-total"></div>
     <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="add-prod-paid"></div>
+    
+    <div class="input-group" id="chittai-due-group-prod-l2" style="display:none;">
+      <label>Starting Due #</label>
+      <input type="number" id="add-prod-due-l2" value="1" inputmode="numeric">
+    </div>
+    
     <button class="btn-full" id="btn-save-product">Add Product</button>
   </div>
 
@@ -1158,7 +1173,21 @@
     // Old Level 2 Modal compatibility
     window.openAddProductModal = (custIdOverride = null) => {
       if(custIdOverride) activeCustId = custIdOverride; 
-      document.getElementById('add-prod-name').value=''; document.getElementById('add-prod-total').value=''; document.getElementById('add-prod-paid').value='';
+      
+      // Reset text inputs
+      document.getElementById('add-prod-name').value = ''; 
+      document.getElementById('add-prod-name').readOnly = false;
+      document.getElementById('add-prod-total').value = ''; 
+      document.getElementById('add-prod-paid').value = '';
+      
+      // Reset Chittai toggle elements
+      const toggle = document.getElementById('chittai-toggle-prod-l2');
+      if (toggle) toggle.checked = false;
+      const dueGroup = document.getElementById('chittai-due-group-prod-l2');
+      if (dueGroup) dueGroup.style.display = 'none';
+      const startDue = document.getElementById('add-prod-due-l2');
+      if (startDue) startDue.value = '1';
+
       openModal('modal-product');
     };
 
@@ -1167,6 +1196,11 @@
       const pName = document.getElementById('add-prod-name').value.trim();
       const pTotal = Number(document.getElementById('add-prod-total').value);
       const pPaid = Number(document.getElementById('add-prod-paid').value);
+      
+      // Capture Level 2 Chittai data
+      const isChittai = document.getElementById('chittai-toggle-prod-l2')?.checked || false;
+      const startDue = parseInt(document.getElementById('add-prod-due-l2')?.value) || 1;
+
       if(!pName || !pTotal) return customAlert("Fill name and total", "Error");
 
       const btn = document.getElementById('btn-save-product'); btn.disabled = true; btn.innerText = "Adding...";
@@ -1185,7 +1219,19 @@
                 paid: pPaid, 
                 pending: pTotal-pPaid, 
                 addedAt: new Date().toISOString(),
-                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
+                // Inject Chittai variables if toggled
+                ...(isChittai && { isChittai: true, startingDue: startDue }),
+                payments: pPaid > 0 ? [{ 
+                    id: 'PAY_'+Date.now(), 
+                    amount: pPaid, 
+                    date: new Date().toISOString(), 
+                    type: 'advance', 
+                    method: 'cash', 
+                    agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', 
+                    pendingAfter: pTotal-pPaid,
+                    // Inject starting due into the advance payment
+                    ...(isChittai && { dueNumber: startDue })
+                }] : []
             };
             const updatedProds = cData.products ? [...cData.products, newP] : [newP];
             transaction.update(custRef, { products: updatedProds });
@@ -2246,6 +2292,25 @@
                 const isChittai = e.target.checked;
                 const prodName = document.getElementById('prod-name');
                 const dueGroup = document.getElementById('chittai-due-group');
+                
+                if (isChittai) {
+                    prodName.value = 'Chittai';
+                    prodName.readOnly = true;
+                    dueGroup.style.display = 'block';
+                } else {
+                    prodName.value = '';
+                    prodName.readOnly = false;
+                    dueGroup.style.display = 'none';
+                }
+            });
+        }
+        
+        const toggleL2 = document.getElementById('chittai-toggle-prod-l2');
+        if(toggleL2) {
+            toggleL2.addEventListener('change', (e) => {
+                const isChittai = e.target.checked;
+                const prodName = document.getElementById('add-prod-name');
+                const dueGroup = document.getElementById('chittai-due-group-prod-l2');
                 
                 if (isChittai) {
                     prodName.value = 'Chittai';
