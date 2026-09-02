@@ -103,7 +103,6 @@
     .btn-act svg { width: 14px; height: 14px; stroke-width: 2.5; pointer-events: none; }
 
     /* --- Floating Action Button (FAB) --- */
-    /* ADJUSTED GAP: changed 90px to 30px */
     .fab { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 30px); right: 20px; background: var(--primary); color: white; border: none; padding: 16px 24px; border-radius: 30px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 90; transition: transform 0.2s; }
     .fab:active { transform: scale(0.95); }
     .fab svg { width: 22px; height: 22px; stroke-width: 2.5; fill: none; stroke: currentColor; pointer-events: none; }
@@ -187,7 +186,7 @@
   <div id="screen-detail" class="screen hidden-right">
     <div class="header">
       <button class="back-btn" onclick="window.history.back()">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 5"></polyline></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
       </button>
       <h2 style="font-size: 1.15rem; margin-left: 5px;" id="detail-agent-name">Agent Name</h2>
     </div>
