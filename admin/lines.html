@@ -125,12 +125,12 @@
     .btn-delete-prod { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
     .btn-circle svg { width: 18px; height: 18px; stroke-width: 2.5; }
 
-    /* UPGRADED: Dynamic 40vh Scrollable Table */
-    .table-wrapper { width: 100%; overflow-x: auto; max-height: 40vh; -webkit-overflow-scrolling: touch; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border); }
-    table { width: 100%; min-width: 300px; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-    th { background: rgba(107, 114, 128, 0.1); padding: 10px; text-transform: uppercase; color: var(--text-sub); font-weight: 700; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2; }
-    td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-weight: 500; }
-    tr:last-child td { border-bottom: none; }
+    /* UPGRADED: Dynamic 40vh Scrollable Table (Synced perfectly with Reports style) */
+    .table-wrapper { width: 100%; overflow-x: auto; max-height: 40vh; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-card); }
+    table { width: 100%; border-collapse: collapse; min-width: 350px; }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; white-space: nowrap; }
+    th { background: var(--bg-color); font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 2; }
+    td { color: var(--text-main); font-weight: 600; }
 
     /* --- Action Icons --- */
     .icon-btn { background: var(--surface-card); border: none; padding: 8px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -173,8 +173,8 @@
     .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform 0.2s; }
     .color-option.selected { transform: scale(1.15); border-color: var(--text-main); }
 
-    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; transition: opacity 0.3s, transform 0.2s; }
-    .btn-full:active:not(:disabled) { transform: scale(0.96); }
+    .btn-full { width: 100%; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background-color: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); margin-top: 15px; transition: transform 0.2s; }
+    .btn-full:active { transform: scale(0.96); }
 
     .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .dash-card { background: var(--bg-color); padding: 12px; border-radius: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
