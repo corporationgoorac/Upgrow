@@ -187,7 +187,7 @@
   <div id="screen-detail" class="screen hidden-right">
     <div class="header">
       <button class="back-btn" onclick="window.history.back()">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 5"></polyline></svg>
       </button>
       <h2 style="font-size: 1.15rem; margin-left: 5px;" id="detail-agent-name">Agent Name</h2>
     </div>
@@ -799,6 +799,7 @@
                 if(!prod.payments) prod.payments = [];
                 
                 // NEW FIX: Omitting cash_split and online_split completely from the push to Master Ledger database.
+                /* --- OLD LOGIC COMMENTED OUT TO PRESERVE LINES ---
                 prod.payments.push({
                     id: 'PAY_' + Date.now() + Math.floor(Math.random()*1000),
                     amount: amt,
@@ -808,6 +809,43 @@
                     agent_uid: item.agentId || 'system',
                     pendingAfter: prod.pending
                 });
+                ------------------------------------------------- */
+
+                // --- NEW CHITTAI MASTER APPROVAL SPLIT ENGINE ---
+                if (item.isChittai && item.numDues > 1) {
+                    let baseAmt = Math.floor(amt / item.numDues);
+                    let remainder = amt - (baseAmt * (item.numDues - 1));
+                    let runningPending = (parseInt(prod.pending) || 0) + amt; // Temporarily restore to step down properly
+                    
+                    for (let i = 0; i < item.numDues; i++) {
+                        let currentDue = (item.nextDue || 1) + i;
+                        let currentAmt = (i === item.numDues - 1) ? remainder : baseAmt;
+                        runningPending = Math.max(0, runningPending - currentAmt);
+
+                        prod.payments.push({
+                            id: 'PAY_' + Date.now() + Math.floor(Math.random()*1000) + '_DUE' + currentDue,
+                            amount: currentAmt,
+                            date: new Date().toISOString(),
+                            type: 'collection',
+                            method: item.method || 'cash',
+                            agent_uid: item.agentId || 'system',
+                            pendingAfter: runningPending,
+                            dueNumber: currentDue,
+                            isChittai: true
+                        });
+                    }
+                } else {
+                    prod.payments.push({
+                        id: 'PAY_' + Date.now() + Math.floor(Math.random()*1000),
+                        amount: amt,
+                        date: new Date().toISOString(),
+                        type: 'collection',
+                        method: item.method || 'cash',
+                        agent_uid: item.agentId || 'system',
+                        pendingAfter: prod.pending,
+                        ...(item.isChittai && { dueNumber: item.nextDue || item.targetDue || 1, isChittai: true })
+                    });
+                }
 
                 customerUpdates[custId].logsToDelete.push(item);
             }
