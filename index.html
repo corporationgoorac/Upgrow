@@ -125,6 +125,11 @@
     .badge.processing { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
     .badge.failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
 
+    /* --- NEW METHOD BADGES --- */
+    .badge-cash { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .badge-online { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+    .badge-split { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+
     /* Loaders */
     .loader-circle { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; display: none; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -295,7 +300,13 @@
                                             amount: entry.amount,
                                             date: entry.timestamp,
                                             status: entry.status, // "pending" or "submitted"
-                                            method: entry.method || entry.type
+                                            method: entry.method || entry.type,
+                                            // --- NEW: Add Chittai variables for the timeline UI ---
+                                            isChittai: entry.isChittai,
+                                            dueNumber: entry.dueNumber,
+                                            nextDue: entry.nextDue,
+                                            targetDue: entry.targetDue,
+                                            numDues: entry.numDues
                                         });
                                     }
                                 }
@@ -500,13 +511,34 @@
                 }
                 // -----------------------------------------------------------
 
-                // Interpret Type (Cash vs Online)
+                // Interpret Type (Cash vs Online vs Split)
                 const rawType = (pay.type || pay.method || "cash").toLowerCase();
                 let typeIcon = '';
-                if(rawType.includes("online") || rawType.includes("upi") || rawType.includes("bank")) {
+                let methodBadgeHtml = '';
+
+                if(rawType === 'split') {
+                    typeIcon = `<svg class="tl-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`; // Split icon
+                    methodBadgeHtml = `<span class="badge badge-split">Split</span>`;
+                } else if(rawType.includes("online") || rawType.includes("upi") || rawType.includes("bank")) {
                     typeIcon = `<svg class="tl-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>`; // Smartphone icon
+                    methodBadgeHtml = `<span class="badge badge-online">Online</span>`;
                 } else {
                     typeIcon = `<svg class="tl-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>`; // Cash bill icon
+                    methodBadgeHtml = `<span class="badge badge-cash">Cash</span>`;
+                }
+
+                // --- NEW: Chittai Due Badge Logic ---
+                let chittaiBadgeHtml = '';
+                if (pay.isChittai) {
+                    if (pay.dueNumber) {
+                        chittaiBadgeHtml = `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); margin-left: 6px;">Due #${pay.dueNumber}</span>`;
+                    } else if (pay.nextDue) {
+                        if (pay.targetDue && pay.targetDue > pay.nextDue) {
+                            chittaiBadgeHtml = `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); margin-left: 6px;">Dues #${pay.nextDue} to #${pay.targetDue}</span>`;
+                        } else {
+                            chittaiBadgeHtml = `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); margin-left: 6px;">Due #${pay.nextDue}</span>`;
+                        }
+                    }
                 }
 
                 const item = document.createElement('div');
@@ -514,11 +546,12 @@
                 item.innerHTML = `
                     <div class="timeline-dot ${statusClass}"></div>
                     <div class="tl-header">
-                        <span class="tl-date">${dateStr}</span>
+                        <span class="tl-date" style="display:flex; align-items:center;">${dateStr} ${chittaiBadgeHtml}</span>
                         <span class="badge ${statusClass}">${statusText}</span>
                     </div>
-                    <div class="tl-header" style="margin-bottom:0;">
+                    <div class="tl-header" style="margin-bottom:0; margin-top:8px;">
                         <span class="tl-amount">${typeIcon} ${fmt(pAmt)}</span>
+                        ${methodBadgeHtml}
                     </div>
                 `;
                 tlContainer.appendChild(item);
