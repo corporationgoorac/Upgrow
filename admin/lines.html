@@ -44,6 +44,16 @@
 
     body { background-color: var(--bg-color); color: var(--text-main); overflow-x: hidden; -ms-overflow-style: none !important; scrollbar-width: none !important; }
 
+    /* Chittai Toggle */
+    .toggle-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: var(--bg-color); border-radius: 14px; border: 1px dashed var(--border); }
+    .toggle-wrapper span { font-size: 0.95rem; font-weight: 800; color: var(--text-main); }
+    .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 34px; }
+    .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input:checked + .toggle-slider { background-color: var(--primary); }
+    input:checked + .toggle-slider:before { transform: translateX(22px); }
+
     /* Animations */
     @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
     @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -437,12 +447,22 @@
         <button class="icon-btn add" id="btn-fetch-gps"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
       </div>
     </div>
+    
+    <div class="toggle-wrapper">
+      <span>Chittai Customer Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="chittai-toggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
     <div id="initial-product-section">
       <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
       <h4 style="margin-bottom:15px; color:var(--primary);">Initial Product</h4>
       <div class="input-group"><label>Product Name</label><input type="text" id="prod-name" placeholder="e.g. 32-inch LED TV"></div>
       <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="prod-total"></div>
       <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="prod-paid"></div>
+      <div class="input-group" id="chittai-due-group" style="display:none;"><label>Starting Due #</label><input type="number" id="prod-due" value="1" inputmode="numeric"></div>
     </div>
     <button class="btn-full" id="btn-save-cust">Save Customer</button>
   </div>
@@ -1047,6 +1067,13 @@
       document.getElementById('cust-id').readOnly = false; document.getElementById('cust-id').value = '';
       document.getElementById('cust-id-tick').style.display = 'none'; document.getElementById('cust-id-cross').style.display = 'none';
       document.getElementById('cust-name').value = ''; document.getElementById('cust-phone').value = ''; document.getElementById('cust-loc').value = '';
+      document.getElementById('prod-name').value = '';
+      document.getElementById('prod-name').readOnly = false;
+      document.getElementById('prod-total').value = '';
+      document.getElementById('prod-paid').value = '';
+      document.getElementById('chittai-toggle').checked = false;
+      document.getElementById('chittai-due-group').style.display = 'none';
+      document.getElementById('prod-due').value = '1';
       document.getElementById('initial-product-section').style.display = 'block';
       document.getElementById('btn-save-cust').onclick = saveNewCustomer;
       document.getElementById('btn-fetch-gps').click(); 
@@ -1062,6 +1089,8 @@
       const pName = document.getElementById('prod-name').value.trim();
       const pTotal = Number(document.getElementById('prod-total').value);
       const pPaid = Number(document.getElementById('prod-paid').value);
+      const isChittai = document.getElementById('chittai-toggle').checked;
+      const startDue = parseInt(document.getElementById('prod-due').value) || 1;
 
       if(!id || !name || !pName || !pTotal) return customAlert("Fill required fields", "Error");
       if(!(await checkIdAvailability('customers', id, document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross')))) return customAlert("ID is already taken", "Error");
@@ -1075,7 +1104,17 @@
             paid: pPaid, 
             pending: pTotal-pPaid, 
             addedAt: new Date().toISOString(),
-            payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
+            ...(isChittai && { isChittai: true, startingDue: startDue }),
+            payments: pPaid > 0 ? [{ 
+                id: 'PAY_'+Date.now(), 
+                amount: pPaid, 
+                date: new Date().toISOString(), 
+                type: 'advance', 
+                method: 'cash', 
+                agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', 
+                pendingAfter: pTotal-pPaid,
+                ...(isChittai && { dueNumber: startDue })
+            }] : []
         };
         await setDoc(doc(db, "customers", id), { id, lineId: activeLineId, name, phone, location: loc, products: [initProduct], createdAt: serverTimestamp() });
         
@@ -1243,7 +1282,7 @@
                     const dStr = new Date(pay.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year: 'numeric' });
                     payHtml += `
                     <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 12px 10px;">${pay.sno}</td>
+                        <td style="padding: 12px 10px;">${pay.dueNumber ? '#' + pay.dueNumber : pay.sno}</td>
                         <td style="padding: 12px 10px; white-space: nowrap;">${dStr}<br><span style="font-size:0.7rem; color:var(--text-sub); text-transform:uppercase;">${pay.method||'CASH'}</span></td>
                         <td style="padding: 12px 10px; color:var(--primary); font-weight:700;">${fmt(pay.amount)}</td>
                         <td style="padding: 12px 10px; color:var(--danger); font-weight:700;">${fmt(pay.displayPending)}</td>
@@ -1865,6 +1904,28 @@
         link.click();
         document.body.removeChild(link);
     };
+
+    // Toggle Listener Initialization (Handles Both Modals)
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggle = document.getElementById('chittai-toggle');
+        if(toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChittai = e.target.checked;
+                const prodName = document.getElementById('prod-name');
+                const dueGroup = document.getElementById('chittai-due-group');
+                
+                if (isChittai) {
+                    prodName.value = 'Chittai';
+                    prodName.readOnly = true;
+                    dueGroup.style.display = 'block';
+                } else {
+                    prodName.value = '';
+                    prodName.readOnly = false;
+                    dueGroup.style.display = 'none';
+                }
+            });
+        }
+    });
 
     // Initial Load
     window.addEventListener('load', async () => { 
