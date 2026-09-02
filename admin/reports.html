@@ -411,180 +411,220 @@
     </div>
   </div>
 
+  <!-- Add Product Sheet (Level 3 Native History Binding) -->
+  <div class="bottom-sheet" id="add-product-sheet-l3">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Add New Product</h3>
+    <div class="toggle-wrapper" style="margin-bottom: 15px;">
+      <span>Chittai Product Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="chittai-toggle-prod-l3">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="input-group"><label>Product Name</label><input type="text" id="add-prod-name-l3" placeholder="e.g. Samsung 32-inch TV"></div>
+    <div class="input-group"><label>Total Amount (₹)</label><input type="number" id="add-prod-total-l3" inputmode="numeric"></div>
+    <div class="input-group"><label>Amount Paid (Advance) (₹)</label><input type="number" id="add-prod-paid-l3" inputmode="numeric"></div>
+    <div class="input-group" id="chittai-due-group-prod-l3" style="display:none;"><label>Starting Due #</label><input type="number" id="add-prod-due-l3" value="1" inputmode="numeric"></div>
+    <button class="btn-full" id="btn-save-new-product-l3" onclick="saveNewProductLevel3()">Add Product</button>
+  </div>
+
+  <!-- Payment Modal (Add & Edit) Level 3 Duplicate to preserve exact lines structure -->
+  <div class="bottom-sheet" id="payment-sheet-l3">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-title-l3">Record Payment</h3>
+    <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="sheet-sub-l3">Product Name</p>
+    <div class="dashboard">
+        <div class="dash-card"><div class="dash-title">Total Pending</div><div class="dash-value pending" id="sheet-pending-l3">₹0</div></div>
+        <div class="dash-card"><div class="dash-title">Total Paid</div><div class="dash-value paid" id="sheet-paid-l3">₹0</div></div>
+    </div>
+    
+    <!-- Chittai specific inputs -->
+    <div id="chittai-payment-ui-l3" style="display: none; background: rgba(245, 158, 11, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--warning); margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+            <div><span style="font-size:0.75rem; color:var(--text-sub); font-weight:800; text-transform:uppercase;">Next Due</span><div id="chittai-next-due-l3" style="font-size:1.2rem; font-weight:800; color:var(--text-main);">#1</div></div>
+            <div style="text-align:right;"><span style="font-size:0.75rem; color:var(--text-sub); font-weight:800; text-transform:uppercase;">Target Due #</span><br><input type="number" id="chittai-target-due-l3" class="chittai-target-due" style="width: 70px; padding: 6px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; font-weight: 800; font-size: 1.1rem; margin-top: 4px; background:var(--surface-color); color:var(--text-main);" inputmode="numeric"></div>
+        </div>
+        <div id="chittai-preview-l3" class="chittai-preview" style="font-size: 0.8rem; font-weight: 700; color: var(--warning); text-align: center;">Enter amount to preview split.</div>
+    </div>
+
+    <div class="input-group"><label>Amount Collected (₹)</label><input type="number" id="pay-amount-l3" class="pay-amount-input" inputmode="numeric" placeholder="Enter amount"></div>
+    <div class="input-group"><label>Date</label><input type="date" id="pay-date-l3"></div>
+    <div class="input-group">
+      <label>Payment Method</label>
+      <select id="pay-method-l3"><option value="cash">Cash</option><option value="online">Online / UPI</option></select>
+    </div>
+    <button class="btn-full" id="btn-save-payment-l3" onclick="savePayment()">Save Payment</button>
+  </div>
+
+  <!-- Edit Info Modal (Level 3) -->
+  <div class="bottom-sheet" id="edit-customer-sheet-l3">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 20px; font-size: 1.3rem; font-weight: 800;">Edit Info</h3>
+    <div class="input-group"><label>Customer ID (Read-only)</label><input type="text" id="edit-cust-id-l3" readonly style="opacity: 0.7; background: var(--skeleton-base);"></div>
+    <div class="input-group"><label>Customer Name</label><input type="text" id="edit-cust-name-l3"></div>
+    <div class="input-group"><label>Phone Number</label><input type="tel" id="edit-cust-phone-l3"></div>
+    <div class="input-group">
+      <label>GPS Location</label>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="edit-cust-loc-l3">
+        <button class="icon-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--primary); border-radius: 14px; padding: 0 16px; flex-shrink: 0;" onclick="fetchEditGpsLevel3()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
+      </div>
+    </div>
+    <button class="btn-full" id="btn-save-cust-l3" onclick="saveCustomerEditLevel3()">Save Changes</button>
+  </div>
+
+  <!-- Change Line Bottom Sheet (Redesigned) -->
+  <div class="bottom-sheet" id="line-picker-sheet-l3">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;">Change Area / Line</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <p style="color: var(--text-sub); font-size: 0.85rem; font-weight: 700; margin: 0;" id="picker-current-line-l3">Current Line: Loading...</p>
+    </div>
+
+    <!-- Redesigned Search Input -->
+    <div style="position: relative; width: 100%; flex-shrink: 0;">
+      <svg style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--text-sub); fill: none; stroke-width: 2.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" id="picker-search-input-l3" style="width: 100%; padding: 14px 14px 14px 45px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface-color); font-size: 1rem; color: var(--text-main); font-weight: 600; outline: none; transition: border-color 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);" placeholder="Search line name or ID...">
+    </div>
+
+    <div id="picker-list-l3">
+      <!-- MIGRATED LOADER: Now perfectly nested inside the scroll container -->
+      <div id="picker-loader-l3" class="loading-trigger">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Custom Confirm Modal -->
+  <div class="confirm-overlay" id="confirm-overlay-l3"></div>
+  <div class="confirm-modal" id="confirm-modal-l3">
+    <div class="confirm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
+    <h3>Are you sure?</h3>
+    <p id="confirm-msg-l3" style="color: var(--text-sub);">This action cannot be undone.</p>
+    <div class="alert-actions">
+      <button class="btn-alert btn-cancel" id="btn-confirm-cancel-l3">Cancel</button>
+      <button class="btn-alert btn-danger" id="btn-confirm-action-l3">Delete</button>
+    </div>
+  </div>
+
+  <!-- Custom Alert Modal -->
+  <div class="confirm-overlay" id="alert-overlay-l3"></div>
+  <div class="alert-modal" id="alert-modal-l3">
+    <div class="alert-icon warning"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
+    <h3 id="alert-title-l3">Notice</h3>
+    <p id="alert-msg-l3" style="margin-bottom: 25px; color: var(--text-sub);">Message goes here.</p>
+    <div class="alert-actions"><button class="btn-alert btn-primary" id="btn-alert-ok-l3" style="margin-bottom: 0;">OK</button></div>
+  </div>
+
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter, where, orderBy, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, setDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-    // --- Global State ---
     let currentUser = null;
-    let localSearchCache = []; 
-    let activeCustomer = null;
+    
+    // --- FIREBASE INDEX ERROR AUTO-HANDLER ---
+    window.handleFirebaseError = function(e, fallbackToAlert = false) {
+      if (!e || !e.message) return;
+      const urlMatch = e.message.match(/(https:\/\/console\.firebase\.google\.com[^\s]+)/);
+      if (urlMatch) {
+        let url = urlMatch[1].replace(/['"\)]$/, ''); 
+        const container = document.getElementById('index-pill-container');
+        const pill = document.createElement('div');
+        pill.className = 'index-pill';
+        pill.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          <span>Missing Database Index!<br>Tap to create instantly.</span>
+          <button class="close-pill">✕</button>
+        `;
+        pill.onclick = (evt) => {
+          if (evt.target.tagName !== 'BUTTON') window.open(url, '_blank');
+        };
+        pill.querySelector('.close-pill').onclick = (evt) => {
+          evt.stopPropagation();
+          pill.remove();
+        };
+        container.appendChild(pill);
+        vibrate([50, 100, 50]);
+      } else if (fallbackToAlert) {
+        customAlert(e.message);
+      }
+    };
+
+    // Format Currency
+    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+    const vibrate = (p = 40) => { if(navigator.vibrate) navigator.vibrate(p); };
+
+    // UPGRADED: Custom Ordinal Date Formatter
+    const formatOrdDate = (dateStr) => {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d)) return "";
+      const day = d.getDate();
+      const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const month = monthNames[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day}${suffix} ${month} ${year}`;
+    };
+
+    // State
+    let activeLineId = null;
+    let activeCustId = null;
+    let currentLineName = "";
+    
+    // Level 3 Advanced States
+    let activeCustomer = null; 
     let activeProductIndex = null;
     let activePaymentIndex = null; 
-    let isSearchMode = false;
-    let searchTimeout = null;
-    let isOpeningCustomer = false; 
 
     // Line Picker State (Fully Real-Time)
     let linesLastVisible = null, linesHasMore = true, linesLoading = false, linesSearch = "";
     let linesNameLastVisible = null, linesNameHasMore = true;
     let linesIdLastVisible = null, linesIdHasMore = true;
 
-    // Pagination State
-    let lastVisibleDoc = null;
-    let isFetching = false;
-    let hasMoreDocs = true;
-    const ITEMS_PER_PAGE = 10;
+    let custLastVisible = null, custHasMore = true, custLoading = false, custSearch = "";
+    let linesDataMap = {}; 
+    let editingLineId = null;
+    
+    // Custom Confirm Logic
+    let confirmResolve = null;
+    window.customConfirm = function(msg) {
+      return new Promise(resolve => {
+        document.getElementById('confirm-msg').innerText = msg;
+        if (!document.getElementById('confirm-overlay').classList.contains('active')) {
+          document.getElementById('confirm-overlay').classList.add('active');
+          document.getElementById('confirm-modal').classList.add('active');
+          window.history.pushState({ confirm: true }, '');
+        }
+        confirmResolve = resolve;
+      });
+    }
+    document.getElementById('btn-confirm-cancel').onclick = () => { window.history.back(); };
+    document.getElementById('btn-confirm-action').onclick = () => { 
+      if(confirmResolve) { confirmResolve(true); confirmResolve = null; }
+      window.history.back(); 
+    };
 
-    const richSkeletonHTML = `
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:70%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:40%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:60%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:50%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
-        <div class="card" style="border-color:transparent; box-shadow:none;"><div class="card-top"><div style="flex:1;"><div class="skeleton-box" style="height:18px; width:80%; border-radius:6px; margin-bottom:8px; animation-duration:1s;"></div><div class="skeleton-box" style="height:12px; width:30%; border-radius:6px; animation-duration:1s;"></div></div><div class="skeleton-box" style="height:24px; width:70px; border-radius:8px; animation-duration:1s;"></div></div></div>
-    `;
-
-    const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
-    const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
-
-    // --- Native Modal Overrides ---
+    // Custom Alert Logic
     let alertResolve = null;
     window.customAlert = function(msg, title="Notice") {
       return new Promise(resolve => {
         vibrate(50);
         document.getElementById('alert-title').innerText = title;
         document.getElementById('alert-msg').innerText = msg;
-        document.getElementById('custom-overlay').classList.add('active');
-        document.getElementById('custom-alert').classList.add('active');
-        window.history.pushState({ customAlert: true }, '');
+        if (!document.getElementById('alert-overlay').classList.contains('active')) {
+          document.getElementById('alert-overlay').classList.add('active');
+          document.getElementById('alert-modal').classList.add('active');
+          window.history.pushState({ alertOpen: true }, '');
+        }
         alertResolve = resolve;
       });
     }
-
-    let confirmResolve = null;
-    window.customConfirm = function(msg) {
-      return new Promise(resolve => {
-        vibrate([50,50]);
-        document.getElementById('confirm-msg').innerText = msg;
-        document.getElementById('custom-overlay').classList.add('active');
-        document.getElementById('custom-confirm').classList.add('active');
-        window.history.pushState({ customConfirm: true }, '');
-        confirmResolve = resolve;
-      });
-    }
-    document.getElementById('btn-confirm-cancel').onclick = () => window.history.back();
-    document.getElementById('btn-confirm-ok').onclick = () => { if(confirmResolve) { confirmResolve(true); confirmResolve = null; } window.history.back(); };
-
-    // --- DOM Elements ---
-    const customerListEl = document.getElementById('customer-list');
-    const searchResultsListEl = document.getElementById('search-results-list'); 
-    const loadMoreTrigger = document.getElementById('load-more-trigger');
-    const paginationLoader = document.getElementById('pagination-loader');
-    const searchBar = document.getElementById('search-bar');
-    const searchInput = document.getElementById('search-input');
-    const emptyState = document.getElementById('empty-state');
-    
-    const screenDetail = document.getElementById('screen-detail');
-    const productListEl = document.getElementById('product-list');
-    const paymentSheet = document.getElementById('payment-sheet');
-    const modalOverlay = document.getElementById('modal-overlay');
-
-    const payAmount = document.getElementById('pay-amount');
-    const payDate = document.getElementById('pay-date');
-    const payMethod = document.getElementById('pay-method');
-    const btnSavePayment = document.getElementById('btn-save-payment');
-
-    // ============================================================================
-    // CLEANED UP: Top-Down UI Closing Engine
-    // ============================================================================
-    function closeTopUI() {
-        // 0. Custom Alerts/Confirms
-        const activeAlert = document.querySelector('.alert-modal.active, .confirm-modal.active');
-        if(activeAlert) {
-            activeAlert.classList.remove('active');
-            document.getElementById('custom-overlay').classList.remove('active');
-            if(alertResolve) { alertResolve(true); alertResolve = null; }
-            if(confirmResolve) { confirmResolve(false); confirmResolve = null; }
-            return;
-        }
-
-        // 1. Modals (Highest Layer)
-        const editSheet = document.getElementById('edit-customer-sheet');
-        if (editSheet && editSheet.classList.contains('active')) {
-            editSheet.classList.remove('active');
-            modalOverlay.classList.remove('active');
-            return;
-        }
-        const addProductSheet = document.getElementById('add-product-sheet');
-        if (addProductSheet && addProductSheet.classList.contains('active')) {
-            addProductSheet.classList.remove('active');
-            modalOverlay.classList.remove('active');
-            return;
-        }
-        const linePickerSheet = document.getElementById('line-picker-sheet');
-        if (linePickerSheet && linePickerSheet.classList.contains('active')) {
-            linePickerSheet.classList.remove('active');
-            modalOverlay.classList.remove('active');
-            return;
-        }
-        if (paymentSheet && paymentSheet.classList.contains('active')) {
-            paymentSheet.classList.remove('active');
-            modalOverlay.classList.remove('active');
-            return;
-        }
-
-        // 2. Slide Panels
-        if (screenDetail && !screenDetail.classList.contains('hidden-right')) {
-            screenDetail.classList.add('hidden-right');
-            activeCustomer = null;
-            return;
-        }
-
-        // 3. Search Bar
-        if (searchBar && searchBar.classList.contains('active')) {
-            searchBar.classList.remove('active');
-            searchInput.value = '';
-            isSearchMode = false;
-            emptyState.style.display = 'none';
-            
-            searchResultsListEl.style.display = 'none';
-            searchResultsListEl.innerHTML = '';
-            customerListEl.style.display = 'block';
-            loadMoreTrigger.style.display = 'block';
-            return;
-        }
-    }
-
-    window.addEventListener('popstate', (e) => {
-        closeTopUI();
-    });
-    
-    modalOverlay.addEventListener('click', () => window.history.back());
-    document.getElementById('custom-overlay').addEventListener('click', () => window.history.back());
-
-    // Toggle Listener Initialization
-    document.addEventListener('DOMContentLoaded', () => {
-        const toggleL2 = document.getElementById('chittai-toggle-prod-l2');
-        if(toggleL2) {
-            toggleL2.addEventListener('change', (e) => {
-                const isChittai = e.target.checked;
-                const prodName = document.getElementById('add-prod-name');
-                const dueGroup = document.getElementById('chittai-due-group-prod-l2');
-                
-                if (isChittai) {
-                    prodName.value = 'Chittai';
-                    prodName.readOnly = true;
-                    dueGroup.style.display = 'block';
-                } else {
-                    prodName.value = '';
-                    prodName.readOnly = false;
-                    dueGroup.style.display = 'none';
-                }
-            });
-        }
-    });
+    document.getElementById('btn-alert-ok').onclick = () => { window.history.back(); };
 
     // Chittai Payment Modal UI Update
     function updateChittaiPreview() {
+        // Because of duplicate DOM IDs, we select by class for safety across all clones
         const amtInputs = document.querySelectorAll('.pay-amount-input');
         const targetInputs = document.querySelectorAll('.chittai-target-due');
         const previews = document.querySelectorAll('.chittai-preview');
@@ -592,12 +632,11 @@
         amtInputs.forEach((amtInput, i) => {
             const targetInput = targetInputs[i];
             const previewEl = previews[i];
-            if(!amtInput || !targetInput || !previewEl) return;
-            
-            const nextDueEl = amtInput.closest('.bottom-sheet').querySelector('[id^="chittai-next-due"]');
-            const chittaiUI = amtInput.closest('.bottom-sheet').querySelector('[id^="chittai-payment-ui"]');
+            // Get next due from the active DOM parent container
+            const nextDueEl = amtInput.parentElement.parentElement.querySelector('[id^="chittai-next-due"]');
+            const chittaiUI = amtInput.parentElement.parentElement.querySelector('[id^="chittai-payment-ui"]');
 
-            if(!nextDueEl || !chittaiUI) return;
+            if(!amtInput || !targetInput || !nextDueEl || !previewEl || !chittaiUI) return;
             if(chittaiUI.style.display === 'none') return;
 
             const amt = parseInt(amtInput.value) || 0;
@@ -624,231 +663,602 @@
         });
     }
 
+    // Attach Chittai preview listeners to duplicate DOM structures
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.pay-amount-input').forEach(el => el.addEventListener('input', updateChittaiPreview));
         document.querySelectorAll('.chittai-target-due').forEach(el => el.addEventListener('input', updateChittaiPreview));
     });
 
-    // --- Initialize ---
-    onAuthStateChanged(auth, (user) => { 
-      if (user) {
-        currentUser = user; 
-        fetchInitialCustomers();
-        buildSearchDictionaryBackground();
+    // History API & Panel Navigation
+    function openPanel(id, stateData) {
+      if (!document.getElementById(id).classList.contains('active')) {
+        document.getElementById(id).classList.add('active');
+        window.history.pushState({ panel: id, ...stateData }, '');
       }
-    });
+    }
+    
+    window.openModal = (id) => {
+      vibrate();
+      if (!document.getElementById(id).classList.contains('active')) {
+        document.getElementById('modal-overlay').classList.add('active');
+        document.getElementById(id).classList.add('active');
+        window.history.pushState({ modal: id }, '');
+      }
+    };
 
-    async function buildSearchDictionaryBackground() {
-        try {
-            const snap = await getDocs(collection(db, "customers"));
-            const newCache = []; 
-            snap.forEach(d => {
-                const data = d.data();
-                newCache.push({
-                    id: d.id.toLowerCase(),
-                    name: (data.name || '').toLowerCase(),
-                    rawName: data.name || 'Unknown',
-                    rawId: d.id,
-                    phone: data.phone || ''
-                });
-            });
-            localSearchCache = newCache;
-        } catch(e) { console.error("Cache build failed", e); }
+    function closeTopUI() {
+      const alertModal = document.getElementById('alert-modal');
+      if (alertModal && alertModal.classList.contains('active')) {
+          alertModal.classList.remove('active');
+          document.getElementById('alert-overlay').classList.remove('active');
+          if (alertResolve) { alertResolve(true); alertResolve = null; }
+          return;
+      }
+      
+      const confirmModal = document.getElementById('confirm-modal');
+      if (confirmModal && confirmModal.classList.contains('active')) {
+        confirmModal.classList.remove('active');
+        document.getElementById('confirm-overlay').classList.remove('active');
+        if(confirmResolve) { confirmResolve(false); confirmResolve = null; } 
+        return;
+      }
+
+      // Level 3 Advanced Bottom Sheets
+      const editSheetL3 = document.getElementById('edit-customer-sheet-l3');
+      if (editSheetL3 && editSheetL3.classList.contains('active')) {
+          editSheetL3.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const paymentSheetL3 = document.getElementById('payment-sheet-l3');
+      if (paymentSheetL3 && paymentSheetL3.classList.contains('active')) {
+          paymentSheetL3.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const addProductSheetL3 = document.getElementById('add-product-sheet-l3');
+      if (addProductSheetL3 && addProductSheetL3.classList.contains('active')) {
+          addProductSheetL3.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const linePickerSheetL3 = document.getElementById('line-picker-sheet-l3');
+      if (linePickerSheetL3 && linePickerSheetL3.classList.contains('active')) {
+          linePickerSheetL3.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+
+      // Older sheets with duplicate IDs from user code
+      const editSheet = document.getElementById('edit-customer-sheet');
+      if (editSheet && editSheet.classList.contains('active')) {
+          editSheet.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const paymentSheet = document.getElementById('payment-sheet');
+      if (paymentSheet && paymentSheet.classList.contains('active')) {
+          paymentSheet.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const addProductSheet = document.getElementById('add-product-sheet');
+      if (addProductSheet && addProductSheet.classList.contains('active')) {
+          addProductSheet.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+      const linePickerSheet = document.getElementById('line-picker-sheet');
+      if (linePickerSheet && linePickerSheet.classList.contains('active')) {
+          linePickerSheet.classList.remove('active');
+          document.getElementById('modal-overlay').classList.remove('active');
+          return;
+      }
+
+      // Old Level 1/2 Modals
+      const activeModal = document.querySelector('.modal.active');
+      if (activeModal) {
+        activeModal.classList.remove('active');
+        document.getElementById('modal-overlay').classList.remove('active');
+        return;
+      }
+
+      // Slide Panels
+      if (document.getElementById('view-ledger').classList.contains('active')) {
+        document.getElementById('view-ledger').classList.remove('active');
+        activeCustId = null;
+        activeCustomer = null; 
+        return;
+      } 
+      if (document.getElementById('view-customers').classList.contains('active')) {
+        document.getElementById('view-customers').classList.remove('active');
+        activeLineId = null;
+        return;
+      }
+
+      // 3. Search Bar
+      const searchBar = document.getElementById('search-bar');
+      if (searchBar && searchBar.classList.contains('active')) {
+          searchBar.classList.remove('active');
+          document.getElementById('search-input').value = '';
+          isSearchMode = false;
+          document.getElementById('empty-state').style.display = 'none';
+          document.getElementById('search-results-list').style.display = 'none';
+          document.getElementById('search-results-list').innerHTML = '';
+          document.getElementById('customer-list').style.display = 'block';
+          document.getElementById('load-more-trigger').style.display = 'block';
+          return;
+      }
     }
 
-    // --- Pagination Engine ---
-    async function fetchInitialCustomers() {
-        if(isFetching) return;
-        isFetching = true;
-        customerListEl.innerHTML = richSkeletonHTML; 
-        
-        try {
-            const q = query(collection(db, "customers"), limit(ITEMS_PER_PAGE));
-            const snap = await getDocs(q);
-            
-            customerListEl.innerHTML = ''; 
+    window.addEventListener('popstate', (e) => { closeTopUI(); });
+    document.getElementById('modal-overlay').addEventListener('click', () => window.history.back());
+    document.querySelectorAll('.modal-handle').forEach(h => h.addEventListener('click', () => window.history.back()));
 
-            if(snap.empty) {
-                emptyState.style.display = 'block';
-            } else {
-                lastVisibleDoc = snap.docs[snap.docs.length - 1];
-                renderCustomerBatch(snap.docs);
-                setupIntersectionObserver();
-            }
-        } catch (e) {
-            customerListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Failed to load.</p>';
+    // --- ID Availability Check (1 Read) ---
+    async function checkIdAvailability(collectionName, idStr, tickEl, crossEl) {
+      if(!idStr) { tickEl.style.display = 'none'; crossEl.style.display = 'none'; return false; }
+      try {
+        const d = await getDoc(doc(db, collectionName, idStr));
+        if(d.exists()) { tickEl.style.display = 'none'; crossEl.style.display = 'block'; return false; }
+        else { tickEl.style.display = 'block'; crossEl.style.display = 'none'; return true; }
+      } catch(e) { return false; }
+    }
+
+    // Debounce wrapper
+    let debounceTimer;
+    function debounce(func, delay = 400) {
+      return (...args) => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => func(...args), delay); };
+    }
+
+    // Line ID Check
+    document.getElementById('line-id').addEventListener('input', debounce(async (e) => {
+      await checkIdAvailability('lines', e.target.value.toUpperCase().trim(), document.getElementById('line-id-tick'), document.getElementById('line-id-cross'));
+    }));
+    
+    // Cust ID Check
+    document.getElementById('cust-id').addEventListener('input', debounce(async (e) => {
+      if(!document.getElementById('cust-id').readOnly) {
+        await checkIdAvailability('customers', e.target.value.toUpperCase().trim(), document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross'));
+      }
+    }));
+
+    // --- Geolocation ---
+    document.getElementById('btn-fetch-gps').onclick = () => {
+      vibrate();
+      const locIn = document.getElementById('cust-loc');
+      const originalVal = locIn.value;
+      locIn.value = "Fetching...";
+      if(navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          p => locIn.value = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)}`,
+          e => { locIn.value = originalVal || ""; customAlert("GPS Denied/Error", "Error"); }
+        );
+      } else { locIn.value = originalVal || ""; customAlert("GPS Not Supported", "Error"); }
+    };
+
+    // --- Skeletons ---
+    function getSkeletons(type, count=4) {
+      let h = '';
+      for(let i=0; i<count; i++){
+        if(type==='line') h+=`<div class="line-card" style="animation-delay:${i*0.1}s; background:var(--surface-card);"><div class="line-info"><div class="skeleton-box" style="width:150px;height:24px;margin-bottom:8px;"></div><div class="skeleton-box" style="width:80px;height:16px;"></div></div><div class="skeleton-box" style="width:36px;height:36px;border-radius:50%;"></div></div>`;
+        if(type==='cust') h+=`<div class="customer-card" style="animation-delay:${i*0.1}s;"><div class="cust-top"><div class="cust-info"><div class="skeleton-box" style="width:140px;height:22px;margin-bottom:8px;"></div><div class="skeleton-box" style="width:90px;height:16px;"></div></div></div><div class="skeleton-box" style="width:120px;height:28px;border-radius:8px;"></div></div>`;
+      }
+      return h;
+    }
+
+    // ==========================================
+    // LEVEL 1: LINES
+    // ==========================================
+    function createLineCardHTML(data) {
+      const schedText = data.scheduleType === 'weekly' && data.scheduleDay ? data.scheduleDay.substring(0,3) : 'Daily';
+      return `
+        <div class="line-card ${data.color || 'grad-6'}" id="line-card-${data.id}" onclick="openCustomersView('${data.id}', '${data.name.replace(/'/g,"\\'")}')">
+          <div class="line-info"><h3>${data.name}</h3><p>${data.id} • ${schedText}</p></div>
+          <div class="actions-wrap">
+            <button class="icon-btn edit" onclick="event.stopPropagation(); openEditLineModal('${data.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+            <button class="icon-btn delete" onclick="event.stopPropagation(); deleteLine('${data.id}')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+          </div>
+        </div>`;
+    }
+
+    async function loadLines(isMore = false) {
+      if(linesLoading || (!linesHasMore && isMore)) return;
+      linesLoading = true;
+      const list = document.getElementById('list-lines');
+      const loader = document.getElementById('loading-lines');
+      
+      if(!isMore) { list.innerHTML = getSkeletons('line'); loader.style.display = 'none'; }
+      else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+
+      try {
+        let q = collection(db, "lines");
+        if(linesSearch) {
+          q = query(q, where("name", ">=", linesSearch), where("name", "<=", linesSearch + "\uf8ff"), orderBy("name"), limit(10));
+        } else {
+          q = query(q, orderBy("createdAt", "desc"), limit(10));
         }
-        isFetching = false;
-    }
+        if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
 
-    async function fetchNextCustomers() {
-        if(isFetching || !hasMoreDocs || isSearchMode) return;
-        isFetching = true;
-        paginationLoader.style.display = 'block';
+        const snap = await getDocs(q);
+        if(!isMore) list.innerHTML = '';
+        if(snap.empty) { 
+          linesHasMore = false; 
+          if(!isMore) list.innerHTML = '<p style="text-align:center;color:var(--text-sub);padding:20px;">No lines found.</p>'; 
+          loader.style.display = 'none';
+          linesLoading=false; 
+          return; 
+        }
 
-        try {
-            const q = query(collection(db, "customers"), startAfter(lastVisibleDoc), limit(ITEMS_PER_PAGE));
-            const snap = await getDocs(q);
-            
-            if(snap.empty) {
-                hasMoreDocs = false;
-            } else {
-                lastVisibleDoc = snap.docs[snap.docs.length - 1];
-                renderCustomerBatch(snap.docs);
-            }
-        } catch(e) { console.error("Pagination error", e); }
+        linesLastVisible = snap.docs[snap.docs.length-1];
+        linesHasMore = snap.docs.length === 10;
         
-        paginationLoader.style.display = 'none';
-        isFetching = false;
-    }
-
-    function renderCustomerBatch(docs) {
-        docs.forEach(d => {
-            const data = d.data();
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.id = `main-card-${d.id}`; // ADDED DOM ID
-            card.innerHTML = `
-                <div class="card-top">
-                    <div>
-                        <div class="card-title" id="main-card-name-${d.id}">${data.name || 'Unknown'}</div> <!-- ADDED DOM ID -->
-                        <div class="card-sub" id="main-card-phone-${d.id}">ID: ${d.id} | 📞 ${data.phone || 'N/A'}</div> <!-- ADDED DOM ID -->
-                    </div>
-                    <span class="badge">${data.products ? data.products.length : 0} Products</span>
-                </div>
-            `;
-            card.onclick = () => loadCustomerDetail(d.id);
-            customerListEl.appendChild(card);
+        let html = '';
+        snap.forEach(d => {
+          const data = d.data();
+          linesDataMap[data.id] = data; 
+          html += createLineCardHTML(data);
         });
-    }
-
-    function setupIntersectionObserver() {
-        const observer = new IntersectionObserver((entries) => {
-            if(entries[0].isIntersecting) fetchNextCustomers();
-        }, { rootMargin: '100px' });
-        observer.observe(loadMoreTrigger);
-    }
-
-    // --- 3. Instant Live Search Engine ---
-    window.openSearch = () => {
-        vibrate();
-        window.history.pushState({ panel: 'search' }, ''); 
-        searchBar.classList.add('active');
-        searchInput.focus();
-        isSearchMode = true;
-    };
-
-    window.closeSearch = () => {
-        window.history.back();
-    };
-
-    searchInput.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        const term = e.target.value.trim().toLowerCase();
+        list.insertAdjacentHTML('beforeend', html);
         
-        if(term.length === 0) {
-            searchResultsListEl.style.display = 'none';
-            customerListEl.style.display = 'block';
-            loadMoreTrigger.style.display = 'block';
-            emptyState.style.display = 'none';
-            return;
-        }
+        loader.style.display = linesHasMore ? 'block' : 'none';
+        loader.innerText = linesHasMore ? 'Scroll for more' : '';
+      } catch(e) { 
+        if(e.message && e.message.includes('index')) handleFirebaseError(e); else if(!isMore) list.innerHTML = `<p style="text-align:center; color:var(--danger);">${e.message}</p>`;
+      }
+      linesLoading = false;
+    }
 
-        customerListEl.style.display = 'none';
-        loadMoreTrigger.style.display = 'none';
-        searchResultsListEl.style.display = 'block';
+    document.getElementById('search-lines').addEventListener('input', debounce(e => {
+      let val = e.target.value.trim();
+      linesSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
+      linesLastVisible = null; linesHasMore = true; loadLines();
+    }));
 
-        searchTimeout = setTimeout(() => {
-            searchResultsListEl.innerHTML = '';
-            let matchedNames = [];
-            let matchedIDs = [];
-
-            for(let c of localSearchCache) {
-                if(matchedNames.length < 10 && c.name.includes(term)) matchedNames.push(c);
-                else if(matchedIDs.length < 10 && c.id.includes(term)) matchedIDs.push(c);
-                if(matchedNames.length === 10 && matchedIDs.length === 10) break;
-            }
-
-            const combined = [...matchedNames, ...matchedIDs];
-            
-            if(combined.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-                combined.forEach(c => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.id = `search-card-${c.rawId}`; // ADDED DOM ID
-                    card.innerHTML = `
-                        <div class="card-top">
-                            <div>
-                                <div class="card-title" id="search-card-name-${c.rawId}">${c.rawName}</div> <!-- ADDED DOM ID -->
-                                <div class="card-sub" id="search-card-phone-${c.rawId}">ID: ${c.rawId} | 📞 ${c.phone}</div> <!-- ADDED DOM ID -->
-                            </div>
-                        </div>
-                    `;
-                    card.onclick = () => loadCustomerDetail(c.rawId);
-                    searchResultsListEl.appendChild(card);
-                });
-            }
-        }, 300); 
+    document.querySelectorAll('.color-option').forEach(el => {
+      el.onclick = () => { 
+        el.parentElement.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected')); 
+        el.classList.add('selected'); 
+      };
     });
 
-    // --- 4. Level 2: Customer Ledger & Products ---
-    async function loadCustomerDetail(custId) {
-        if (isOpeningCustomer) return; 
-        isOpeningCustomer = true;
+    document.getElementById('line-schedule-type').onchange = (e) => {
+      document.getElementById('line-day-group').style.display = e.target.value === 'weekly' ? 'block' : 'none';
+    };
 
-        vibrate();
+    document.getElementById('edit-line-schedule-type').onchange = (e) => {
+      document.getElementById('edit-line-day-group').style.display = e.target.value === 'weekly' ? 'block' : 'none';
+    };
+
+    document.getElementById('btn-save-line').onclick = async () => {
+      vibrate();
+      const id = document.getElementById('line-id').value.toUpperCase().trim();
+      const name = document.getElementById('line-name').value.trim();
+      const stype = document.getElementById('line-schedule-type').value;
+      const sday = document.getElementById('line-day').value;
+      const color = document.querySelector('#line-color-picker .color-option.selected').dataset.grad;
+
+      if(!id || !name) return customAlert("Fill ID and Name", "Error");
+      const isAvail = await checkIdAvailability('lines', id, document.getElementById('line-id-tick'), document.getElementById('line-id-cross'));
+      if(!isAvail) return customAlert("ID is already taken!", "Error");
+
+      const btn = document.getElementById('btn-save-line'); btn.disabled = true; btn.innerText = "Saving...";
+      try {
+        await setDoc(doc(db, "lines", id), { id, name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color, createdAt: serverTimestamp() });
+        window.history.back(); 
+        linesLastVisible = null; loadLines(); 
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
+      btn.disabled = false; btn.innerText = "Create Line";
+    };
+
+    window.openEditLineModal = (id) => {
+      vibrate();
+      const line = linesDataMap[id];
+      if(!line) return;
+      editingLineId = id;
+      
+      document.getElementById('edit-line-id').value = line.id;
+      document.getElementById('edit-line-name').value = line.name;
+      document.getElementById('edit-line-schedule-type').value = line.scheduleType || 'daily';
+      document.getElementById('edit-line-day').value = line.scheduleDay || 'Monday';
+      document.getElementById('edit-line-day-group').style.display = line.scheduleType === 'weekly' ? 'block' : 'none';
+      
+      document.querySelectorAll('#edit-line-color-picker .color-option').forEach(c => {
+         c.classList.remove('selected');
+         if(c.dataset.grad === (line.color || 'grad-6')) c.classList.add('selected');
+      });
+
+      openModal('modal-edit-line');
+    };
+
+    document.getElementById('btn-update-line').onclick = async () => {
+      vibrate();
+      const name = document.getElementById('edit-line-name').value.trim();
+      const stype = document.getElementById('edit-line-schedule-type').value;
+      const sday = document.getElementById('edit-line-day').value;
+      const color = document.querySelector('#edit-line-color-picker .color-option.selected').dataset.grad;
+
+      if(!name) return customAlert("Fill Name", "Error");
+      const btn = document.getElementById('btn-update-line'); btn.disabled = true; btn.innerText = "Saving...";
+      
+      try {
+        await updateDoc(doc(db, "lines", editingLineId), { name, scheduleType: stype, scheduleDay: stype==='weekly'?sday:null, color });
         
-        if (screenDetail.classList.contains('hidden-right')) {
-            window.history.pushState({ panel: 'detail' }, '');
-            screenDetail.classList.remove('hidden-right');
+        linesDataMap[editingLineId].name = name;
+        linesDataMap[editingLineId].scheduleType = stype;
+        linesDataMap[editingLineId].scheduleDay = stype==='weekly'?sday:null;
+        linesDataMap[editingLineId].color = color;
+        
+        const card = document.getElementById('line-card-'+editingLineId);
+        if(card) card.outerHTML = createLineCardHTML(linesDataMap[editingLineId]);
+
+        window.history.back(); 
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
+      btn.disabled = false; btn.innerText = "Update Line";
+    };
+
+    window.deleteLine = async (id) => {
+      vibrate([50,100]);
+      if(!(await customConfirm(`Delete Line ${id} and ALL its customers permanently?`))) return;
+      try {
+        const custSnap = await getDocs(query(collection(db, "customers"), where("lineId", "==", id)));
+        const docs = custSnap.docs;
+        
+        while(docs.length > 0) {
+          const chunk = docs.splice(0, 480);
+          const batch = writeBatch(db);
+          chunk.forEach(d => batch.delete(d.ref));
+          await batch.commit();
         }
+        await deleteDoc(doc(db, "lines", id));
+        vibrate([50,50,50]);
+        linesLastVisible = null; loadLines();
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert("Error: " + e.message, "Deletion Failed"); }
+    };
 
-        document.getElementById('detail-cust-name').innerText = "Loading...";
-        productListEl.innerHTML = '<div class="loader-spinner"></div>';
-        
-        try {
-            const docSnap = await getDoc(doc(db, "customers", custId));
-            if(!docSnap.exists()) throw new Error("Not found");
-            
-            activeCustomer = { id: custId, ref: doc(db, "customers", custId), data: docSnap.data() };
-            const c = activeCustomer.data;
-            
-            document.getElementById('detail-cust-name').innerText = c.name;
-            document.getElementById('ledger-cust-name-inner').innerText = c.name;
-            
-            document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
-            document.getElementById('ledger-cust-phone').href = c.phone ? 'tel:' + c.phone : '#';
-            
-            document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
+    // ==========================================
+    // LEVEL 2: CUSTOMERS
+    // ==========================================
+    window.openCustomersView = (lineId, lineName) => {
+      vibrate(); activeLineId = lineId; currentLineName = lineName;
+      document.getElementById('title-line-name').innerText = lineName;
+      custLastVisible = null; custHasMore = true; custSearch = ""; document.getElementById('search-customers').value = '';
+      openPanel('view-customers', { lineId });
+      loadCustomers();
+    };
 
-            const mapParent = document.getElementById('ledger-map-container');
-            const locateBtn = document.getElementById('btn-locate-map');
-            if (c.location && c.location.includes(',')) {
-                locateBtn.style.display = 'inline-block';
-                const parts = c.location.split(',');
-                const lat = parseFloat(parts[0].trim());
-                const lon = parseFloat(parts[1].trim());
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    const bbox = `${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}`;
-                    mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
-                }
-            } else {
-                locateBtn.style.display = 'none';
-                mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
-            }
-            
-            renderProducts();
-        } catch(e) {
-            productListEl.innerHTML = '<p style="text-align:center; color:var(--danger);">Error loading details.</p>';
-        } finally {
-            isOpeningCustomer = false; 
+    // UPGRADED: Background Math Sync for Level 2 Badges
+    function updateLevel2ProductCount() {
+        if (!activeCustomer || !activeCustomer.data.products) return;
+        const count = activeCustomer.data.products.length;
+        const statBadge = document.querySelector(`#cust-card-${activeCustomer.id} .cust-stats`);
+        if (statBadge) {
+            statBadge.innerText = `${count} Active Product${count !== 1 ? 's' : ''}`;
         }
     }
 
-    // Dynamic Maps Location Trigger
+    async function loadCustomers(isMore = false) {
+      if(custLoading || (!custHasMore && isMore)) return;
+      custLoading = true;
+      const list = document.getElementById('list-customers');
+      const loader = document.getElementById('loading-customers');
+      
+      if(!isMore) { list.innerHTML = getSkeletons('cust'); loader.style.display = 'none'; }
+      else { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
+
+      try {
+        let q = query(collection(db, "customers"), where("lineId", "==", activeLineId));
+        if(custSearch) q = query(q, where("name", ">=", custSearch), where("name", "<=", custSearch + "\uf8ff"), orderBy("name"), limit(10));
+        else q = query(q, orderBy("createdAt", "desc"), limit(10));
+        
+        if(isMore && custLastVisible) q = query(q, startAfter(custLastVisible));
+        
+        const snap = await getDocs(q);
+        if(!isMore) list.innerHTML = '';
+        if(snap.empty) { 
+          custHasMore=false; 
+          if(!isMore) list.innerHTML='<p style="text-align:center;color:var(--text-sub);">No customers found.</p>'; 
+          loader.style.display = 'none';
+          custLoading=false; 
+          return; 
+        }
+
+        custLastVisible = snap.docs[snap.docs.length-1];
+        custHasMore = snap.docs.length === 10;
+
+        let html = '';
+        snap.forEach(d => {
+          const c = d.data();
+          const pCount = c.products ? c.products.length : 0;
+          
+          html += `
+            <div class="customer-card" id="cust-card-${c.id}" onclick="openLedgerView('${c.id}')">
+              <div class="cust-top">
+                <div class="cust-info"><h3>${c.name}</h3><p>${c.id} • ${c.phone || 'No Phone'}</p></div>
+                <div class="actions-wrap">
+                  <button class="icon-btn add" onclick="event.stopPropagation(); openAddProductModal('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                  <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
+              </div>
+              <div class="cust-stats">${pCount} Active Product${pCount!==1?'s':''}</div>
+            </div>`;
+        });
+        list.insertAdjacentHTML('beforeend', html);
+        
+        loader.style.display = custHasMore ? 'block' : 'none';
+        loader.innerText = custHasMore ? 'Scroll for more' : '';
+      } catch(e) { 
+        if(e.message && e.message.includes('index')) handleFirebaseError(e); else if(!isMore) list.innerHTML = `<p style="text-align:center; color:var(--danger);">${e.message}</p>`; 
+      }
+      custLoading = false;
+    }
+
+    document.getElementById('search-customers').addEventListener('input', debounce(e => {
+      let val = e.target.value.trim();
+      custSearch = val ? val.charAt(0).toUpperCase() + val.slice(1) : "";
+      custLastVisible = null; custHasMore = true; loadCustomers();
+    }));
+
+    window.openCreateCustomerModal = () => {
+      document.getElementById('modal-cust-title').innerText = "Create Customer";
+      document.getElementById('cust-id').readOnly = false; document.getElementById('cust-id').value = '';
+      document.getElementById('cust-id-tick').style.display = 'none'; document.getElementById('cust-id-cross').style.display = 'none';
+      document.getElementById('cust-name').value = ''; document.getElementById('cust-phone').value = ''; document.getElementById('cust-loc').value = '';
+      document.getElementById('prod-name').value = '';
+      document.getElementById('prod-name').readOnly = false;
+      document.getElementById('prod-total').value = '';
+      document.getElementById('prod-paid').value = '';
+      document.getElementById('chittai-toggle').checked = false;
+      document.getElementById('chittai-due-group').style.display = 'none';
+      document.getElementById('prod-due').value = '1';
+      document.getElementById('initial-product-section').style.display = 'block';
+      document.getElementById('btn-save-cust').onclick = saveNewCustomer;
+      document.getElementById('btn-fetch-gps').click(); 
+      openModal('modal-customer');
+    };
+
+    async function saveNewCustomer() {
+      vibrate();
+      const id = document.getElementById('cust-id').value.toUpperCase().trim();
+      const name = document.getElementById('cust-name').value.trim();
+      const phone = document.getElementById('cust-phone').value.trim();
+      const loc = document.getElementById('cust-loc').value.trim();
+      const pName = document.getElementById('prod-name').value.trim();
+      const pTotal = Number(document.getElementById('prod-total').value);
+      const pPaid = Number(document.getElementById('prod-paid').value);
+      const isChittai = document.getElementById('chittai-toggle').checked;
+      const startDue = parseInt(document.getElementById('prod-due').value) || 1;
+
+      if(!id || !name || !pName || !pTotal) return customAlert("Fill required fields", "Error");
+      if(!(await checkIdAvailability('customers', id, document.getElementById('cust-id-tick'), document.getElementById('cust-id-cross')))) return customAlert("ID is already taken", "Error");
+
+      const btn = document.getElementById('btn-save-cust'); btn.disabled = true; btn.innerText = "Saving...";
+      try {
+        const initProduct = { 
+            id: 'P_'+Date.now(), 
+            name: pName, 
+            total: pTotal, 
+            paid: pPaid, 
+            pending: pTotal-pPaid, 
+            addedAt: new Date().toISOString(),
+            ...(isChittai && { isChittai: true, startingDue: startDue }),
+            payments: pPaid > 0 ? [{ 
+                id: 'PAY_'+Date.now(), 
+                amount: pPaid, 
+                date: new Date().toISOString(), 
+                type: 'advance', 
+                method: 'cash', 
+                agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', 
+                pendingAfter: pTotal-pPaid,
+                ...(isChittai && { dueNumber: startDue })
+            }] : []
+        };
+        await setDoc(doc(db, "customers", id), { id, lineId: activeLineId, name, phone, location: loc, products: [initProduct], createdAt: serverTimestamp() });
+        
+        window.history.back(); custLastVisible = null; loadCustomers();
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
+      btn.disabled = false; btn.innerText = "Save Customer";
+    }
+
+    window.deleteCustomer = async (id) => {
+      vibrate([50,100]);
+      if(!(await customConfirm(`Delete Customer ${id}?`))) return;
+      try { await deleteDoc(doc(db, "customers", id)); vibrate([50,50]); custLastVisible = null; loadCustomers(); } 
+      catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Deletion Failed"); }
+    };
+
+    // Old Level 2 Modal compatibility
+    window.openAddProductModal = (custIdOverride = null) => {
+      if(custIdOverride) activeCustId = custIdOverride; 
+      document.getElementById('add-prod-name').value=''; document.getElementById('add-prod-total').value=''; document.getElementById('add-prod-paid').value='';
+      openModal('modal-product');
+    };
+
+    document.getElementById('btn-save-product').onclick = async () => {
+      vibrate();
+      const pName = document.getElementById('add-prod-name').value.trim();
+      const pTotal = Number(document.getElementById('add-prod-total').value);
+      const pPaid = Number(document.getElementById('add-prod-paid').value);
+      if(!pName || !pTotal) return customAlert("Fill name and total", "Error");
+
+      const btn = document.getElementById('btn-save-product'); btn.disabled = true; btn.innerText = "Adding...";
+      try {
+        const custRef = doc(db, "customers", activeCustId);
+        
+        await runTransaction(db, async (transaction) => {
+            const cSnap = await transaction.get(custRef);
+            if (!cSnap.exists()) throw new Error("Customer does not exist!");
+            
+            const cData = cSnap.data();
+            const newP = { 
+                id: 'P_'+Date.now(), 
+                name: pName, 
+                total: pTotal, 
+                paid: pPaid, 
+                pending: pTotal-pPaid, 
+                addedAt: new Date().toISOString(),
+                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
+            };
+            const updatedProds = cData.products ? [...cData.products, newP] : [newP];
+            transaction.update(custRef, { products: updatedProds });
+        });
+
+        window.history.back();
+        if(document.getElementById('view-ledger').classList.contains('active')) loadLedgerData();
+        custLastVisible = null; loadCustomers(); 
+      } catch(e) { if(e.message && e.message.includes('index')) handleFirebaseError(e); else customAlert(e.message, "Error"); }
+      btn.disabled = false; btn.innerText = "Add Product";
+    };
+
+    // ==========================================
+    // UPGRADED LEVEL 3: LEDGER & PRODUCTS
+    // ==========================================
+    window.openLedgerView = async (custId) => {
+      vibrate(); 
+      activeCustId = custId;
+      document.getElementById('ledger-products').innerHTML = '<div class="loader-spinner"></div>';
+      openPanel('view-ledger', { custId });
+      await loadLedgerData();
+    };
+
+    async function loadLedgerData() {
+      try {
+        const cSnap = await getDoc(doc(db, "customers", activeCustId));
+        if(!cSnap.exists()) return;
+        const c = cSnap.data();
+
+        activeCustomer = { id: activeCustId, ref: doc(db, "customers", activeCustId), data: c };
+
+        document.getElementById('ledger-cust-name').innerText = c.name;
+        document.getElementById('detail-cust-name-hidden').innerText = c.name;
+        
+        document.getElementById('ledger-cust-phone').innerText = c.phone || 'No Phone';
+        document.getElementById('ledger-cust-phone').href = c.phone ? 'tel:' + c.phone : '#';
+        
+        document.getElementById('ledger-cust-loc').innerText = c.location || 'No Location';
+
+        const mapParent = document.getElementById('ledger-map-container');
+        const locateBtn = document.getElementById('btn-locate-map');
+        if (c.location && c.location.includes(',')) {
+            locateBtn.style.display = 'inline-block';
+            const parts = c.location.split(',');
+            const lat = parseFloat(parts[0].trim());
+            const lon = parseFloat(parts[1].trim());
+            if (!isNaN(lat) && !isNaN(lon)) {
+                mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
+            }
+        } else {
+            locateBtn.style.display = 'none';
+            mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
+        }
+        
+        renderProducts();
+      } catch(e) { 
+        console.error(e); 
+        if(e.message && e.message.includes('index')) handleFirebaseError(e); 
+      }
+    }
+
     window.locateCustomer = () => {
         vibrate();
         const loc = activeCustomer?.data?.location;
@@ -871,6 +1281,7 @@
     };
 
     function renderProducts() {
+        const productListEl = document.getElementById('ledger-products');
         productListEl.innerHTML = '';
         const prods = activeCustomer.data.products || [];
         let grandTotalPending = 0;
@@ -936,7 +1347,7 @@
                         <button class="btn-circle btn-add" onclick="window.openAddPayment(${pIndex})">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
-                        <button class="btn-circle btn-delete" onclick="window.deleteProduct(${pIndex})">
+                        <button class="btn-circle btn-delete-prod" onclick="window.deleteProduct(${pIndex})">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </div>
@@ -952,15 +1363,15 @@
                 </div>
                 
                 <div id="ledger-collapse-${pIndex}" style="display: none; margin-top: 10px;">
-                    <div class="table-wrapper">
-                      <table>
-                        <thead>
+                    <div class="table-wrapper" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border);">
+                      <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.85rem;">
+                        <thead style="background: rgba(107, 114, 128, 0.1);">
                           <tr>
-                            <th>S.No / Due</th>
-                            <th>Date</th>
-                            <th>Paid</th>
-                            <th>Remaining</th>
-                            <th style="text-align: center;">Edit</th>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">S.No / Due</th>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Date</th>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Paid</th>
+                            <th style="padding: 10px; text-align: left; border-bottom:1px solid var(--border);">Remaining</th>
+                            <th style="padding: 10px; text-align: center; border-bottom:1px solid var(--border);">Edit</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -976,32 +1387,32 @@
         document.getElementById('ledger-total-pending').innerText = fmt(grandTotalPending);
     }
 
-    // --- 5. Ledger Editing ---
-    window.openAddProductModal = () => {
+    // --- LEVEL 3 ADVANCED MODALS ENGINE ---
+    window.openAddProductModalLevel3 = () => {
         vibrate();
-        document.getElementById('add-prod-name').value = '';
-        document.getElementById('add-prod-name').readOnly = false;
-        document.getElementById('add-prod-total').value = '';
-        document.getElementById('add-prod-paid').value = '';
-        document.getElementById('chittai-toggle-prod-l2').checked = false;
-        document.getElementById('chittai-due-group-prod-l2').style.display = 'none';
-        document.getElementById('add-prod-due-l2').value = '1';
+        document.getElementById('add-prod-name-l3').value = '';
+        document.getElementById('add-prod-name-l3').readOnly = false;
+        document.getElementById('add-prod-total-l3').value = '';
+        document.getElementById('add-prod-paid-l3').value = '';
+        document.getElementById('chittai-toggle-prod-l3').checked = false;
+        document.getElementById('chittai-due-group-prod-l3').style.display = 'none';
+        document.getElementById('add-prod-due-l3').value = '1';
         window.history.pushState({ modal: 'add-product' }, '');
-        modalOverlay.classList.add('active');
-        document.getElementById('modal-product').classList.add('active');
+        document.getElementById('modal-overlay').classList.add('active');
+        document.getElementById('add-product-sheet-l3').classList.add('active');
     };
 
-    window.saveNewProduct = async () => {
+    window.saveNewProductLevel3 = async () => {
         vibrate();
-        const pName = document.getElementById('add-prod-name').value.trim();
-        const pTotal = Number(document.getElementById('add-prod-total').value);
-        const pPaid = Number(document.getElementById('add-prod-paid').value);
-        const isChittai = document.getElementById('chittai-toggle-prod-l2').checked;
-        const startDue = parseInt(document.getElementById('add-prod-due-l2').value) || 1;
+        const pName = document.getElementById('add-prod-name-l3').value.trim();
+        const pTotal = Number(document.getElementById('add-prod-total-l3').value);
+        const pPaid = Number(document.getElementById('add-prod-paid-l3').value);
+        const isChittai = document.getElementById('chittai-toggle-prod-l3').checked;
+        const startDue = parseInt(document.getElementById('add-prod-due-l3').value) || 1;
 
         if(!pName || !pTotal) return customAlert("Please enter a valid product name and total amount.");
 
-        const btn = document.getElementById('btn-save-product');
+        const btn = document.getElementById('btn-save-new-product-l3');
         btn.innerText = "Adding..."; btn.disabled = true;
 
         try {
@@ -1013,16 +1424,7 @@
                 pending: pTotal-pPaid,
                 addedAt: new Date().toISOString(),
                 ...(isChittai && { isChittai: true, startingDue: startDue }),
-                payments: pPaid > 0 ? [{ 
-                    id: 'PAY_'+Date.now(), 
-                    amount: pPaid, 
-                    date: new Date().toISOString(), 
-                    type: 'advance', 
-                    method: 'cash', 
-                    agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', 
-                    pendingAfter: pTotal-pPaid,
-                    ...(isChittai && { dueNumber: startDue })
-                }] : []
+                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
             };
             
             let finalUpdatedProds = null;
@@ -1040,6 +1442,7 @@
 
             vibrate([30, 50]);
             renderProducts();
+            updateLevel2ProductCount(); // UPGRADED: Syncs math to Level 2 card instantly
             window.history.back(); 
         } catch(e) {
             customAlert("Failed to add product: " + e.message);
@@ -1071,29 +1474,30 @@
             if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds; 
             vibrate([50, 50, 50]);
             renderProducts();
+            updateLevel2ProductCount(); // UPGRADED: Syncs math to Level 2 card instantly
         } catch(e) {
             customAlert("Failed to delete: " + e.message);
         }
     };
 
     window.openAddPayment = (pIndex) => {
-        const paymentSheet = document.getElementById('payment-sheet');
-        if (paymentSheet.classList.contains('active')) return;
+        const paymentSheetL3 = document.getElementById('payment-sheet-l3');
+        if (paymentSheetL3 && paymentSheetL3.classList.contains('active')) return;
         vibrate();
         activeProductIndex = pIndex;
         activePaymentIndex = null; 
         const prod = activeCustomer.data.products[pIndex];
         
-        document.getElementById('sheet-title').innerText = "Record Payment";
-        document.getElementById('sheet-sub').innerText = prod.name;
-        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
+        document.getElementById('sheet-title-l3').innerText = "Record Payment";
+        document.getElementById('sheet-sub-l3').innerText = prod.name;
+        document.getElementById('sheet-pending-l3').innerText = fmt(prod.pending);
+        document.getElementById('sheet-paid-l3').innerText = fmt(prod.paid);
         
-        document.getElementById('pay-amount').value = '';
-        document.getElementById('pay-date').value = new Date().toISOString().split('T')[0]; 
-        document.getElementById('pay-method').value = 'cash';
+        document.getElementById('pay-amount-l3').value = '';
+        document.getElementById('pay-date-l3').value = new Date().toISOString().split('T')[0]; 
+        document.getElementById('pay-method-l3').value = 'cash';
 
-        const chittaiUI = document.getElementById('chittai-payment-ui');
+        const chittaiUI = document.getElementById('chittai-payment-ui-l3');
         if(chittaiUI) {
             if(prod.isChittai) {
                 chittaiUI.style.display = 'block';
@@ -1102,8 +1506,8 @@
                     prod.payments.forEach(p => { if (p.dueNumber && p.dueNumber > maxDue) maxDue = p.dueNumber; });
                 }
                 let nextDue = maxDue > 0 ? maxDue + 1 : (prod.startingDue || 1);
-                document.getElementById('chittai-next-due').innerText = '#' + nextDue;
-                document.getElementById('chittai-target-due').value = nextDue;
+                document.getElementById('chittai-next-due-l3').innerText = '#' + nextDue;
+                document.getElementById('chittai-target-due-l3').value = nextDue;
                 updateChittaiPreview();
             } else {
                 chittaiUI.style.display = 'none';
@@ -1112,41 +1516,41 @@
 
         window.history.pushState({ modal: 'payment' }, ''); 
         document.getElementById('modal-overlay').classList.add('active');
-        paymentSheet.classList.add('active');
+        paymentSheetL3.classList.add('active');
     };
 
     window.openEditPayment = (pIndex, payIndex) => {
-        const paymentSheet = document.getElementById('payment-sheet');
-        if (paymentSheet.classList.contains('active')) return;
+        const paymentSheetL3 = document.getElementById('payment-sheet-l3');
+        if (paymentSheetL3 && paymentSheetL3.classList.contains('active')) return;
         vibrate();
         activeProductIndex = pIndex;
         activePaymentIndex = payIndex; 
         const prod = activeCustomer.data.products[pIndex];
         const pay = prod.payments[payIndex];
         
-        document.getElementById('sheet-title').innerText = "Edit Payment";
-        document.getElementById('sheet-sub').innerText = prod.name;
-        document.getElementById('sheet-pending').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid').innerText = fmt(prod.paid);
+        document.getElementById('sheet-title-l3').innerText = "Edit Payment";
+        document.getElementById('sheet-sub-l3').innerText = prod.name;
+        document.getElementById('sheet-pending-l3').innerText = fmt(prod.pending);
+        document.getElementById('sheet-paid-l3').innerText = fmt(prod.paid);
         
-        document.getElementById('pay-amount').value = pay.amount;
-        document.getElementById('pay-date').value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
-        document.getElementById('pay-method').value = pay.method || 'cash';
+        document.getElementById('pay-amount-l3').value = pay.amount;
+        document.getElementById('pay-date-l3').value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
+        document.getElementById('pay-method-l3').value = pay.method || 'cash';
 
-        const chittaiUI = document.getElementById('chittai-payment-ui');
+        const chittaiUI = document.getElementById('chittai-payment-ui-l3');
         if(chittaiUI) chittaiUI.style.display = 'none'; // Hide chittai UI when editing single old payment
 
         window.history.pushState({ modal: 'payment' }, '');
         document.getElementById('modal-overlay').classList.add('active');
-        paymentSheet.classList.add('active');
+        paymentSheetL3.classList.add('active');
     };
 
     window.savePayment = async () => {
         vibrate();
-        const payAmount = document.getElementById('pay-amount');
-        const payDate = document.getElementById('pay-date');
-        const payMethod = document.getElementById('pay-method');
-        const btnSavePayment = document.getElementById('btn-save-payment');
+        const payAmount = document.getElementById('pay-amount-l3');
+        const payDate = document.getElementById('pay-date-l3');
+        const payMethod = document.getElementById('pay-method-l3');
+        const btnSavePayment = document.getElementById('btn-save-payment-l3');
         
         const amt = parseInt(payAmount.value);
         const selectedDate = payDate.value;
@@ -1160,10 +1564,8 @@
         // Chittai Pre-validation
         let nextDue, targetDue, numDues, baseAmt;
         if (activePaymentIndex === null && localProd.isChittai) {
-            const nextDueEl = document.getElementById('chittai-next-due');
-            const targetDueEl = document.getElementById('chittai-target-due');
-            nextDue = parseInt(nextDueEl.innerText.replace('#', '')) || 1;
-            targetDue = parseInt(targetDueEl.value) || nextDue;
+            nextDue = parseInt(document.getElementById('chittai-next-due-l3').innerText.replace('#', '')) || 1;
+            targetDue = parseInt(document.getElementById('chittai-target-due-l3').value) || nextDue;
             if (targetDue < nextDue) return customAlert("Target due cannot be less than next due.");
             numDues = (targetDue - nextDue) + 1;
             baseAmt = Math.floor(amt / numDues);
@@ -1255,27 +1657,27 @@
         btnSavePayment.disabled = false;
     };
 
-    window.openEditCustomerModal = () => {
+    window.openEditCustomerModalLevel3 = () => {
         if (!activeCustomer) return;
         vibrate();
         const c = activeCustomer.data;
         
-        document.getElementById('edit-cust-id').value = activeCustomer.id;
-        document.getElementById('edit-cust-name').value = c.name || '';
-        document.getElementById('edit-cust-phone').value = c.phone || '';
-        document.getElementById('edit-cust-loc').value = c.location || '';
+        document.getElementById('edit-cust-id-l3').value = activeCustomer.id;
+        document.getElementById('edit-cust-name-l3').value = c.name || '';
+        document.getElementById('edit-cust-phone-l3').value = c.phone || '';
+        document.getElementById('edit-cust-loc-l3').value = c.location || '';
         
         window.history.pushState({ modal: 'edit-customer' }, '');
-        modalOverlay.classList.add('active');
-        document.getElementById('edit-customer-sheet').classList.add('active');
+        document.getElementById('modal-overlay').classList.add('active');
+        document.getElementById('edit-customer-sheet-l3').classList.add('active');
     };
 
-    window.saveCustomerEdit = async () => {
+    window.saveCustomerEditLevel3 = async () => {
         vibrate();
-        const btn = document.getElementById('btn-save-cust');
-        const newName = document.getElementById('edit-cust-name').value.trim();
-        const newPhone = document.getElementById('edit-cust-phone').value.trim();
-        const newLoc = document.getElementById('edit-cust-loc').value.trim();
+        const btn = document.getElementById('btn-save-cust-l3');
+        const newName = document.getElementById('edit-cust-name-l3').value.trim();
+        const newPhone = document.getElementById('edit-cust-phone-l3').value.trim();
+        const newLoc = document.getElementById('edit-cust-loc-l3').value.trim();
 
         if (!newName) return customAlert("Name is required");
 
@@ -1289,14 +1691,12 @@
                 location: newLoc
             });
 
-            // Update Local State synchronously for instantly smooth UX
             activeCustomer.data.name = newName;
             activeCustomer.data.phone = newPhone;
             activeCustomer.data.location = newLoc;
 
-            // Update UI
-            document.getElementById('detail-cust-name').innerText = newName;
-            document.getElementById('ledger-cust-name-inner').innerText = newName;
+            document.getElementById('ledger-cust-name').innerText = newName;
+            document.getElementById('detail-cust-name-hidden').innerText = newName;
             
             document.getElementById('ledger-cust-phone').innerText = newPhone || 'No Phone';
             document.getElementById('ledger-cust-phone').href = newPhone ? 'tel:' + newPhone : '#';
@@ -1318,37 +1718,13 @@
                 mapParent.innerHTML = `<iframe id="ledger-map-frame" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>`;
             }
 
-            // --- ZERO-READ OPTIMIZATION START ---
-            // 1. Update UI (Level 1 main list) directly
-            const mainNameEl = document.getElementById(`main-card-name-${activeCustomer.id}`);
-            const mainPhoneEl = document.getElementById(`main-card-phone-${activeCustomer.id}`);
-            if (mainNameEl) mainNameEl.innerText = newName;
-            if (mainPhoneEl) mainPhoneEl.innerText = `ID: ${activeCustomer.id} | 📞 ${newPhone || 'N/A'}`;
-
-            // 2. Update UI (Level 1 search list) directly
-            const searchNameEl = document.getElementById(`search-card-name-${activeCustomer.id}`);
-            const searchPhoneEl = document.getElementById(`search-card-phone-${activeCustomer.id}`);
-            if (searchNameEl) searchNameEl.innerText = newName;
-            if (searchPhoneEl) searchPhoneEl.innerText = `ID: ${activeCustomer.id} | 📞 ${newPhone || 'N/A'}`;
-
-            // 3. Update RAM Cache Manually
-            const cacheIndex = localSearchCache.findIndex(c => c.rawId === activeCustomer.id);
-            if (cacheIndex !== -1) {
-                localSearchCache[cacheIndex].name = newName.toLowerCase();
-                localSearchCache[cacheIndex].rawName = newName;
-                localSearchCache[cacheIndex].phone = newPhone;
-            } else {
-                localSearchCache.push({
-                    id: activeCustomer.id.toLowerCase(),
-                    name: newName.toLowerCase(),
-                    rawName: newName,
-                    rawId: activeCustomer.id,
-                    phone: newPhone
-                });
-            }
-            
             vibrate([30, 50]);
-            window.history.back(); // Invokes popstate securely
+            
+            // Re-render Level 2 info if possible to keep names matching
+            const lvl2Title = document.querySelector(`#cust-card-${activeCustomer.id} h3`);
+            if(lvl2Title) lvl2Title.innerText = newName;
+
+            window.history.back(); 
         } catch(e) {
             customAlert("Failed to save: " + e.message);
         }
@@ -1357,10 +1733,9 @@
         btn.disabled = false;
     };
 
-    // --- GPS Fetch for Edit Modal ---
-    window.fetchEditGps = () => {
+    window.fetchEditGpsLevel3 = () => {
         vibrate();
-        const locIn = document.getElementById('edit-cust-loc');
+        const locIn = document.getElementById('edit-cust-loc-l3');
         const originalVal = locIn.value;
         locIn.value = "Fetching...";
         if(navigator.geolocation) {
@@ -1373,10 +1748,7 @@
         }
     };
 
-
-    // ==========================================
-    // UPGRADED: LINE PICKER (FULLY REAL-TIME)
-    // ==========================================
+    // --- LINE PICKER ENGINE ---
     let debounceLineSearchTimer;
     const debounceLine = (f, d=400) => (...args) => { clearTimeout(debounceLineSearchTimer); debounceLineSearchTimer = setTimeout(() => f(...args), d); };
 
@@ -1396,26 +1768,28 @@
         vibrate();
         
         const currentLineId = activeCustomer.data.lineId;
-        const lineDisplayLabel = document.getElementById('picker-current-line');
-        lineDisplayLabel.innerText = "Current Line: Loading...";
+        const lineDisplayLabel = document.getElementById('picker-current-line-l3');
+        if(lineDisplayLabel) lineDisplayLabel.innerText = "Current Line: Loading...";
 
-        linesSearch = ""; document.getElementById('picker-search-input').value = '';
+        linesSearch = ""; 
+        const searchInputL3 = document.getElementById('picker-search-input-l3');
+        if(searchInputL3) searchInputL3.value = '';
+        
         linesLastVisible = null; linesHasMore = true;
         linesNameLastVisible = null; linesNameHasMore = true;
         linesIdLastVisible = null; linesIdHasMore = true;
         
-        // OPENS INSTANTLY - No blocking lag
         window.history.pushState({ modal: 'line-picker' }, '');
-        modalOverlay.classList.add('active');
-        document.getElementById('line-picker-sheet').classList.add('active');
+        document.getElementById('modal-overlay').classList.add('active');
+        const pickerSheetL3 = document.getElementById('line-picker-sheet-l3');
+        if(pickerSheetL3) pickerSheetL3.classList.add('active');
 
-        // Fresh read for current line info
         if(currentLineId) {
             getLineData(currentLineId).then(lData => {
-                if(lData) lineDisplayLabel.innerText = `Current Line: ${lData.name} (${lData.id})`;
-                else lineDisplayLabel.innerText = `Current Line: Unknown (${currentLineId})`;
+                if(lData && lineDisplayLabel) lineDisplayLabel.innerText = `Current Line: ${lData.name} (${lData.id})`;
+                else if(lineDisplayLabel) lineDisplayLabel.innerText = `Current Line: Unknown (${currentLineId})`;
             });
-        } else {
+        } else if(lineDisplayLabel) {
             lineDisplayLabel.innerText = `Current Line: Unassigned`;
         }
 
@@ -1429,16 +1803,16 @@
       if (isSearch && isMore && !linesNameHasMore && !linesIdHasMore) return;
       if (!isSearch && isMore && !linesHasMore) return;
 
-      const list = document.getElementById('picker-list');
+      const list = document.getElementById('picker-list-l3');
+      if(!list) return;
       
       linesLoading = true;
       
       if(!isMore) { 
-        // UPGRADED: 6 Skeletons prevents height jitter, PLUS preserving the loader element
         let h=''; for(let i=0;i<6;i++) h+=`<div class="picker-line" style="background: var(--surface-card); border: 1px solid var(--border);"><div class="skeleton-box" style="height:20px;width:60%;margin-bottom:8px; border-radius:4px;"></div><div class="skeleton-box" style="height:15px;width:40%; border-radius:4px; margin-bottom:0;"></div></div>`;
-        list.innerHTML = h + '<div id="picker-loader" class="loading-trigger" style="display: none;">Loading...</div>';
+        list.innerHTML = h + '<div id="picker-loader-l3" class="loading-trigger" style="display: none;">Loading...</div>';
       } else { 
-        const loader = document.getElementById('picker-loader');
+        const loader = document.getElementById('picker-loader-l3');
         if(loader) { loader.innerText = 'Loading...'; loader.style.display = 'block'; }
       }
 
@@ -1452,14 +1826,12 @@
           
           let nameSnap = null; let idSnap = null; const promises = [];
           
-          // PARALLEL QUERY A
           if (linesNameHasMore) {
             let qName = query(linesRef, where("name", ">=", nameTerm), where("name", "<=", nameTerm + "\uf8ff"), orderBy("name"), limit(3));
             if (isMore && linesNameLastVisible) qName = query(qName, startAfter(linesNameLastVisible));
             promises.push(getDocs(qName).then(snap => { nameSnap = snap; }));
           }
           
-          // PARALLEL QUERY B
           if (linesIdHasMore) {
             let qId = query(linesRef, where("id", ">=", idTerm), where("id", "<=", idTerm + "\uf8ff"), orderBy("id"), limit(3));
             if (isMore && linesIdLastVisible) qId = query(qId, startAfter(linesIdLastVisible));
@@ -1472,20 +1844,15 @@
             linesNameLastVisible = nameSnap.docs[nameSnap.docs.length - 1];
             linesNameHasMore = nameSnap.docs.length === 3;
             nameSnap.forEach(d => results.push(d.data()));
-          } else if (nameSnap) {
-            linesNameHasMore = false;
-          }
+          } else if (nameSnap) { linesNameHasMore = false; }
           
           if (idSnap && !idSnap.empty) {
             linesIdLastVisible = idSnap.docs[idSnap.docs.length - 1];
             linesIdHasMore = idSnap.docs.length === 3;
             idSnap.forEach(d => results.push(d.data()));
-          } else if (idSnap) {
-            linesIdHasMore = false;
-          }
+          } else if (idSnap) { linesIdHasMore = false; }
           
         } else {
-          // Standard Real-Time Paginated Load
           let q = query(linesRef, orderBy("createdAt", "desc"), limit(6));
           if(isMore && linesLastVisible) q = query(q, startAfter(linesLastVisible));
 
@@ -1494,12 +1861,9 @@
               linesLastVisible = snap.docs[snap.docs.length-1];
               linesHasMore = snap.docs.length === 6;
               snap.forEach(d => results.push(d.data()));
-          } else {
-              linesHasMore = false;
-          }
+          } else { linesHasMore = false; }
         }
 
-        // De-duplication
         const uniqueMap = {};
         const finalResults = [];
         results.forEach(data => {
@@ -1510,7 +1874,7 @@
         });
 
         if(!isMore) {
-            list.innerHTML = '<div id="picker-loader" class="loading-trigger" style="display: none;">Loading...</div>';
+            list.innerHTML = '<div id="picker-loader-l3" class="loading-trigger" style="display: none;">Loading...</div>';
         }
         
         if(finalResults.length === 0 && !isMore) { 
@@ -1520,7 +1884,6 @@
 
         let html = '';
         finalResults.forEach(data => {
-          // Disable clicking the exact line the user is already in
           const isCurrent = data.id === activeCustomer.data.lineId;
           const style = isCurrent ? `opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; border: 2px solid var(--primary);` : ``;
           const text = isCurrent ? ` <span style="font-size:0.75rem; color:var(--primary); font-weight:800; background:rgba(255,255,255,0.9); padding:2px 8px; border-radius:6px; letter-spacing:0.5px;">ACTIVE</span>` : ``;
@@ -1535,10 +1898,9 @@
             </div>`;
         });
         
-        const currentLoader = document.getElementById('picker-loader');
+        const currentLoader = document.getElementById('picker-loader-l3');
         if (currentLoader) {
             currentLoader.insertAdjacentHTML('beforebegin', html);
-            // UPGRADED: No jumping. Loader hides instantly when content renders.
             currentLoader.style.display = 'none';
             currentLoader.innerText = '';
         } else {
@@ -1549,24 +1911,28 @@
       linesLoading = false;
     }
 
-    document.getElementById('picker-search-input').addEventListener('input', debounceLine(e => {
-      let val = e.target.value.trim();
-      linesSearch = val;
-      
-      linesLastVisible = null; linesHasMore = true;
-      linesNameLastVisible = null; linesNameHasMore = true;
-      linesIdLastVisible = null; linesIdHasMore = true;
-      
-      loadPickerLines();
-    }));
+    const searchInputPickerL3 = document.getElementById('picker-search-input-l3');
+    if (searchInputPickerL3) {
+      searchInputPickerL3.addEventListener('input', debounceLine(e => {
+        let val = e.target.value.trim();
+        linesSearch = val;
+        linesLastVisible = null; linesHasMore = true;
+        linesNameLastVisible = null; linesNameHasMore = true;
+        linesIdLastVisible = null; linesIdHasMore = true;
+        loadPickerLines();
+      }));
+    }
 
-    document.getElementById('picker-list').addEventListener('scroll', function() {
-      if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 50) {
-        let isSearch = linesSearch.trim() !== "";
-        let anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
-        if(anyMore && !linesLoading) { vibrate(10); loadPickerLines(true); }
-      }
-    });
+    const pickerListL3 = document.getElementById('picker-list-l3');
+    if (pickerListL3) {
+      pickerListL3.addEventListener('scroll', function() {
+        if((this.clientHeight + this.scrollTop) >= this.scrollHeight - 50) {
+          let isSearch = linesSearch.trim() !== "";
+          let anyMore = isSearch ? (linesNameHasMore || linesIdHasMore) : linesHasMore;
+          if(anyMore && !linesLoading) { vibrate(10); loadPickerLines(true); }
+        }
+      });
+    }
 
     window.assignLineToCustomer = async (newLineId) => {
         vibrate([30, 50]);
@@ -1574,18 +1940,19 @@
 
         try {
             await updateDoc(activeCustomer.ref, { lineId: newLineId });
-            activeCustomer.data.lineId = newLineId; // Sync locally instantly
+            activeCustomer.data.lineId = newLineId; 
             
-            // Fix History API race condition by removing classes manually before back()
-            document.getElementById('line-picker-sheet').classList.remove('active');
+            const pickerL3 = document.getElementById('line-picker-sheet-l3');
+            if(pickerL3) pickerL3.classList.remove('active');
+            
+            const pickerL2 = document.getElementById('line-picker-sheet');
+            if(pickerL2) pickerL2.classList.remove('active');
+            
             document.getElementById('modal-overlay').classList.remove('active');
             
-            window.history.back(); // Dismiss Modal cleanly
+            window.history.back(); 
             
-            // Delay toast slightly to let history finish popping and keep user in ledger
-            setTimeout(() => {
-                customAlert("Customer successfully moved to new line.", "Success");
-            }, 300);
+            setTimeout(() => { customAlert("Customer successfully moved to new line.", "Success"); }, 300);
             
             const ghostCard = document.getElementById('cust-card-' + activeCustomer.id);
             if (ghostCard) {
@@ -1594,13 +1961,9 @@
                 ghostCard.style.transform = 'scale(0.9)';
                 setTimeout(() => ghostCard.remove(), 300);
             }
-            
-        } catch(e) {
-            customAlert("Failed to change line: " + e.message, "Error");
-        }
+        } catch(e) { customAlert("Failed to change line: " + e.message, "Error"); }
     };
 
-    // --- Native CSV Exporter ---
     window.downloadCSV = (pIndex) => {
         vibrate();
         const prod = activeCustomer.data.products[pIndex];
