@@ -1424,16 +1424,7 @@
                 pending: pTotal-pPaid,
                 addedAt: new Date().toISOString(),
                 ...(isChittai && { isChittai: true, startingDue: startDue }),
-                payments: pPaid > 0 ? [{ 
-                    id: 'PAY_'+Date.now(), 
-                    amount: pPaid, 
-                    date: new Date().toISOString(), 
-                    type: 'advance', 
-                    method: 'cash', 
-                    agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', 
-                    pendingAfter: pTotal-pPaid,
-                    ...(isChittai && { dueNumber: startDue })
-                }] : []
+                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
             };
             
             let finalUpdatedProds = null;
