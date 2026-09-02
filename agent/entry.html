@@ -700,7 +700,8 @@
           // --- END COMMENTED OUT OLD LOGIC ---
           */
 
-          // --- NEW: PATH 2 SINGLE MASTER DRAFT PUSH (ZERO EXTRA READS) ---
+          /*
+          // --- BEGIN COMMENTED OUT: PATH 2 SINGLE DRAFT (OVERWRITE VULNERABLE) ---
           const logRef = doc(db, "daily_logs", `${currentUser.uid}_${today}`);
           const logDoc = await transaction.get(logRef);
           
@@ -715,6 +716,19 @@
                 activeCustomers: arrayUnion(selectedCustomer.id)
             });
           }
+          // --- END COMMENTED OUT ---
+          */
+
+          // --- NEW: UNIVERSAL UNIQUE MASTER DRAFT PUSH (ZERO READS, MULTIPLE CARDS) ---
+          // By appending Date.now(), every single submission creates a distinct document.
+          // This prevents accidental overwrites and allows multiple collections per product.
+          const uniqueDraftId = Date.now();
+          const logRef = doc(db, "daily_logs", `${currentUser.uid}_${today}_${uniqueDraftId}`);
+          
+          transaction.set(logRef, { 
+              [entryKey]: paymentPayload,
+              activeCustomers: [selectedCustomer.id] // Array allows exact matching for live math
+          });
         });
 
         // SUCCESS: Auto-clear from Local Storage Map Manifest
