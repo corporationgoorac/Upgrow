@@ -43,16 +43,6 @@
     ::-webkit-scrollbar { display: none !important; }
     body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; }
 
-    /* Chittai Toggle */
-    .toggle-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: var(--bg-color); border-radius: 14px; border: 1px dashed var(--border); }
-    .toggle-wrapper span { font-size: 0.95rem; font-weight: 800; color: var(--text-main); }
-    .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 34px; }
-    .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    input:checked + .toggle-slider { background-color: var(--primary); }
-    input:checked + .toggle-slider:before { transform: translateX(22px); }
-
     /* --- Screen Management --- */
     .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 1; }
     .screen.hidden-right { transform: translateX(100%); }
@@ -162,6 +152,16 @@
     .btn-cancel { background: var(--bg-color); color: var(--text-main); border: 2px solid var(--border); }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-primary { background: var(--primary); color: #fff; }
+
+    /* Chittai Toggle Specific CSS */
+    .toggle-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: var(--bg-color); border-radius: 14px; border: 1px dashed var(--border); }
+    .toggle-wrapper span { font-size: 0.95rem; font-weight: 800; color: var(--text-main); }
+    .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 34px; }
+    .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input:checked + .toggle-slider { background-color: var(--primary); }
+    input:checked + .toggle-slider:before { transform: translateX(22px); }
   </style>
 </head>
 <body>
@@ -1170,7 +1170,13 @@
     // Old Level 2 Modal compatibility
     window.openAddProductModal = (custIdOverride = null) => {
       if(custIdOverride) activeCustId = custIdOverride; 
-      document.getElementById('add-prod-name').value=''; document.getElementById('add-prod-total').value=''; document.getElementById('add-prod-paid').value='';
+      document.getElementById('add-prod-name').value=''; 
+      document.getElementById('add-prod-name').readOnly=false;
+      document.getElementById('add-prod-total').value=''; 
+      document.getElementById('add-prod-paid').value='';
+      if(document.getElementById('chittai-toggle-prod-l2')) document.getElementById('chittai-toggle-prod-l2').checked=false;
+      if(document.getElementById('chittai-due-group-prod-l2')) document.getElementById('chittai-due-group-prod-l2').style.display='none';
+      if(document.getElementById('add-prod-due-l2')) document.getElementById('add-prod-due-l2').value='1';
       openModal('modal-product');
     };
 
@@ -1179,6 +1185,9 @@
       const pName = document.getElementById('add-prod-name').value.trim();
       const pTotal = Number(document.getElementById('add-prod-total').value);
       const pPaid = Number(document.getElementById('add-prod-paid').value);
+      const isChittai = document.getElementById('chittai-toggle-prod-l2') && document.getElementById('chittai-toggle-prod-l2').checked;
+      const startDue = document.getElementById('add-prod-due-l2') ? (parseInt(document.getElementById('add-prod-due-l2').value) || 1) : 1;
+
       if(!pName || !pTotal) return customAlert("Fill name and total", "Error");
 
       const btn = document.getElementById('btn-save-product'); btn.disabled = true; btn.innerText = "Adding...";
@@ -1197,7 +1206,17 @@
                 paid: pPaid, 
                 pending: pTotal-pPaid, 
                 addedAt: new Date().toISOString(),
-                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
+                ...(isChittai && { isChittai: true, startingDue: startDue }),
+                payments: pPaid > 0 ? [{ 
+                    id: 'PAY_'+Date.now(), 
+                    amount: pPaid, 
+                    date: new Date().toISOString(), 
+                    type: 'advance', 
+                    method: 'cash', 
+                    agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', 
+                    pendingAfter: pTotal-pPaid,
+                    ...(isChittai && { dueNumber: startDue })
+                }] : []
             };
             const updatedProds = cData.products ? [...cData.products, newP] : [newP];
             transaction.update(custRef, { products: updatedProds });
@@ -1363,7 +1382,7 @@
                 </div>
                 
                 <div id="ledger-collapse-${pIndex}" style="display: none; margin-top: 10px;">
-                    <div class="table-wrapper" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border);">
+                    <div class="product-table-wrapper" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border);">
                       <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.85rem;">
                         <thead style="background: rgba(107, 114, 128, 0.1);">
                           <tr>
@@ -1424,7 +1443,16 @@
                 pending: pTotal-pPaid,
                 addedAt: new Date().toISOString(),
                 ...(isChittai && { isChittai: true, startingDue: startDue }),
-                payments: pPaid > 0 ? [{ id: 'PAY_'+Date.now(), amount: pPaid, date: new Date().toISOString(), type: 'advance', method: 'cash', agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', pendingAfter: pTotal-pPaid }] : []
+                payments: pPaid > 0 ? [{ 
+                    id: 'PAY_'+Date.now(), 
+                    amount: pPaid, 
+                    date: new Date().toISOString(), 
+                    type: 'advance', 
+                    method: 'cash', 
+                    agent_uid: currentUser ? currentUser.uid : 'UNKNOWN', 
+                    pendingAfter: pTotal-pPaid,
+                    ...(isChittai && { dueNumber: startDue })
+                }] : []
             };
             
             let finalUpdatedProds = null;
@@ -1481,23 +1509,32 @@
     };
 
     window.openAddPayment = (pIndex) => {
+        const paymentSheet = document.getElementById('payment-sheet');
+        if (paymentSheet && paymentSheet.classList.contains('active')) return;
+        
+        // Also check if they are using the L3 version from HTML
         const paymentSheetL3 = document.getElementById('payment-sheet-l3');
-        if (paymentSheetL3 && paymentSheetL3.classList.contains('active')) return;
+        const activeSheet = paymentSheetL3 ? paymentSheetL3 : paymentSheet;
+        if (!activeSheet) return;
+        
         vibrate();
         activeProductIndex = pIndex;
         activePaymentIndex = null; 
         const prod = activeCustomer.data.products[pIndex];
         
-        document.getElementById('sheet-title-l3').innerText = "Record Payment";
-        document.getElementById('sheet-sub-l3').innerText = prod.name;
-        document.getElementById('sheet-pending-l3').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid-l3').innerText = fmt(prod.paid);
+        const isL3 = !!paymentSheetL3;
+        const prefix = isL3 ? '-l3' : '';
         
-        document.getElementById('pay-amount-l3').value = '';
-        document.getElementById('pay-date-l3').value = new Date().toISOString().split('T')[0]; 
-        document.getElementById('pay-method-l3').value = 'cash';
+        document.getElementById(`sheet-title${prefix}`).innerText = "Record Payment";
+        document.getElementById(`sheet-sub${prefix}`).innerText = prod.name;
+        document.getElementById(`sheet-pending${prefix}`).innerText = fmt(prod.pending);
+        document.getElementById(`sheet-paid${prefix}`).innerText = fmt(prod.paid);
+        
+        document.getElementById(`pay-amount${prefix}`).value = '';
+        document.getElementById(`pay-date${prefix}`).value = new Date().toISOString().split('T')[0]; 
+        document.getElementById(`pay-method${prefix}`).value = 'cash';
 
-        const chittaiUI = document.getElementById('chittai-payment-ui-l3');
+        const chittaiUI = document.getElementById(`chittai-payment-ui${prefix}`);
         if(chittaiUI) {
             if(prod.isChittai) {
                 chittaiUI.style.display = 'block';
@@ -1506,8 +1543,8 @@
                     prod.payments.forEach(p => { if (p.dueNumber && p.dueNumber > maxDue) maxDue = p.dueNumber; });
                 }
                 let nextDue = maxDue > 0 ? maxDue + 1 : (prod.startingDue || 1);
-                document.getElementById('chittai-next-due-l3').innerText = '#' + nextDue;
-                document.getElementById('chittai-target-due-l3').value = nextDue;
+                document.getElementById(`chittai-next-due${prefix}`).innerText = '#' + nextDue;
+                document.getElementById(`chittai-target-due${prefix}`).value = nextDue;
                 updateChittaiPreview();
             } else {
                 chittaiUI.style.display = 'none';
@@ -1516,41 +1553,49 @@
 
         window.history.pushState({ modal: 'payment' }, ''); 
         document.getElementById('modal-overlay').classList.add('active');
-        paymentSheetL3.classList.add('active');
+        activeSheet.classList.add('active');
     };
 
     window.openEditPayment = (pIndex, payIndex) => {
+        const paymentSheet = document.getElementById('payment-sheet');
         const paymentSheetL3 = document.getElementById('payment-sheet-l3');
-        if (paymentSheetL3 && paymentSheetL3.classList.contains('active')) return;
+        const activeSheet = paymentSheetL3 ? paymentSheetL3 : paymentSheet;
+        if (!activeSheet || activeSheet.classList.contains('active')) return;
+
         vibrate();
         activeProductIndex = pIndex;
         activePaymentIndex = payIndex; 
         const prod = activeCustomer.data.products[pIndex];
         const pay = prod.payments[payIndex];
         
-        document.getElementById('sheet-title-l3').innerText = "Edit Payment";
-        document.getElementById('sheet-sub-l3').innerText = prod.name;
-        document.getElementById('sheet-pending-l3').innerText = fmt(prod.pending);
-        document.getElementById('sheet-paid-l3').innerText = fmt(prod.paid);
-        
-        document.getElementById('pay-amount-l3').value = pay.amount;
-        document.getElementById('pay-date-l3').value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
-        document.getElementById('pay-method-l3').value = pay.method || 'cash';
+        const prefix = paymentSheetL3 ? '-l3' : '';
 
-        const chittaiUI = document.getElementById('chittai-payment-ui-l3');
+        document.getElementById(`sheet-title${prefix}`).innerText = "Edit Payment";
+        document.getElementById(`sheet-sub${prefix}`).innerText = prod.name;
+        document.getElementById(`sheet-pending${prefix}`).innerText = fmt(prod.pending);
+        document.getElementById(`sheet-paid${prefix}`).innerText = fmt(prod.paid);
+        
+        document.getElementById(`pay-amount${prefix}`).value = pay.amount;
+        document.getElementById(`pay-date${prefix}`).value = pay.date ? pay.date.split('T')[0] : new Date().toISOString().split('T')[0];
+        document.getElementById(`pay-method${prefix}`).value = pay.method || 'cash';
+
+        const chittaiUI = document.getElementById(`chittai-payment-ui${prefix}`);
         if(chittaiUI) chittaiUI.style.display = 'none'; // Hide chittai UI when editing single old payment
 
         window.history.pushState({ modal: 'payment' }, '');
         document.getElementById('modal-overlay').classList.add('active');
-        paymentSheetL3.classList.add('active');
+        activeSheet.classList.add('active');
     };
 
     window.savePayment = async () => {
         vibrate();
-        const payAmount = document.getElementById('pay-amount-l3');
-        const payDate = document.getElementById('pay-date-l3');
-        const payMethod = document.getElementById('pay-method-l3');
-        const btnSavePayment = document.getElementById('btn-save-payment-l3');
+        const isL3 = !!document.getElementById('payment-sheet-l3');
+        const prefix = isL3 ? '-l3' : '';
+        
+        const payAmount = document.getElementById(`pay-amount${prefix}`);
+        const payDate = document.getElementById(`pay-date${prefix}`);
+        const payMethod = document.getElementById(`pay-method${prefix}`);
+        const btnSavePayment = document.getElementById(`btn-save-payment${prefix}`);
         
         const amt = parseInt(payAmount.value);
         const selectedDate = payDate.value;
@@ -1564,8 +1609,12 @@
         // Chittai Pre-validation
         let nextDue, targetDue, numDues, baseAmt;
         if (activePaymentIndex === null && localProd.isChittai) {
-            nextDue = parseInt(document.getElementById('chittai-next-due-l3').innerText.replace('#', '')) || 1;
-            targetDue = parseInt(document.getElementById('chittai-target-due-l3').value) || nextDue;
+            const nextDueStr = document.getElementById(`chittai-next-due${prefix}`).innerText;
+            nextDue = parseInt(nextDueStr.replace('#', '')) || 1;
+            
+            const targetDueVal = document.getElementById(`chittai-target-due${prefix}`).value;
+            targetDue = parseInt(targetDueVal) || nextDue;
+            
             if (targetDue < nextDue) return customAlert("Target due cannot be less than next due.");
             numDues = (targetDue - nextDue) + 1;
             baseAmt = Math.floor(amt / numDues);
