@@ -148,6 +148,15 @@
     <h3 style="margin-bottom: 5px; font-size: 1.3rem; font-weight: 800;" id="sheet-product-name">Product Name</h3>
     <p style="color: var(--text-sub); font-size: 0.95rem; margin-bottom: 25px; font-weight: 600;">Pending: <span id="sheet-pending-amt" style="color: var(--primary); font-weight: 800;">₹0</span></p>
     
+    <!-- NEW: Chittai specific inputs (Hidden by default) -->
+    <div id="chittai-payment-ui" style="display: none; background: rgba(245, 158, 11, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--warning); margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+            <div><span style="font-size:0.75rem; color:var(--text-sub); font-weight:800; text-transform:uppercase;">Next Due</span><div id="chittai-next-due" style="font-size:1.2rem; font-weight:800; color:var(--text-main);">#1</div></div>
+            <div style="text-align:right;"><span style="font-size:0.75rem; color:var(--text-sub); font-weight:800; text-transform:uppercase;">Target Due #</span><br><input type="number" id="chittai-target-due" style="width: 70px; padding: 6px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; font-weight: 800; font-size: 1.1rem; margin-top: 4px; background:var(--surface-color); color:var(--text-main);" inputmode="numeric"></div>
+        </div>
+        <div id="chittai-preview" style="font-size: 0.8rem; font-weight: 700; color: var(--warning); text-align: center;">Enter amount to preview split.</div>
+    </div>
+
     <div class="input-group">
       <label>Total Amount Collected (₹)</label>
       <input type="number" id="pay-total" placeholder="e.g. 5000" inputmode="numeric">
@@ -199,6 +208,7 @@
     let currentUser = null;
     let selectedCustomer = null;
     let selectedProduct = null;
+    window.currentPendingDues = {}; // NEW: Global registry for exact pending due calculations
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
 
     // DOM Elements
@@ -338,10 +348,56 @@
       });
     }
 
+    // --- NEW: Global Auto-Split Preview Engine for Chittai Modal ---
+    window.updateChittaiPreview = () => {
+        const payAmtInput = document.getElementById('pay-total');
+        const targetDueInput = document.getElementById('chittai-target-due');
+        const previewEl = document.getElementById('chittai-preview');
+        const nextDueEl = document.getElementById('chittai-next-due');
+        const btnSavePayment = document.getElementById('btn-save-payment');
+        
+        if(!payAmtInput || !targetDueInput || !previewEl || !nextDueEl) return;
+        
+        const amt = parseInt(payAmtInput.value) || 0;
+        const target = parseInt(targetDueInput.value) || 0;
+        const next = parseInt(nextDueEl.innerText.replace('#', '')) || 1;
+        
+        if (target < next && target > 0) {
+            previewEl.style.color = "var(--danger)";
+            previewEl.innerText = "Target due cannot be less than next due.";
+            btnSavePayment.disabled = true;
+            btnSavePayment.style.opacity = '0.5';
+            return;
+        }
+
+        const numDues = (target - next) + 1;
+        if (numDues > 0 && amt > 0) {
+            const baseAmt = Math.floor(amt / numDues);
+            const remainder = amt - (baseAmt * (numDues - 1));
+            previewEl.style.color = "var(--warning)";
+            if (numDues === 1) {
+                previewEl.innerText = `Applying full ₹${amt} to Due #${next}.`;
+            } else {
+                previewEl.innerText = `Splitting ₹${amt} across ${numDues} dues (₹${baseAmt}/each, last due ₹${remainder}).`;
+            }
+            btnSavePayment.disabled = false;
+            btnSavePayment.style.opacity = '1';
+        } else {
+            previewEl.style.color = "var(--warning)";
+            previewEl.innerText = "Enter amount and target due to preview split.";
+            btnSavePayment.disabled = false; // Default valid if normal product
+            btnSavePayment.style.opacity = '1';
+        }
+    };
+    document.getElementById('pay-total').addEventListener('input', window.updateChittaiPreview);
+    document.getElementById('chittai-target-due').addEventListener('input', window.updateChittaiPreview);
+
     // --- Second Screen: Live Pending Math & Detail Card UI ---
-    window.openPaymentSheet = (productName, maxAmount, prodIndex) => {
+    // OLD LINE: window.openPaymentSheet = (productName, maxAmount, prodIndex) => {
+    window.openPaymentSheet = (productName, maxAmount, prodIndex, fullProdObj = null) => {
       vibrate();
-      selectedProduct = { name: productName, index: prodIndex, max: maxAmount };
+      // OLD LINE: selectedProduct = { name: productName, index: prodIndex, max: maxAmount };
+      selectedProduct = { name: productName, index: prodIndex, max: maxAmount, fullObj: fullProdObj };
       
       document.getElementById('sheet-product-name').innerText = productName;
       document.getElementById('sheet-pending-amt').innerText = fmt(maxAmount);
@@ -351,6 +407,31 @@
       payCashSplit.value = '';
       payOnlineSplit.value = '';
       splitContainer.style.display = 'none';
+
+      // NEW CHITTAI MODAL LOGIC INJECTION
+      const chittaiUI = document.getElementById('chittai-payment-ui');
+      if(fullProdObj && fullProdObj.isChittai) {
+          chittaiUI.style.display = 'block';
+          
+          let maxDue = 0;
+          if (fullProdObj.payments && fullProdObj.payments.length > 0) {
+              fullProdObj.payments.forEach(p => { if (p.dueNumber && p.dueNumber > maxDue) maxDue = p.dueNumber; });
+          }
+          
+          // Also factor in the drafts sitting in the outbox
+          let pendingMax = window.currentPendingDues ? window.currentPendingDues[`${selectedCustomer.id}_${prodIndex}`] || 0 : 0;
+          if (pendingMax > maxDue) maxDue = pendingMax;
+
+          let nextDue = maxDue > 0 ? maxDue + 1 : (fullProdObj.startingDue || 1);
+          
+          document.getElementById('chittai-next-due').innerText = '#' + nextDue;
+          document.getElementById('chittai-target-due').value = nextDue;
+          window.updateChittaiPreview();
+      } else {
+          if(chittaiUI) chittaiUI.style.display = 'none';
+          document.getElementById('btn-save-payment').disabled = false;
+          document.getElementById('btn-save-payment').style.opacity = '1';
+      }
 
       window.history.pushState({ screen: 'modal' }, '');
       modalOverlay.classList.add('active');
@@ -383,6 +464,7 @@
         const logsSnap = await getDocs(logsQuery); // <--- NEW OPTIMIZED FETCH
 
         let allPendingData = {};
+        window.currentPendingDues = {}; // Reset global due tracker for outbox
         
         logsSnap.forEach(d => {
           const data = d.data();
@@ -391,6 +473,12 @@
              if(data[key].status === 'pending' || data[key].status === 'submitted') {
                  if(!allPendingData[key]) allPendingData[key] = 0;
                  allPendingData[key] += parseInt(data[key].amount);
+                 
+                 // NEW: Track the highest pending due number sitting in the outbox
+                 if(data[key].dueNumber) {
+                     if(!window.currentPendingDues[key]) window.currentPendingDues[key] = 0;
+                     if(data[key].dueNumber > window.currentPendingDues[key]) window.currentPendingDues[key] = data[key].dueNumber;
+                 }
              }
           });
         });
@@ -441,7 +529,9 @@
           
           // Attach Click Event
           if(liveBalance > 0) {
-             card.onclick = () => openPaymentSheet(prod.name || 'Unnamed Product', liveBalance, index);
+             // OLD LINE: card.onclick = () => openPaymentSheet(prod.name || 'Unnamed Product', liveBalance, index);
+             // NEW LINE: Passes the entire product object so we can check for isChittai
+             card.onclick = () => openPaymentSheet(prod.name || 'Unnamed Product', liveBalance, index, prod);
              card.style.border = "2px solid rgba(16, 185, 129, 0.2)";
           } else {
              card.style.opacity = '0.6';
@@ -506,7 +596,6 @@
       btn.disabled = true;
 
       const today = new Date().toISOString().split('T')[0];
-      const logRef = doc(db, "daily_logs", `${currentUser.uid}_${today}`);
       const entryKey = `${selectedCustomer.id}_${selectedProduct.index}`;
 
       const paymentPayload = {
@@ -519,26 +608,82 @@
         customer_name: selectedCustomer.name
       };
 
+      // NEW CHITTAI SPLIT LOGIC PRE-PROCESSING
+      const isChittai = selectedProduct.fullObj && selectedProduct.fullObj.isChittai;
+      let nextDue, targetDue, numDues = 1, baseAmt = amt, remainder = 0;
+      
+      if(isChittai) {
+          nextDue = parseInt(document.getElementById('chittai-next-due').innerText.replace('#', '')) || 1;
+          targetDue = parseInt(document.getElementById('chittai-target-due').value) || nextDue;
+          if(targetDue < nextDue) { alert("Target due cannot be less than next due."); btn.innerText = "Save Entry"; btn.disabled = false; return; }
+          numDues = (targetDue - nextDue) + 1;
+          baseAmt = Math.floor(amt / numDues);
+          remainder = amt - (baseAmt * (numDues - 1));
+      }
+
       try {
         // FIREBASE TRANSACTION: Guarantee atomicity for the outbox
         await runTransaction(db, async (transaction) => {
-          const logDoc = await transaction.get(logRef);
-          // if (!logDoc.exists()) {                                  // <--- OLD LINE COMMENTED OUT
-          //   transaction.set(logRef, { [entryKey]: paymentPayload }); // <--- OLD LINE COMMENTED OUT
-          // } else {                                                   // <--- OLD LINE COMMENTED OUT
-          //   transaction.update(logRef, { [entryKey]: paymentPayload }); // <--- OLD LINE COMMENTED OUT
-          // }                                                          // <--- OLD LINE COMMENTED OUT
-          
-          if (!logDoc.exists()) {
-            transaction.set(logRef, { 
-                [entryKey]: paymentPayload,
-                activeCustomers: [selectedCustomer.id] // <--- NEW OPTIMIZED PAYLOAD
-            });
+            
+          if (isChittai) {
+              // CHITTAI MULTI-DUE PUSH
+              for (let i = 0; i < numDues; i++) {
+                  let currentDue = nextDue + i;
+                  let currentAmt = (i === numDues - 1) ? (amt - (baseAmt * (numDues - 1))) : baseAmt; // Remainder applied to last due securely
+                  
+                  // Key protection: We append _DUE to the Document ID, NOT the dictionary key!
+                  let loopLogRef = doc(db, "daily_logs", `${currentUser.uid}_${today}_DUE${currentDue}`);
+                  
+                  // Calculate dynamic cash/online splits for this specific iteration
+                  let cashSp = 0, onlineSp = 0;
+                  if (payMethod.value === 'split') {
+                      let cashBase = Math.floor(parseInt(payCashSplit.value) / numDues);
+                      let onlineBase = Math.floor(parseInt(payOnlineSplit.value) / numDues);
+                      cashSp = (i === numDues - 1) ? parseInt(payCashSplit.value) - (cashBase * (numDues - 1)) : cashBase;
+                      onlineSp = (i === numDues - 1) ? parseInt(payOnlineSplit.value) - (onlineBase * (numDues - 1)) : onlineBase;
+                  } else if (payMethod.value === 'cash') {
+                      cashSp = currentAmt;
+                  } else {
+                      onlineSp = currentAmt;
+                  }
+                  
+                  let loopPayload = {
+                      ...paymentPayload,
+                      amount: currentAmt,
+                      cash_split: cashSp,
+                      online_split: onlineSp,
+                      dueNumber: currentDue,
+                      isChittai: true
+                  };
+
+                  const logDoc = await transaction.get(loopLogRef);
+                  if (!logDoc.exists()) {
+                      transaction.set(loopLogRef, { [entryKey]: loopPayload, activeCustomers: [selectedCustomer.id] });
+                  } else {
+                      transaction.update(loopLogRef, { [entryKey]: loopPayload, activeCustomers: arrayUnion(selectedCustomer.id) });
+                  }
+              }
           } else {
-            transaction.update(logRef, { 
-                [entryKey]: paymentPayload,
-                activeCustomers: arrayUnion(selectedCustomer.id) // <--- NEW OPTIMIZED PAYLOAD
-            });
+              // STANDARD PUSH (Unchanged)
+              const logRef = doc(db, "daily_logs", `${currentUser.uid}_${today}`);
+              const logDoc = await transaction.get(logRef);
+              // if (!logDoc.exists()) {                                  // <--- OLD LINE COMMENTED OUT
+              //   transaction.set(logRef, { [entryKey]: paymentPayload }); // <--- OLD LINE COMMENTED OUT
+              // } else {                                                   // <--- OLD LINE COMMENTED OUT
+              //   transaction.update(logRef, { [entryKey]: paymentPayload }); // <--- OLD LINE COMMENTED OUT
+              // }                                                          // <--- OLD LINE COMMENTED OUT
+              
+              if (!logDoc.exists()) {
+                transaction.set(logRef, { 
+                    [entryKey]: paymentPayload,
+                    activeCustomers: [selectedCustomer.id] // <--- NEW OPTIMIZED PAYLOAD
+                });
+              } else {
+                transaction.update(logRef, { 
+                    [entryKey]: paymentPayload,
+                    activeCustomers: arrayUnion(selectedCustomer.id) // <--- NEW OPTIMIZED PAYLOAD
+                });
+              }
           }
         });
 
