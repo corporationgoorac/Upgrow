@@ -14,6 +14,7 @@ const qrcode = require('qrcode');
 const admin = require('firebase-admin');
 const cron = require('node-cron');
 const fs = require('fs');       
+const path = require('path'); 
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('⚠️ [ANTI-CRASH] Unhandled Rejection at:', promise, 'reason:', reason);
@@ -22,9 +23,30 @@ process.on('uncaughtException', (err) => {
     console.error('⚠️ [ANTI-CRASH] Uncaught Exception:', err);
 });
 
+// ==========================================
+// 🔥 FIREBASE INIT (JSON File Support for msg.js)
+// ==========================================
 if (!admin.apps.length) {
-    console.warn("⚠️ [SAFETY CATCH] Firebase Admin was not initialized prior.");
-    admin.initializeApp(); 
+    console.warn("⚠️ [SAFETY CATCH] Firebase Admin was not initialized prior. Initializing with credentials...");
+    try {
+        let serviceAccount;
+        const localKeyPath = path.join(__dirname, 'firebaseAccountsKeys.json');
+        
+        if (fs.existsSync(localKeyPath)) {
+            serviceAccount = require(localKeyPath);
+            console.log("🔥 Loaded Firebase credentials from local firebaseAccountsKeys.json in msg.js");
+        } else {
+            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            console.log("🔥 Loaded Firebase credentials from Environment Variables in msg.js");
+        }
+        
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log("🔥 Firebase Admin Initialized Successfully in msg.js");
+    } catch (error) {
+        console.error("❌ Firebase Admin Initialization Error in msg.js:", error.message);
+    }
 }
 const db = admin.firestore();
 
@@ -38,22 +60,26 @@ setInterval(() => {
     console.log("🧹 Cleared processedDocs cache to free memory.");
 }, 12 * 60 * 60 * 1000); 
 
+// --- FIX: UNIVERSAL SAFE SENDING HELPER ---
 async function safeSendMessage(client, jid, message, agentName) {
     try {
+        // 1. Resolve the correct WhatsApp ID securely
         const waId = await client.getNumberId(jid);
         const finalId = waId ? waId._serialized : jid;
-        const chat = await client.getChatById(finalId);
-        
-        await chat.sendMessage(message);
+
+        // 2. Direct Send (Works instantly even if the chat isn't in recent memory)
+        await client.sendMessage(finalId, message);
         console.log(`✅ Message successfully sent to ${agentName || jid}`);
         return true;
+        
     } catch (error) {
-        console.error(`❌ Primary send failed for ${agentName || jid}:`, error.message);
+        // 3. Ultimate Fallback: Try raw JID if serialization fails
         try {
             await client.sendMessage(jid, message);
+            console.log(`✅ Message successfully sent to ${agentName || jid} (via fallback)`);
             return true;
         } catch (finalErr) {
-            console.error(`Critial Failure: Could not reach ${jid}:`, finalErr.message);
+            console.error(`❌ Critical Failure: Could not reach ${agentName || jid}:`, finalErr.message);
             return false;
         }
     }
