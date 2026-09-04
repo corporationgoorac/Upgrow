@@ -126,7 +126,7 @@
     .sheet-handle { width: 45px; height: 6px; background: var(--border); border-radius: 10px; margin: 10px auto 15px auto; flex-shrink: 0; }
     
     /* --- REDESIGNED LINE PICKER --- */
-    #line-picker-sheet { padding-bottom: 15px; } /* REMOVED EXCESSIVE PADDING */
+    #line-picker-sheet { padding-bottom: 15px; } 
     #picker-list { overflow-y: auto; max-height: 55vh; padding-bottom: 5px; margin-top: 15px; display: flex; flex-direction: column; gap: 12px; }
     .picker-line { padding: 18px; border-radius: 16px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.2); border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     .picker-line:active { transform: scale(0.96); }
@@ -374,13 +374,13 @@
       </div>
     </div>
     
-    <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
-    
-    <!-- NEW DELETE CUSTOMER BUTTON -->
-    <button class="btn-full" id="btn-delete-cust" onclick="deleteCustomerCompletely()" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger); box-shadow: none; margin-top: 15px; border: 1px dashed var(--danger);">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 8px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-      Delete Customer
-    </button>
+    <!-- UPDATED: Flex container for side-by-side Save and Delete buttons -->
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn-full" id="btn-delete-cust" onclick="deleteCustomerCompletely()" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger); box-shadow: none; border: 1px dashed var(--danger); flex: 0 0 56px; padding: 0; margin-top: 0;" title="Delete Customer">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+        <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()" style="margin-top: 0; flex: 1;">Save Changes</button>
+    </div>
   </div>
 
   <!-- Change Line Bottom Sheet (Redesigned) -->
@@ -698,8 +698,6 @@
       if (user) {
         currentUser = user; 
         fetchInitialCustomers();
-        // REMOVED: buildSearchDictionaryBackground() 
-        // We are now exclusively using the Live Paginated Search Engine instead of local memory.
       }
     });
 
@@ -1572,9 +1570,6 @@
             const searchPhoneEl = document.getElementById(`search-card-phone-${activeCustomer.id}`);
             if (searchNameEl) searchNameEl.innerText = newName;
             if (searchPhoneEl) searchPhoneEl.innerText = `ID: ${activeCustomer.id} | 📞 ${newPhone || 'N/A'}`;
-
-            // 3. Update RAM Cache Manually
-            // (Disabled: Migrated to fully Live Paginated Search, background dict removed)
             
             vibrate([30, 50]);
             window.history.back(); // Invokes popstate securely
@@ -1596,7 +1591,8 @@
 
         const btn = document.getElementById('btn-delete-cust');
         const originalText = btn.innerHTML;
-        btn.innerText = "Deleting...";
+        // Inject a localized, high-quality spinner directly into the small square
+        btn.innerHTML = `<div class="loader-spinner" style="width: 20px; height: 20px; border-width: 3px; border-top-color: var(--danger); margin: 0 auto;"></div>`;
         btn.disabled = true;
 
         try {
@@ -1623,9 +1619,14 @@
             // 6. Clear active reference securely
             activeCustomer = null;
             vibrate([50, 50, 50]);
+
+            // FIX: Restore button state so it isn't stuck next time another customer is opened
+            btn.innerHTML = originalText;
+            btn.disabled = false;
             
         } catch (e) {
             customAlert("Failed to delete customer: " + e.message);
+            // Restore if it fails
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
