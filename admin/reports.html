@@ -375,6 +375,12 @@
     </div>
     
     <button class="btn-full" id="btn-save-cust" onclick="saveCustomerEdit()">Save Changes</button>
+    
+    <!-- NEW DELETE CUSTOMER BUTTON -->
+    <button class="btn-full" id="btn-delete-cust" onclick="deleteCustomerCompletely()" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger); box-shadow: none; margin-top: 15px; border: 1px dashed var(--danger);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 8px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      Delete Customer
+    </button>
   </div>
 
   <!-- Change Line Bottom Sheet (Redesigned) -->
@@ -426,7 +432,8 @@
   <script type="module">
     import { auth, db } from './config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-    import { collection, query, getDocs, doc, getDoc, updateDoc, limit, startAfter, where, orderBy, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+    // ADDED deleteDoc import here
+    import { collection, query, getDocs, doc, getDoc, updateDoc, deleteDoc, limit, startAfter, where, orderBy, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // --- Global State ---
     let currentUser = null;
@@ -1577,6 +1584,51 @@
         
         btn.innerText = "Save Changes";
         btn.disabled = false;
+    };
+
+    // --- NEW: Delete Customer Completely ---
+    window.deleteCustomerCompletely = async () => {
+        if (!activeCustomer) return;
+        vibrate([50, 100]);
+        
+        const confirmed = await customConfirm(`Are you sure you want to permanently delete "${activeCustomer.data.name}" and all associated products and payments? This action cannot be undone.`);
+        if (!confirmed) return;
+
+        const btn = document.getElementById('btn-delete-cust');
+        const originalText = btn.innerHTML;
+        btn.innerText = "Deleting...";
+        btn.disabled = true;
+
+        try {
+            // 1. Delete from Firestore completely
+            await deleteDoc(activeCustomer.ref);
+            
+            // 2. Clean up UI: Remove from Main List
+            const mainCard = document.getElementById(`main-card-${activeCustomer.id}`);
+            if (mainCard) mainCard.remove();
+            
+            // 3. Clean up UI: Remove from Search Results
+            const searchCard = document.getElementById(`search-card-${activeCustomer.id}`);
+            if (searchCard) searchCard.remove();
+
+            // 4. Close Modal gracefully using history stack
+            window.history.back(); 
+            
+            // 5. Slide customer detail view away
+            const screenDetail = document.getElementById('screen-detail');
+            if (screenDetail && !screenDetail.classList.contains('hidden-right')) {
+                screenDetail.classList.add('hidden-right');
+            }
+            
+            // 6. Clear active reference securely
+            activeCustomer = null;
+            vibrate([50, 50, 50]);
+            
+        } catch (e) {
+            customAlert("Failed to delete customer: " + e.message);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     };
 
     // --- GPS Fetch for Edit Modal ---
