@@ -339,20 +339,34 @@
       const toast = document.getElementById('status-toast');
       const msgEl = document.getElementById('toast-msg');
       
-      // OLD LINES COMMENTED:
-      // if (!statusStr) {
-      //     msgEl.innerHTML = `Never active`;
-      // } else {
-      //     msgEl.innerHTML = `<span style="opacity:0.7; font-weight:500;">Active:</span> ${statusStr}`;
-      // }
-      
-      // UPGRADED: Two-line professional date/time layout
+      // UPGRADED: Two-line professional date/time layout with 12-hour AM/PM format
       if (!statusStr) {
           msgEl.innerHTML = `<div style="display:flex; flex-direction:column; line-height:1.3;"><span style="opacity:0.6; font-size:0.8rem; text-transform:uppercase; font-weight:800;">Status</span><span style="font-size:1.05rem;">Never Active</span></div>`;
       } else {
-          const parts = statusStr.split(' ');
-          const datePart = parts[0] || '';
-          const timePart = parts.slice(1).join(' ') || '';
+          // Clean the string for Apple/Safari compatibility
+          const safeStr = statusStr.replace(/-/g, '/');
+          const d = new Date(safeStr);
+          
+          let datePart, timePart;
+          
+          // Check if it's a valid date
+          if (!isNaN(d)) {
+              // Extract original date format or customize as needed
+              datePart = statusStr.split(' ')[0] || d.toLocaleDateString('en-US');
+              
+              // Force 12-hour format (e.g., "12:30 PM") without seconds
+              timePart = d.toLocaleTimeString('en-US', { 
+                  hour: 'numeric', 
+                  minute: '2-digit', 
+                  hour12: true 
+              });
+          } else {
+              // Fallback just in case the string isn't a recognizable date
+              const parts = statusStr.split(' ');
+              datePart = parts[0] || '';
+              timePart = parts.slice(1).join(' ') || '';
+          }
+
           msgEl.innerHTML = `<div style="display:flex; flex-direction:column; line-height:1.3;">
                                <span style="opacity:0.6; font-size:0.8rem; text-transform:uppercase; font-weight:800;">Last Active</span>
                                <span style="font-size:1.05rem;">${datePart} <span style="color:var(--primary); margin:0 4px;">|</span> ${timePart}</span>
