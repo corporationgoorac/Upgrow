@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Added Theme Color for mobile toolbars -->
+  <meta name="theme-color" content="#121212">
   <title>Import Data - New App</title>
   <style>
-    body { background-color: #f4f7f6; color: #111827; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .container { background: #ffffff; padding: 40px; border-radius: 16px; border: 1px solid #e5e7eb; text-align: center; max-width: 450px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+    /* UPGRADED: Fully integrated Dark Theme matching your app's variables */
+    body { background-color: #121212; color: #f9fafb; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .container { background: #1e1e1e; padding: 40px; border-radius: 16px; border: 1px solid #2d3748; text-align: center; max-width: 450px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
     h2 { margin-top: 0; color: #10B981; }
-    p { color: #6b7280; line-height: 1.5; margin-bottom: 25px; font-weight: 500; }
-    .file-input-wrapper { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #f8fafc; }
-    input[type="file"] { width: 100%; font-size: 0.9rem; color: #475569; }
+    p { color: #9ca3af; line-height: 1.5; margin-bottom: 25px; font-weight: 500; }
+    .file-input-wrapper { border: 2px dashed #2d3748; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #121212; }
+    input[type="file"] { width: 100%; font-size: 0.9rem; color: #f9fafb; }
     button { background: #10B981; color: white; border: none; padding: 16px 24px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
     button:hover { background: #059669; transform: translateY(-2px); }
-    button:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; }
+    button:disabled { background: #2d3748; color: #6b7280; cursor: not-allowed; transform: none; box-shadow: none; }
     #status { margin-top: 20px; font-weight: bold; font-size: 0.9rem; }
   </style>
 </head>
@@ -50,7 +53,8 @@
       btn.disabled = true;
       btn.innerText = "Processing...";
       status.innerText = "Reading file...";
-      status.style.color = "#6b7280";
+      // UPGRADED: Better color contrast for dark mode processing status
+      status.style.color = "#9ca3af";
 
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -70,12 +74,21 @@
             // 1. INJECT THE LINE ID AUTOMATICALLY
             c.lineId = "C01"; 
             
-            // 2. UPGRADE ALL OLD PRODUCTS TO CHITTAI
+            // 2. UPGRADE ALL OLD PRODUCTS TO CHITTAI & FIX PENDING MATH
             if (c.products && Array.isArray(c.products)) {
               c.products.forEach(p => {
                 p.isChittai = true;          // Forces the Chittai UI to open in the new app
                 if (!p.startingDue) {
                    p.startingDue = 1;        // Adds fallback starting due
+                }
+                
+                // Calculate and inject the missing 'pending' field
+                const totalValue = parseInt(p.total) || parseInt(p.amount) || 0;
+                const paidValue = parseInt(p.paid) || 0;
+                
+                // Only overwrite if 'pending' is actually missing
+                if (p.pending === undefined || p.pending === null) {
+                    p.pending = Math.max(0, totalValue - paidValue);
                 }
               });
             }
