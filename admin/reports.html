@@ -21,6 +21,11 @@
       --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
       --skeleton-base: #e5e7eb;
       --skeleton-highlight: #f3f4f6;
+
+      /* --- Dynamic Pending Gradients - Light Mode --- */
+      --grad-color-1: 16, 185, 129; 
+      --grad-color-2: 52, 211, 153; 
+      --completed-text: #ffffff;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -36,6 +41,11 @@
         --skeleton-highlight: #3f4a5e;
         /* Advanced CSS Filter: Turns bright white Google map into sleek dark dashboard while preserving clarity */
         --map-filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%);
+
+        /* --- Dynamic Pending Gradients - Dark Mode --- */
+        --grad-color-1: 4, 120, 87;
+        --grad-color-2: 6, 78, 59; 
+        --completed-text: #f9fafb;
       }
     }
 
@@ -76,6 +86,41 @@
     .card-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
     .card-sub { font-size: 0.85rem; color: var(--text-sub); font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
     .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+
+    /* --- Dynamic Pending Gradients --- */
+    /* For 1 to 2000: Subtle Dynamic Gradient Overlay */
+    .dynamic-grad-card {
+        position: relative;
+        z-index: 1;
+        border-color: rgba(var(--grad-color-1), var(--dynamic-opacity)) !important;
+    }
+    .dynamic-grad-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(var(--grad-color-1), var(--dynamic-opacity)) 0%, rgba(var(--grad-color-2), calc(var(--dynamic-opacity) * 0.5)) 100%);
+        z-index: -1;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    /* For 0: Solid Professional Gradient */
+    .completed-card {
+        background: linear-gradient(135deg, rgb(var(--grad-color-1)) 0%, rgb(var(--grad-color-2)) 100%) !important;
+        border: none !important;
+    }
+    .completed-card .card-title, 
+    .completed-card .card-sub {
+        color: var(--completed-text) !important;
+    }
+    .badge-completed {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: var(--completed-text) !important;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
 
     /* --- Ledger Map Header --- */
     .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-top: 0px !important; margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
@@ -474,6 +519,83 @@
     const fmt = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
     const vibrate = (p = 30) => { if(navigator.vibrate) navigator.vibrate(p); };
 
+    // --- Zero-Read Dynamic Card Visuals Helper ---
+    function generateCardVisuals(products) {
+        if (!products || products.length === 0) {
+            return { className: 'card', style: '', badge: '<span class="badge">0 Products</span>' };
+        }
+        
+        let totalPending = 0;
+        products.forEach(p => {
+            const pTotal = parseInt(p.total) || parseInt(p.amount) || 0;
+            let pPaid = 0;
+            if (p.payments) p.payments.forEach(pay => pPaid += (parseInt(pay.amount) || 0));
+            else pPaid = parseInt(p.paid) || 0;
+            totalPending += Math.max(0, pTotal - pPaid);
+        });
+
+        // Case 1: Standard Card (Above 2000)
+        if (totalPending > 2000) {
+            return { 
+                className: 'card', 
+                style: '', 
+                badge: `<span class="badge">${products.length} Products</span>` 
+            };
+        }
+
+        // Case 2: Completed Card (Exactly 0)
+        if (totalPending === 0) {
+            return {
+                className: 'card completed-card',
+                style: '',
+                badge: `<span class="badge badge-completed">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg> CLEARED
+                        </span>`
+            };
+        }
+
+        // Case 3: Dynamic Gradient (1 to 2000)
+        // Math: At 2000, opacity is 0.05. As it approaches 0, opacity scales up to 0.7.
+        let intensity = (2000 - totalPending) / 2000;
+        let opacity = 0.05 + (intensity * 0.65); 
+        
+        return {
+            className: 'card dynamic-grad-card',
+            style: `--dynamic-opacity: ${opacity.toFixed(2)};`,
+            badge: `<span class="badge" style="background: rgba(var(--grad-color-1), 0.15); color: var(--primary);">₹${totalPending} Left</span>`
+        };
+    }
+
+    // --- Instant Edge-Case Master Card Sync ---
+    function syncMasterCard(customerObj) {
+        if (!customerObj || !customerObj.data) return;
+        const cId = customerObj.id;
+        const data = customerObj.data;
+        const visuals = generateCardVisuals(data.products);
+        
+        const updateCard = (cardIdPrefix) => {
+            const card = document.getElementById(`${cardIdPrefix}-card-${cId}`);
+            if (card) {
+                card.className = visuals.className;
+                card.style = visuals.style;
+                card.innerHTML = `
+                    <div class="card-top">
+                        <div>
+                            <div class="card-title" id="${cardIdPrefix}-card-name-${cId}">${data.name || 'Unknown'}</div> 
+                            <div class="card-sub" id="${cardIdPrefix}-card-phone-${cId}">ID: ${cId} | 📞 ${data.phone || 'N/A'}</div> 
+                        </div>
+                        ${visuals.badge}
+                    </div>
+                `;
+            }
+        };
+        
+        updateCard('main');
+        updateCard('search');
+    }
+
     // --- Native Modal Overrides ---
     let alertResolve = null;
     window.customAlert = function(msg, title="Notice") {
@@ -756,8 +878,11 @@
     function renderCustomerBatch(docs) {
         docs.forEach(d => {
             const data = d.data();
+            const visuals = generateCardVisuals(data.products);
+            
             const card = document.createElement('div');
-            card.className = 'card';
+            card.className = visuals.className;
+            card.style = visuals.style;
             card.id = `main-card-${d.id}`; 
             card.innerHTML = `
                 <div class="card-top">
@@ -765,7 +890,7 @@
                         <div class="card-title" id="main-card-name-${d.id}">${data.name || 'Unknown'}</div> 
                         <div class="card-sub" id="main-card-phone-${d.id}">ID: ${d.id} | 📞 ${data.phone || 'N/A'}</div> 
                     </div>
-                    <span class="badge">${data.products ? data.products.length : 0} Products</span>
+                    ${visuals.badge}
                 </div>
             `;
             card.onclick = () => loadCustomerDetail(d.id);
@@ -901,8 +1026,11 @@
             } else {
                 emptyState.style.display = 'none';
                 finalResults.forEach(c => {
+                    const visuals = generateCardVisuals(c.products);
+                    
                     const card = document.createElement('div');
-                    card.className = 'card';
+                    card.className = visuals.className;
+                    card.style = visuals.style;
                     card.id = `search-card-${c.rawId}`; 
                     card.innerHTML = `
                         <div class="card-top">
@@ -910,6 +1038,7 @@
                                 <div class="card-title" id="search-card-name-${c.rawId}">${c.name || 'Unknown'}</div> 
                                 <div class="card-sub" id="search-card-phone-${c.rawId}">ID: ${c.rawId} | 📞 ${c.phone || 'N/A'}</div> 
                             </div>
+                            ${visuals.badge}
                         </div>
                     `;
                     card.onclick = () => loadCustomerDetail(c.rawId);
@@ -1194,6 +1323,7 @@
 
             vibrate([30, 50]);
             renderProducts();
+            syncMasterCard(activeCustomer); // Update Background List Instantly
             window.history.back(); 
         } catch(e) {
             customAlert("Failed to add product: " + e.message);
@@ -1225,6 +1355,7 @@
             if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds; 
             vibrate([50, 50, 50]);
             renderProducts();
+            syncMasterCard(activeCustomer); // Update Background List Instantly
         } catch(e) {
             customAlert("Failed to delete: " + e.message);
         }
@@ -1289,6 +1420,7 @@
             if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds;
             vibrate([30, 50]);
             renderProducts();
+            syncMasterCard(activeCustomer); // Update Background List Instantly
             window.history.back(); // Automatically closes the edit bottom sheet cleanly
         } catch(e) {
             customAlert("Failed to delete payment: " + e.message);
@@ -1486,6 +1618,7 @@
 
             vibrate([30, 50]);
             renderProducts(); 
+            syncMasterCard(activeCustomer); // Update Background List Instantly
             window.history.back(); 
 
         } catch (e) {
@@ -1559,17 +1692,7 @@
             }
 
             // --- ZERO-READ OPTIMIZATION START ---
-            // 1. Update UI (Level 1 main list) directly
-            const mainNameEl = document.getElementById(`main-card-name-${activeCustomer.id}`);
-            const mainPhoneEl = document.getElementById(`main-card-phone-${activeCustomer.id}`);
-            if (mainNameEl) mainNameEl.innerText = newName;
-            if (mainPhoneEl) mainPhoneEl.innerText = `ID: ${activeCustomer.id} | 📞 ${newPhone || 'N/A'}`;
-
-            // 2. Update UI (Level 1 search list) directly
-            const searchNameEl = document.getElementById(`search-card-name-${activeCustomer.id}`);
-            const searchPhoneEl = document.getElementById(`search-card-phone-${activeCustomer.id}`);
-            if (searchNameEl) searchNameEl.innerText = newName;
-            if (searchPhoneEl) searchPhoneEl.innerText = `ID: ${activeCustomer.id} | 📞 ${newPhone || 'N/A'}`;
+            syncMasterCard(activeCustomer); // Safe redraw of master card
             
             vibrate([30, 50]);
             window.history.back(); // Invokes popstate securely
