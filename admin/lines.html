@@ -20,6 +20,11 @@
       --shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
       --skeleton-base: #e5e7eb;
       --skeleton-highlight: #f3f4f6;
+
+      /* --- Dynamic Pending Gradients - Light Mode --- */
+      --grad-color-1: 16, 185, 129; 
+      --grad-color-2: 52, 211, 153; 
+      --completed-text: #ffffff;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -35,6 +40,11 @@
         --skeleton-highlight: #3f4a5e;
         /* Advanced CSS Filter: Turns bright white Google map into sleek dark dashboard while preserving clarity */
         --map-filter: invert(92%) hue-rotate(180deg) brightness(95%) contrast(105%);
+
+        /* --- Dynamic Pending Gradients - Dark Mode --- */
+        --grad-color-1: 4, 120, 87;
+        --grad-color-2: 6, 78, 59; 
+        --completed-text: #f9fafb;
       }
     }
 
@@ -101,6 +111,43 @@
     .cust-info p { font-size: 0.85rem; color: var(--text-sub); font-family: monospace; }
     .cust-stats { display: flex; gap: 10px; font-size: 0.85rem; font-weight: 600; color: var(--primary); background: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 8px; width: fit-content; }
     
+    /* --- Dynamic Pending Gradients for Lines --- */
+    .dynamic-grad-card {
+        position: relative;
+        z-index: 1;
+        border-color: rgba(var(--grad-color-1), var(--dynamic-opacity)) !important;
+    }
+    .dynamic-grad-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(var(--grad-color-1), var(--dynamic-opacity)) 0%, rgba(var(--grad-color-2), calc(var(--dynamic-opacity) * 0.5)) 100%);
+        z-index: -1;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .completed-card {
+        background: linear-gradient(135deg, rgb(var(--grad-color-1)) 0%, rgb(var(--grad-color-2)) 100%) !important;
+        border: none !important;
+    }
+    .completed-card .cust-info h3, 
+    .completed-card .cust-info p {
+        color: var(--completed-text) !important;
+    }
+    .completed-card .icon-btn {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: var(--completed-text) !important;
+    }
+    .badge-completed {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: var(--completed-text) !important;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
     /* --- Ledger View --- */
     .ledger-summary { background-color: var(--surface-card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 20px; position: relative; overflow: hidden; z-index: 1; }
     .ledger-summary h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
@@ -688,6 +735,52 @@
       return `${day}${suffix} ${month} ${year}`;
     };
 
+    // --- Zero-Read Dynamic Card Visuals Helper (Level 2 specific) ---
+    function generateLevel2CardVisuals(products) {
+        let pCount = products ? products.length : 0;
+        if (!products || products.length === 0) {
+            return { className: 'customer-card', style: '', badge: `<div class="cust-stats">0 Products</div>` };
+        }
+        
+        let totalPending = 0;
+        products.forEach(p => {
+            const pTotal = parseInt(p.total) || parseInt(p.amount) || 0;
+            let pPaid = 0;
+            if (p.payments) p.payments.forEach(pay => pPaid += (parseInt(pay.amount) || 0));
+            else pPaid = parseInt(p.paid) || 0;
+            totalPending += Math.max(0, pTotal - pPaid);
+        });
+
+        if (totalPending > 2000) {
+            return { 
+                className: 'customer-card', 
+                style: '', 
+                badge: `<div class="cust-stats">${pCount} Active Product${pCount !== 1 ? 's' : ''}</div>` 
+            };
+        }
+
+        if (totalPending === 0) {
+            return {
+                className: 'customer-card completed-card',
+                style: '',
+                badge: `<div class="cust-stats badge-completed" style="width: fit-content;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg> CLEARED
+                        </div>`
+            };
+        }
+
+        let intensity = (2000 - totalPending) / 2000;
+        let opacity = 0.05 + (intensity * 0.65); 
+        
+        return {
+            className: 'customer-card dynamic-grad-card',
+            style: `--dynamic-opacity: ${opacity.toFixed(2)};`,
+            badge: `<div class="cust-stats" style="background: rgba(var(--grad-color-1), 0.15); color: var(--primary);">${fmt(totalPending)} Left</div>`
+        };
+    }
+
     // State
     let activeLineId = null;
     let activeCustId = null;
@@ -1166,13 +1259,25 @@
       loadCustomers();
     };
 
-    // UPGRADED: Background Math Sync for Level 2 Badges
+    // UPGRADED: Background Math Sync for Level 2 Badges & Styles
     function updateLevel2ProductCount() {
-        if (!activeCustomer || !activeCustomer.data.products) return;
-        const count = activeCustomer.data.products.length;
-        const statBadge = document.querySelector(`#cust-card-${activeCustomer.id} .cust-stats`);
-        if (statBadge) {
-            statBadge.innerText = `${count} Active Product${count !== 1 ? 's' : ''}`;
+        if (!activeCustomer || !activeCustomer.data) return;
+        const c = activeCustomer.data;
+        const cardEl = document.querySelector(`#cust-card-${c.id}`);
+        if (cardEl) {
+            const visuals = generateLevel2CardVisuals(c.products);
+            cardEl.className = visuals.className;
+            cardEl.style = visuals.style;
+            cardEl.innerHTML = `
+                <div class="cust-top">
+                  <div class="cust-info"><h3>${c.name}</h3><p>${c.id} • ${c.phone || 'No Phone'}</p></div>
+                  <div class="actions-wrap">
+                    <button class="icon-btn add" onclick="event.stopPropagation(); openAddProductModal('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                    <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                  </div>
+                </div>
+                ${visuals.badge}
+            `;
         }
     }
 
@@ -1251,10 +1356,10 @@
         results.forEach(c => {
             if(!uniqueMap[c.id]) {
                 uniqueMap[c.id] = true;
-                const pCount = c.products ? c.products.length : 0;
+                const visuals = generateLevel2CardVisuals(c.products);
                 
                 html += `
-                  <div class="customer-card" id="cust-card-${c.id}" onclick="openLedgerView('${c.id}')">
+                  <div class="${visuals.className}" id="cust-card-${c.id}" style="${visuals.style}" onclick="openLedgerView('${c.id}')">
                     <div class="cust-top">
                       <div class="cust-info"><h3>${c.name}</h3><p>${c.id} • ${c.phone || 'No Phone'}</p></div>
                       <div class="actions-wrap">
@@ -1262,7 +1367,7 @@
                         <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCustomer('${c.id}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                       </div>
                     </div>
-                    <div class="cust-stats">${pCount} Active Product${pCount!==1?'s':''}</div>
+                    ${visuals.badge}
                   </div>`;
             }
         });
@@ -2039,6 +2144,7 @@
 
             vibrate([30, 50]);
             renderProducts(); 
+            updateLevel2ProductCount(); // Instantly recalculate card colors
             window.history.back(); 
 
         } catch (e) {
@@ -2107,6 +2213,7 @@
             if (finalUpdatedProds) activeCustomer.data.products = finalUpdatedProds;
             vibrate([30, 50]);
             renderProducts();
+            updateLevel2ProductCount(); // Instantly recalculate card colors
             window.history.back(); // Automatically closes the edit bottom sheet cleanly
         } catch(e) {
             customAlert("Failed to delete payment: " + e.message);
@@ -2183,9 +2290,7 @@
 
             vibrate([30, 50]);
             
-            // Re-render Level 2 info if possible to keep names matching
-            const lvl2Title = document.querySelector(`#cust-card-${activeCustomer.id} h3`);
-            if(lvl2Title) lvl2Title.innerText = newName;
+            updateLevel2ProductCount(); // Refreshes name perfectly without removing line functionality
 
             window.history.back(); 
         } catch(e) {
