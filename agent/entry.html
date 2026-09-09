@@ -819,6 +819,16 @@
         try {
           await updateDoc(doc(db, "customers", selectedCustomer.id), { location: coords });
           
+          // --- NEW: Instantly heal the UI and local state ---
+          selectedCustomer.location = coords; 
+
+          const locBtn = document.getElementById('header-loc-btn');
+          if (locBtn) {
+              locBtn.classList.remove('missing');
+              locBtn.querySelector('span').innerText = 'Update GPS';
+          }
+          // --------------------------------------------------
+          
           // Generate Map iframe Preview (Zero Cost via Google Maps Embed)
           const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
 
