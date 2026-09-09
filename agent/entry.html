@@ -78,6 +78,22 @@
     .location-btn svg { width: 18px; height: 18px; stroke-width: 2.5; }
     @keyframes pulseLoc { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
 
+    /* --- Missing GPS Warning State --- */
+    .location-btn.missing {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+        animation: pulseLocMissing 2s infinite;
+    }
+    .location-btn.missing svg {
+        stroke: #f59e0b; /* Forces the map pin icon to match the warning text */
+    }
+    @keyframes pulseLocMissing { 
+        0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); } 
+        70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); } 
+        100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } 
+    }
+
     /* --- Bottom Sheet Modal --- */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
@@ -132,7 +148,7 @@
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
       </button>
       <h2 style="font-size: 1.15rem; color: var(--text-main);" id="detail-name">Loading...</h2>
-      <button class="location-btn" onclick="openLocationModal()">
+      <button id="header-loc-btn" class="location-btn" onclick="openLocationModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
         <span>Update GPS</span>
       </button>
@@ -446,6 +462,20 @@
       
       selectedCustomer = customer;
       document.getElementById('detail-name').innerText = customer.name;
+
+      // --- Dynamic GPS Button Override ---
+      const locBtn = document.getElementById('header-loc-btn');
+      const locSpan = locBtn.querySelector('span');
+
+      if (customer.location && customer.location.trim() !== '') {
+          // Has GPS: Standard Blue State
+          locBtn.classList.remove('missing');
+          locSpan.innerText = 'Update GPS';
+      } else {
+          // No GPS: Warning Orange State
+          locBtn.classList.add('missing');
+          locSpan.innerText = '⚠️ Missing GPS';
+      }
       
       // History Push
       window.history.pushState({ screen: 'detail' }, '');
