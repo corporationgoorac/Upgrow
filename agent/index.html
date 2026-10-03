@@ -124,6 +124,33 @@
       font-weight: 500;
     }
 
+    .shield-btn {
+      margin-top: 30px;
+      padding: 14px 28px;
+      background-color: var(--surface-color);
+      color: var(--danger);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
+    }
+
+    .shield-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .shield-btn:active {
+      transform: scale(0.95);
+      background-color: var(--skeleton-highlight);
+    }
+
     .spinner {
       width: 45px;
       height: 45px;
@@ -302,6 +329,16 @@
     <div class="shield-text">
       You are not an agent or your permission is missing. Contact admin for more info to grant the permission.
     </div>
+    
+    <!-- NEW LOGOUT BUTTON -->
+    <button id="shield-logout-btn" class="shield-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      Log Out & Switch
+    </button>
   </div>
 
   <!-- 3. Main App Shell -->
@@ -363,7 +400,8 @@
     });
 
     import { auth, db } from './config.js';
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    // UPDATED: Added signOut to the import
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     // --- PWA Service Worker Registration ---
@@ -440,6 +478,25 @@
     function triggerVibration() {
       if (navigator.vibrate) navigator.vibrate(30);
     }
+
+    // --- NEW: Shield Log Out Logic ---
+    document.getElementById('shield-logout-btn').addEventListener('click', async () => {
+      triggerVibration();
+      const btn = document.getElementById('shield-logout-btn');
+      
+      // Provide visual feedback during the network request
+      btn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div> Logging out...';
+      
+      try {
+        await signOut(auth);
+        localStorage.removeItem('upfield_dp'); // Ensure clean slate for next user
+        window.location.replace("login.html");
+      } catch (error) {
+        console.error("Logout failed:", error);
+        // Revert button visually if it fails
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Log Out & Switch`;
+      }
+    });
 
     // Navigation Sync Logic (Switches active state on Bottom Nav)
     window.setActiveNav = function(clickedElement, index) {
