@@ -19,7 +19,6 @@
       --border: #e5e7eb;
       --primary: #10B981;
       --primary-hover: #059669;
-      --danger: #ef4444; /* Added danger color for logout buttons */
       --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       --skeleton-base: #e5e7eb;
       --skeleton-highlight: #f3f4f6;
@@ -106,13 +105,6 @@
       gap: 15px;
     }
 
-    /* New Header Right Flex Container */
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
     .menu-btn {
       background: none;
       border: none;
@@ -126,29 +118,6 @@
       transition: background 0.2s;
     }
     .menu-btn:active { background: var(--border); }
-
-    /* New Universal Header Logout Icon */
-    .header-action-btn {
-      background: transparent;
-      border: none;
-      color: var(--danger);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px;
-      border-radius: 8px;
-      transition: background-color 0.2s, transform 0.2s;
-    }
-    .header-action-btn svg {
-      width: 22px;
-      height: 22px;
-      stroke: currentColor;
-    }
-    .header-action-btn:active { 
-      background-color: var(--border); 
-      transform: scale(0.95); 
-    }
 
     .app-title {
       font-size: 1.25rem;
@@ -238,11 +207,6 @@
     .nav-item:hover { background-color: var(--bg-color); color: var(--text-main); }
     .nav-item.active { background-color: rgba(16, 185, 129, 0.1); color: var(--primary); }
     .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
-
-    /* New styles for Sidebar Logout */
-    .mt-auto { margin-top: auto; }
-    .logout-item { color: var(--danger) !important; }
-    .logout-item:hover { background-color: rgba(239, 68, 68, 0.1) !important; }
 
     /* --- Main Content Area (Iframe for 0ms navigation feel) --- */
     main {
@@ -361,21 +325,9 @@
         <div class="app-title">Up <span>Grow</span></div>
       </div>
 
-      <!-- Wrapped profile and logout button in header-right -->
-      <div class="header-right">
-        <!-- New Universal Header Logout Icon (Great for Mobile & Desktop) -->
-        <button id="header-logout-btn" class="header-action-btn" aria-label="Log Out">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-        </button>
-        
-        <div class="profile-wrapper" id="profile-btn">
-          <div class="skeleton" id="dp-skeleton"></div>
-          <img id="user-dp" class="profile-img" alt="Profile">
-        </div>
+      <div class="profile-wrapper" id="profile-btn">
+        <div class="skeleton" id="dp-skeleton"></div>
+        <img id="user-dp" class="profile-img" alt="Profile">
       </div>
     </header>
 
@@ -405,18 +357,6 @@
             Ledger
           </a>
         </nav>
-        
-        <!-- New Sidebar Logout Link (Pushed to bottom using mt-auto) -->
-        <div class="mt-auto" style="padding: 15px 10px; border-top: 1px solid var(--border);">
-          <a href="#" class="nav-item logout-item" id="sidebar-logout-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            Log Out
-          </a>
-        </div>
       </aside>
 
       <!-- Main Content Area -->
@@ -468,8 +408,7 @@
     });
     
     import { auth } from './config.js';
-    // UPDATED: Added signOut to the import
-    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
     // 1. Service Worker Registration for PWA Offline & Installability
     if ('serviceWorker' in navigator) {
@@ -525,26 +464,6 @@
     sidebarToggle.addEventListener('click', () => {
       triggerVibration();
       sidebar.classList.toggle('collapsed');
-    });
-
-    // --- NEW: Universal Log Out Logic ---
-    async function handleLogout() {
-      triggerVibration();
-      try {
-        await signOut(auth);
-        localStorage.removeItem('upgrow_dp'); // Ensure clean slate for next admin
-        window.location.replace("login.html");
-      } catch (error) {
-        console.error("Logout failed:", error);
-      }
-    }
-
-    // Bind log out logic to both buttons
-    document.getElementById('header-logout-btn').addEventListener('click', handleLogout);
-    
-    document.getElementById('sidebar-logout-btn').addEventListener('click', (e) => {
-      e.preventDefault(); // Prevent hash navigation
-      handleLogout();
     });
 
     // Navigation Sync Logic (Syncs active states between PC Sidebar and Mobile Bottom Nav)
